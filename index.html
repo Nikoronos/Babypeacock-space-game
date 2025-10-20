@@ -1,222 +1,214 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
-  <title>babypeacock — Space Runner</title>
-  <style>
-    :root{--bg:#050814;--panel:#0d142b;--ink:#e8f0ff;--accent:#8be9fd;--good:#7CFC00;--bad:#ff6b6b;}
-    *{box-sizing:border-box} html,body{height:100%;margin:0;background:#050814;color:var(--ink);font-family:system-ui,Segoe UI,Roboto,Poppins,Arial,sans-serif}
-    header{max-width:980px;margin:8px auto 6px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center}
-    .brand{font-weight:800;letter-spacing:.3px} .brand em{font-style:normal;color:var(--accent)} /* p küçük */
-    #hud{display:flex;gap:10px}
-    .tag{background:var(--panel);padding:6px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.06)}
-    #wrap{max-width:980px;margin:0 auto 12px;padding:0 12px}
-    #stage{position:relative;aspect-ratio:16/9;width:100%;touch-action:none}
-    canvas{width:100%;height:100%;display:block;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
-    #overlay{pointer-events:none;position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-    .panel{pointer-events:auto;background:rgba(13,20,43,.92);backdrop-filter:blur(4px);padding:22px;border-radius:16px;text-align:center;border:1px solid rgba(255,255,255,.08)}
-    .panel h2{margin:0 0 8px}
-    .panel button{margin-top:12px;background:#1a2652;color:var(--ink);border:1px solid rgba(255,255,255,.12);padding:10px 14px;border-radius:10px;font-weight:700}
-    footer{opacity:.75;font-size:12px;text-align:center;margin:6px 0 12px}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>babypeacock — Vertical Shooter</title>
+<style>
+  :root{--bg:#050814;--panel:#0d142b;--ink:#e8f0ff;--accent:#8be9fd;--good:#7CFC00;--bad:#ff6b6b}
+  *{box-sizing:border-box} html,body{height:100%;margin:0;background:#050814;color:var(--ink);font-family:system-ui,Segoe UI,Roboto,Poppins,Arial,sans-serif}
+  header{max-width:980px;margin:8px auto 6px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center}
+  .brand{font-weight:800;letter-spacing:.3px}.brand em{font-style:normal;color:var(--accent)} /* p küçük */
+  #hud{display:flex;gap:10px}.tag{background:var(--panel);padding:6px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.06)}
+  #wrap{max-width:980px;margin:0 auto 12px;padding:0 12px}
+  #stage{position:relative;aspect-ratio:9/16;width:100%;touch-action:none}
+  canvas{width:100%;height:100%;display:block;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+  #overlay{pointer-events:none;position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+  .panel{pointer-events:auto;background:rgba(13,20,43,.92);backdrop-filter:blur(4px);padding:22px;border-radius:16px;text-align:center;border:1px solid rgba(255,255,255,.08)}
+  .panel h2{margin:0 0 8px}.panel button{margin-top:12px;background:#1a2652;color:var(--ink);border:1px solid rgba(255,255,255,.12);padding:10px 14px;border-radius:10px;font-weight:700}
+  footer{opacity:.75;font-size:12px;text-align:center;margin:6px 0 12px}
+</style>
 </head>
 <body>
-  <header>
-    <div class="brand">baby<em>peacock</em> — Space Runner 🦚🚀</div>
-    <div id="hud">
-      <div class="tag">Score: <b id="sc">0</b></div>
-      <div class="tag">Lives: <b id="lv">3</b></div>
-      <div class="tag">Feathers: <b id="fw">0</b></div>
-    </div>
-  </header>
-
-  <div id="wrap">
-    <div id="stage">
-      <canvas id="game"></canvas>
-      <div id="overlay"></div>
-    </div>
+<header>
+  <div class="brand">baby<em>peacock</em> — Space Shooter 🦚🚀</div>
+  <div id="hud">
+    <div class="tag">Score: <b id="sc">0</b></div>
+    <div class="tag">Lives: <b id="lv">3</b></div>
+    <div class="tag">Feathers: <b id="fw">0</b></div>
   </div>
+</header>
 
-  <footer>Parmağını/imidcini oynat → gemi seni takip eder. Basılı tut → otomatik ateş. Yeşil tüy = güçlendirme, kırmızı asteroit = zarar.</footer>
+<div id="wrap">
+  <div id="stage">
+    <canvas id="game"></canvas>
+    <div id="overlay"></div>
+  </div>
+</div>
+
+<footer>Gemini altta; sürükle → hareket. Basılı tut → yukarı ateş. Yeşil tüy = güçlendirme. Uzaylı gemileri tepeden iner.</footer>
 
 <script>
-/* ------------------ Ayarlar ------------------ */
-const ASSET = "yc3ku6.jpg";         // Maskot görseli index.html ile AYNI klasörde
+/* ---------- Ayarlar ---------- */
+const ASSET = "yc3ku6.jpg";  // maskot görseli index.html ile aynı klasörde
 const MAX_LIVES = 3;
 
-/* ------------------ Canvas ------------------ */
+/* ---------- Canvas ---------- */
 const c = document.getElementById("game");
 const ctx = c.getContext("2d");
-let W=960, H=540;
-
+let W=540, H=960;
 function fit(){
   const dpr = Math.min(2, window.devicePixelRatio||1);
-  c.width = Math.round(960*dpr);
-  c.height= Math.round(540*dpr);
+  c.width = Math.round(540*dpr);
+  c.height= Math.round(960*dpr);
   W=c.width; H=c.height;
 }
 new ResizeObserver(fit).observe(document.getElementById("stage")); fit();
 
-/* ------------------ HUD & Overlay ------------------ */
-const hud = {
-  sc: document.getElementById("sc"),
-  lv: document.getElementById("lv"),
-  fw: document.getElementById("fw"),
-};
-const overlay = document.getElementById("overlay");
-function setHud(){ hud.sc.textContent=state.score; hud.lv.textContent=state.lives; hud.fw.textContent=state.feathers; }
-function showStart(){
-  overlay.innerHTML = `<div class="panel">
-    <h2>🦚 Tavus Kuşu Uzay Aracı</h2>
-    <div style="opacity:.9">Sürükle → hareket • Basılı tut → ateş<br>Yeşil tüy topla: ateş güçlenir • 3 darbe = biter</div>
+/* ---------- HUD & Overlay ---------- */
+const hud={sc:document.getElementById("sc"),lv:document.getElementById("lv"),fw:document.getElementById("fw")};
+const overlay=document.getElementById("overlay");
+function setHud(){ hud.sc.textContent=S.score; hud.lv.textContent=S.lives; hud.fw.textContent=S.feathers; }
+function startScreen(){
+  overlay.innerHTML=`<div class="panel">
+    <h2>🦚 Tavus Kuşu Gemisi</h2>
+    <div style="opacity:.9">Sürükle → hareket • Basılı tut → ateş<br>Yeşil tüy ile ateş güçlenir • 3 darbe = biter</div>
     <button id="btnStart">Başla</button>
   </div>`;
-  document.getElementById("btnStart").onclick = ()=>{ overlay.innerHTML=""; reset(); run(); };
+  document.getElementById("btnStart").onclick=()=>{overlay.innerHTML=""; reset(); run();};
 }
-function showOver(){
-  overlay.innerHTML = `<div class="panel">
+function overScreen(){
+  overlay.innerHTML=`<div class="panel">
     <h2>Game Over</h2>
-    <div style="opacity:.9;margin-bottom:8px">Skor: <b>${state.score}</b> — Tüy: <b>${state.feathers}</b></div>
+    <div style="opacity:.9;margin-bottom:8px">Skor: <b>${S.score}</b> — Tüy: <b>${S.feathers}</b></div>
     <button id="btnAgain">Tekrar Oyna</button>
   </div>`;
-  document.getElementById("btnAgain").onclick = ()=>{ overlay.innerHTML=""; reset(); run(); };
+  document.getElementById("btnAgain").onclick=()=>{overlay.innerHTML=""; reset(); run();};
 }
 
-/* ------------------ Varlıklar ------------------ */
-const shipImg = new Image();
-let shipReady = false;
-shipImg.onload = ()=> shipReady = true;
-shipImg.onerror = ()=> shipReady = false;
-shipImg.src = ASSET;   // yol doğru değilse oyun YİNE başlar; sadece sprite yerine daire çizer
+/* ---------- Varlıklar ---------- */
+const shipImg=new Image(); let shipReady=false;
+shipImg.onload=()=>shipReady=true; shipImg.onerror=()=>shipReady=false; shipImg.src=ASSET;
 
-/* ------------------ Durum ------------------ */
-const state = {running:false, over:false, tPrev:0, score:0, lives:MAX_LIVES, feathers:0, press:false};
-const player = {x:W*0.18,y:H*0.5,r:28,vx:0,vy:0,fireCd:0,fireDelay:260};
-const bullets=[], rocks=[], powerUps=[];
-let spawnRockT=0, spawnPowT=0, speedScale=1;
+/* ---------- Durum ---------- */
+const S={running:false,over:false,tPrev:0,score:0,lives:MAX_LIVES,feathers:0,press:false};
+const player={x:W*0.5,y:H*0.86,r:28,vx:0,vy:0,fireCd:0,fireDelay:220};
+const bullets=[], aliens=[], powerUps=[];
+let spawnAlienT=0, spawnPowT=0, speedScale=1;
 
-/* ------------------ Girdi ------------------ */
-const pointer = {x:W*0.18, y:H*0.5, active:false};
-function localXY(e){
-  const r=c.getBoundingClientRect();
-  const px=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
-  const py=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
-  return {x: px*(c.width/r.width), y: py*(c.height/r.height)};
-}
-["pointerdown","mousedown","touchstart"].forEach(ev=>{
-  c.addEventListener(ev,(e)=>{ state.press=true; pointer.active=true; const p=localXY(e); pointer.x=p.x; pointer.y=p.y; });
-});
-["pointermove","mousemove","touchmove"].forEach(ev=>{
-  c.addEventListener(ev,(e)=>{ const p=localXY(e); pointer.x=p.x; pointer.y=p.y; if(e.cancelable) e.preventDefault(); }, {passive:false});
-});
-["pointerup","mouseleave","touchend","touchcancel"].forEach(ev=>{
-  c.addEventListener(ev,()=>{ state.press=false; pointer.active=false; });
-});
+/* ---------- Girdi ---------- */
+const p={x:player.x,y:player.y,active:false};
+function localXY(e){const r=c.getBoundingClientRect();const px=(e.touches?e.touches[0].clientX:e.clientX)-r.left;const py=(e.touches?e.touches[0].clientY:e.clientY)-r.top;return {x:px*(c.width/r.width),y:py*(c.height/r.height)}}
+["pointerdown","mousedown","touchstart"].forEach(ev=>{c.addEventListener(ev,e=>{S.press=true;p.active=true;const q=localXY(e);p.x=q.x;p.y=q.y;});});
+["pointermove","mousemove","touchmove"].forEach(ev=>{c.addEventListener(ev,e=>{const q=localXY(e);p.x=q.x;p.y=q.y;if(e.cancelable)e.preventDefault();},{passive:false});});
+["pointerup","mouseleave","touchend","touchcancel"].forEach(ev=>{c.addEventListener(ev,()=>{S.press=false;p.active=false;});});
 
-/* ------------------ Oyun Döngüsü ------------------ */
+/* ---------- Döngü ---------- */
 function reset(){
-  state.score=0; state.lives=MAX_LIVES; state.feathers=0; setHud();
-  bullets.length=0; rocks.length=0; powerUps.length=0;
-  spawnRockT=0; spawnPowT=0; speedScale=1;
-  player.x=W*0.18; player.y=H*0.5; player.vx=player.vy=0; player.fireCd=0; player.fireDelay=260;
-  state.over=false;
+  S.score=0; S.lives=MAX_LIVES; S.feathers=0; setHud();
+  bullets.length=0; aliens.length=0; powerUps.length=0;
+  spawnAlienT=0; spawnPowT=0; speedScale=1;
+  player.x=W*0.5; player.y=H*0.86; player.vx=player.vy=0; player.fireCd=0; player.fireDelay=220;
+  S.over=false;
 }
-function run(){ state.running=true; state.tPrev=performance.now(); requestAnimationFrame(loop); }
-function loop(t){
-  if(!state.running) return;
-  const dt = Math.min(40, t - state.tPrev); state.tPrev=t;
-  update(dt/16.666); render(); requestAnimationFrame(loop);
-}
+function run(){S.running=true; S.tPrev=performance.now(); requestAnimationFrame(loop);}
+function loop(t){ if(!S.running) return; const dt=Math.min(40,t-S.tPrev); S.tPrev=t; update(dt/16.666); render(); requestAnimationFrame(loop); }
 
-/* ------------------ Mantık ------------------ */
+/* ---------- Mantık ---------- */
 function update(dt){
-  // oyuncu
-  const ease=0.18;
-  if(pointer.active){
-    player.vx += ((pointer.x - player.x)*ease - player.vx)*0.5;
-    player.vy += ((pointer.y - player.y)*ease - player.vy)*0.5;
-  } else { player.vx*=0.9; player.vy*=0.9; }
-  player.x = clamp(player.x + player.vx*dt, player.r, W*0.97);
-  player.y = clamp(player.y + player.vy*dt, player.r, H-player.r);
+  // oyuncu (alt bölgede kal)
+  const ease=0.2;
+  if(p.active){
+    player.vx += ((p.x - player.x)*ease - player.vx)*0.5;
+    player.vy += ((p.y - player.y)*ease - player.vy)*0.5;
+  }else{ player.vx*=0.9; player.vy*=0.9; }
+  player.x = clamp(player.x + player.vx*dt, player.r, W-player.r);
+  const floor = H*0.75; // oyuncu alt çeyreği geçmesin
+  player.y = clamp(player.y + player.vy*dt, floor, H-player.r);
 
-  // ateş
+  // ateş (yukarı)
   player.fireCd -= dt*16.666;
-  if (state.press && player.fireCd<=0){
-    const spread = Math.min(3, 1 + Math.floor(state.feathers/3));
-    const speed = 9 + Math.min(6, state.feathers*0.6);
+  if(S.press && player.fireCd<=0){
+    const spread = Math.min(3, 1+Math.floor(S.feathers/3));
+    const speed = 11 + Math.min(6, S.feathers*0.6);
     for(let i=0;i<spread;i++){
-      const ang = (spread===1?0:(-0.1 + i*(0.2/(spread-1))));
-      bullets.push({x:player.x+player.r*0.6, y:player.y+ang*30, vx:speed, vy:ang*speed*0.5});
+      const ang = (spread===1?0:(-0.18 + i*(0.36/(spread-1))));
+      bullets.push({x:player.x + (i-(spread-1)/2)*6, y:player.y-player.r, vx:Math.sin(ang)*speed, vy:-Math.cos(ang)*speed});
     }
-    player.fireCd = Math.max(90, player.fireDelay - state.feathers*8);
+    player.fireCd = Math.max(90, player.fireDelay - S.feathers*8);
   }
 
-  // asteroit üretimi
-  spawnRockT += dt*16.666;
-  const rockEvery = Math.max(350, 900 - state.score*0.8);
-  if (spawnRockT > rockEvery){
-    spawnRockT = 0;
-    const r = 16 + Math.random()*28;
-    const y = 30 + Math.random()*(H-60);
-    const vx = -(2.5 + Math.random()*2.2 + speedScale*0.2);
-    const vy = (Math.random()-0.5)*1.0;
-    rocks.push({x:W+r, y, r, vx, vy, hp:r>30?2:1});
+  // uzaylı üret
+  spawnAlienT += dt*16.666;
+  const every = Math.max(350, 900 - S.score*0.8);
+  if(spawnAlienT>every){
+    spawnAlienT=0;
+    const x = 30 + Math.random()*(W-60);
+    const r = 20 + Math.random()*26;
+    const vy = 2.2 + Math.random()*2.4 + speedScale*0.2;
+    const hp = r>32 ? 3 : 2;
+    aliens.push({x,y:-r,r,vy,vx:(Math.random()-.5)*0.5,hp,type: Math.random()<0.5?0:1});
   }
 
-  // power-up üretimi
+  // tüy üret
   spawnPowT += dt*16.666;
-  if (spawnPowT > 2800){
-    spawnPowT = 0;
-    const y = 40 + Math.random()*(H-80);
-    powerUps.push({x:W+20, y, r:14, vx:-3.2});
+  if(spawnPowT>2800){
+    spawnPowT=0;
+    const x = 20 + Math.random()*(W-40);
+    powerUps.push({x,y:-20,r:14,vy:2.8});
   }
 
   // mermiler
   for(let i=bullets.length-1;i>=0;i--){
     const b=bullets[i]; b.x+=b.vx*dt; b.y+=b.vy*dt;
-    if (b.x>W+20 || b.y<-20 || b.y>H+20) bullets.splice(i,1);
+    if(b.y<-20 || b.x<-20 || b.x>W+20) bullets.splice(i,1);
   }
 
-  // asteroitler
-  for(let i=rocks.length-1;i>=0;i--){
-    const a=rocks[i]; a.x+=a.vx*dt; a.y+=a.vy*dt;
-    if (a.x<-a.r-20){ rocks.splice(i,1); continue; }
+  // uzaylılar
+  for(let i=aliens.length-1;i>=0;i--){
+    const a=aliens[i]; a.x+=a.vx*dt; a.y+=a.vy*dt;
+    if(a.y>H+a.r){ aliens.splice(i,1); continue; }
 
-    // gemi çarpışması
-    if (dist2(a.x,a.y,player.x,player.y) < sq(a.r + player.r*0.75)){
-      rocks.splice(i,1); hit(); continue;
+    // oyuncu çarpışması
+    if(dist2(a.x,a.y,player.x,player.y) < sq(a.r + player.r*0.7)){
+      aliens.splice(i,1); hit(); continue;
     }
     // mermi çarpışması
     for(let j=bullets.length-1;j>=0;j--){
       const b=bullets[j];
-      if (dist2(a.x,a.y,b.x,b.y) < sq(a.r)){
-        bullets.splice(j,1); a.hp--; state.score += 5;
-        if (a.hp<=0){ rocks.splice(i,1); state.score += 10; speedScale+=0.02; }
+      if(dist2(a.x,a.y,b.x,b.y) < sq(a.r)){
+        bullets.splice(j,1); a.hp--; S.score += 5;
+        if(a.hp<=0){ aliens.splice(i,1); S.score += 15; speedScale += .02; }
         setHud(); break;
       }
     }
   }
 
-  // power-up temas
+  // tüyler
   for(let i=powerUps.length-1;i>=0;i--){
-    const f=powerUps[i]; f.x+=f.vx*dt;
-    if (f.x<-20){ powerUps.splice(i,1); continue; }
-    if (dist2(f.x,f.y,player.x,player.y) < sq(f.r + player.r*0.7)){
-      powerUps.splice(i,1); state.feathers++; state.score += 15; setHud(); flash();
+    const f=powerUps[i]; f.y += f.vy*dt;
+    if(f.y>H+20){ powerUps.splice(i,1); continue; }
+    if(dist2(f.x,f.y,player.x,player.y) < sq(f.r + player.r*0.7)){
+      powerUps.splice(i,1); S.feathers++; S.score += 20; setHud(); flash();
     }
   }
 }
 
-function hit(){ state.lives--; setHud(); shakeT=220; if(state.lives<=0) { state.running=false; showOver(); } }
-function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
-function sq(n){ return n*n; }
-function dist2(x1,y1,x2,y2){ const dx=x1-x2, dy=y1-y2; return dx*dx+dy*dy; }
+function hit(){ S.lives--; setHud(); shakeT=220; if(S.lives<=0){ S.running=false; overScreen(); } }
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function sq(n){return n*n;}
+function dist2(x1,y1,x2,y2){const dx=x1-x2,dy=y1-y2;return dx*dx+dy*dy;}
 
-/* ------------------ Görüntüleme ------------------ */
+/* ---------- Çizim ---------- */
 let starT=0, shakeT=0, flashT=0;
 function flash(){ flashT=160; }
-
+function drawAlien(a){
+  ctx.save(); ctx.translate(a.x,a.y);
+  // tip 0: disk; tip 1: üçgen uçan gemi
+  if(a.type===0){
+    ctx.fillStyle="#9aa6ff"; // kubbe
+    ctx.beginPath(); ctx.ellipse(0,-a.r*0.25,a.r*0.6,a.r*0.4,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#3c4a6b"; // gövde
+    ctx.beginPath(); ctx.ellipse(0,0,a.r,a.r*0.55,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="rgba(255,255,255,.12)"; ctx.fillRect(-a.r*0.7,-a.r*0.1,a.r*1.4,a.r*0.2);
+  }else{
+    ctx.fillStyle="#3c4a6b";
+    ctx.beginPath(); // V şeklinde üçgen uzaylı
+    ctx.moveTo(0,-a.r); ctx.lineTo(a.r*0.9,a.r*0.6); ctx.lineTo(-a.r*0.9,a.r*0.6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle="#9aa6ff"; ctx.beginPath(); ctx.arc(0,-a.r*0.4,a.r*0.35,0,Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+}
 function render(){
   starT += 0.6;
   const shakeX = shakeT>0 ? (Math.random()-0.5)*6 : 0;
@@ -224,46 +216,46 @@ function render(){
   if (shakeT>0) shakeT -= 16;
   ctx.setTransform(1,0,0,1, shakeX, shakeY);
 
-  // arka plan
-  const grad = ctx.createLinearGradient(0,0,W,H);
-  grad.addColorStop(0,"#081125"); grad.addColorStop(1,"#0a1231");
-  ctx.fillStyle = grad; ctx.fillRect(-shakeX,-shakeY,W,H);
-  for(let i=0;i<70;i++){
-    const x=(i*137 + starT*3) % (W+50), y=(i*223 % H);
-    ctx.fillStyle="rgba(255,255,255,.28)"; ctx.fillRect(W - x, y, 2, 2);
+  // arka plan (yıldızlar yukarıdan aşağı hissi)
+  const grad=ctx.createLinearGradient(0,0,0,H); grad.addColorStop(0,"#081125"); grad.addColorStop(1,"#0a1231");
+  ctx.fillStyle=grad; ctx.fillRect(-shakeX,-shakeY,W,H);
+  for(let i=0;i<90;i++){
+    const y=(i*137 + starT*4) % (H+50), x=(i*223 % W);
+    ctx.fillStyle="rgba(255,255,255,.28)"; ctx.fillRect(x, y, 2, 2);
   }
 
   // power-ups
   powerUps.forEach(f=>{ ctx.beginPath(); ctx.fillStyle= "#7CFC00"; ctx.arc(f.x,f.y,f.r,0,Math.PI*2); ctx.fill(); });
 
-  // asteroitler
-  rocks.forEach(a=>{ ctx.beginPath(); ctx.fillStyle="#3c4a6b"; ctx.arc(a.x,a.y,a.r,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="rgba(255,255,255,.1)"; ctx.stroke(); });
+  // uzaylılar
+  aliens.forEach(a=> drawAlien(a));
 
-  // mermiler
-  ctx.fillStyle="#8be9fd"; bullets.forEach(b=>{ ctx.fillRect(b.x-4,b.y-2,8,4); });
+  // mermiler (yukarı)
+  ctx.fillStyle="#8be9fd"; bullets.forEach(b=>{ ctx.fillRect(b.x-2,b.y-8,4,12); });
 
-  // gemi (maskot)
+  // oyuncu — tavus kuşu gemisi
   const s = player.r*2;
   ctx.save(); ctx.translate(player.x,player.y);
-  const tilt = Math.atan2(player.vy, player.vx+0.0001)*0.15; ctx.rotate(tilt);
+  // hafif sallanma (uçuş hissi)
+  ctx.rotate(Math.sin(performance.now()/300)*0.02);
   if (shipReady) ctx.drawImage(shipImg, -s/2, -s/2, s, s);
-  else { ctx.fillStyle="#8be9fd"; ctx.beginPath(); ctx.arc(0,0,player.r,0,Math.PI*2); ctx.fill(); } // yedek çizim
+  else { ctx.fillStyle="#8be9fd"; ctx.beginPath(); ctx.arc(0,0,player.r,0,Math.PI*2); ctx.fill(); }
   ctx.restore();
 
-  // flaş
+  // vurgu flaşı
   if (flashT>0){ ctx.fillStyle="rgba(255,255,255,.08)"; ctx.fillRect(0,0,W,H); flashT -= 16; }
 
   ctx.setTransform(1,0,0,1,0,0);
 }
 
-/* ------------------ Görünürlük ------------------ */
+/* ---------- Görünürlük ---------- */
 document.addEventListener("visibilitychange", ()=>{
-  if(document.hidden){ state.running=false; }
-  else if(!state.over){ state.tPrev=performance.now(); state.running=true; requestAnimationFrame(loop); }
+  if(document.hidden){ S.running=false; }
+  else if(!S.over){ S.tPrev=performance.now(); S.running=true; requestAnimationFrame(loop); }
 });
 
-/* ------------------ Başlat ------------------ */
-setHud(); showStart();
+/* ---------- Başlat ---------- */
+setHud(); startScreen();
 </script>
 </body>
 </html>
