@@ -12,59 +12,61 @@
          background:rgba(0,0,0,.8);color:#fff;font-weight:700;letter-spacing:.5px;z-index:10}
   #start .box{padding:18px 22px;border:1px solid #2dd4bf;border-radius:12px;text-align:center}
   #hint{font-size:14px;opacity:.8;margin-top:6px}
+  #power{position:fixed;top:10px;right:10px;color:#a7f3d0;font-weight:700}
 </style>
 </head>
 <body>
   <div id="score">🦚 Skor: <span id="sc">0</span></div>
+  <div id="power">💎 x <span id="px">0</span></div>
   <div id="start"><div class="box">
-    Dokun ve Başlat<br><div id="hint">Sürükle: hareket • Dokun: ateş</div>
+    Dokun ve Başlat
+    <div id="hint">Sürükle: hareket • Dokun/Boşluk: ateş</div>
   </div></div>
   <canvas id="game" width="480" height="720"></canvas>
 
-  <!-- Sesler -->
-  <audio id="shoot" preload="auto" playsinline>
-    <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_3b4b5f10a0.mp3" type="audio/mpeg">
-  </audio>
-  <audio id="hit" preload="auto" playsinline>
-    <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_2b1b0dcd8c.mp3" type="audio/mpeg">
-  </audio>
-
 <script>
 const cv = document.getElementById('game'), ctx=cv.getContext('2d');
-const scEl = document.getElementById('sc');
+const scEl = document.getElementById('sc'), pxEl = document.getElementById('px');
 const startEl = document.getElementById('start');
-const shootS = document.getElementById('shoot');
-const hitS = document.getElementById('hit');
-
-const playerImg = new Image(); playerImg.src = "img/player/bpc_mini.png";
-const enemySrcs = ["bpc_enemy_green.png","bpc_enemy_red.png","bpc_enemy_ufo_gray.png","bpc_enemy_ufo_red.png"];
-const enemyImgs = enemySrcs.map(s=>{ const i=new Image(); i.src=s; return i; });
 
 function fitCanvas(){ const h = Math.min(820, window.innerHeight-20); cv.height = Math.max(620, h); }
 fitCanvas(); addEventListener('resize', fitCanvas);
 
-const bullets=[], enemies=[];
-let score=0, keys={}, started=false, lastSpawn=0, shootCd=0;
+// ---- Görsel yükleme ve siyah arka planı temizleme (chroma-key) ----
+function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.crossOrigin="anonymous"; i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
+function keyOutBlack(img, thresh=28){ // r,g,b hepsi thresh altı ise alpha=0
+  const w=img.width, h=img.height;
+  const off=document.createElement('canvas'); off.width=w; off.height=h;
+  const ox=off.getContext('2d'); ox.drawImage(img,0,0);
+  const d=ox.getImageData(0,0,w,h); const a=d.data;
+  for(let p=0;p<a.length;p+=4){
+    const r=a[p], g=a[p+1], b=a[p+2];
+    if(r<thresh && g<thresh && b<thresh){ a[p+3]=0; }   // şeffaf yap
+  }
+  ox.putImageData(d,0,0);
+  return off; // canvas'ı direkt drawImage ile çizebiliriz
+}
+
+// ---- Asset yolları (senin repo yapına göre) ----
+const PLAYER_SRC = "img/player/bpc_mini.png";
+const ENEMY_SRCS = ["bpc_enemy_green.png","bpc_enemy_red.png","bpc_enemy_ufo_gray.png","bpc_enemy_ufo_red.png"];
+
+// ---- Oyun durumu ----
+const bullets=[], enemies=[], gems=[];
+let score=0, keys={}, started=false, lastSpawn=0, shootCd=0, gemTimer=0;
+let powerShots=0; // her gem alınca +3; varken üçlü atış yapar
 const player = {x: cv.width/2-28, y: cv.height-110, w:56, h:56, speed:5};
 
 addEventListener('keydown', e=>{keys[e.key.toLowerCase()]=true;});
 addEventListener('keyup',   e=>{keys[e.key.toLowerCase()]=false;});
 
-// 🔴 ÖNEMLİ: Başlatmayı overlay'e de bağladık
-function begin(){
-  if (started) return;
-  started = true;
-  startEl.style.display='none';
-  // mobil ses izni
-  [shootS, hitS].forEach(a=>{
-    a.muted=true; a.play().then(()=>{ a.pause(); a.currentTime=0; a.muted=false; }).catch(()=>{});
-  });
-}
+// Başlat
+function begin(){ if(started) return; started=true; startEl.style.display='none'; }
 startEl.addEventListener('click', begin);
 startEl.addEventListener('touchstart', (e)=>{ e.preventDefault(); begin(); }, {passive:false});
-document.addEventListener('keydown', (e)=>{ if(!started){ begin(); } }, {once:false});
+addEventListener('keydown', ()=>{ if(!started) begin(); }, {once:false});
 
-// Dokunmatik kontroller
+// Dokunmatik
 let touching=false;
 cv.addEventListener('pointerdown', e=>{ if(!started) begin(); touching=true; moveTo(e); shoot(); });
 cv.addEventListener('pointermove', e=>{ if(touching) moveTo(e); });
@@ -72,14 +74,30 @@ cv.addEventListener('pointerup',   ()=>{ touching=false; });
 function moveTo(e){ player.x = e.offsetX - player.w/2; clampPlayer(); }
 
 function clampPlayer(){ player.x = Math.max(0, Math.min(cv.width-player.w, player.x)); }
+
 function shoot(){
-  bullets.push({x:player.x+player.w/2-2, y:player.y-12, w:4,h:12, vy:-9});
-  try{ shootS.currentTime=0; shootS.play(); }catch(_){}
+  if(powerShots>0){
+    // üçlü saçılım
+    const spread=3; // derece karşılığı basit offset
+    addBullet(player.x+player.w/2-2, -9, 0);
+    addBullet(player.x+player.w/2-2, -9, -spread);
+    addBullet(player.x+player.w/2-2, -9,  spread);
+    powerShots--; pxEl.textContent = powerShots;
+  } else {
+    addBullet(player.x+player.w/2-2, -9, 0);
+  }
+}
+function addBullet(x, vy, angle){
+  bullets.push({x:x, y:player.y-12, w:4, h:12, vy:vy, ang:angle});
 }
 function spawnEnemy(){
   const img = enemyImgs[Math.floor(Math.random()*enemyImgs.length)];
-  const size = 52 + Math.random()*30; // biraz daha büyük
-  enemies.push({x:Math.random()*(cv.width-size), y:-size, w:size, h:size, vy:1.5+Math.random()*2.2, img});
+  const size = 52 + Math.random()*30;
+  enemies.push({x:Math.random()*(cv.width-size), y:-size, w:size, h:size, vy:1.4+Math.random()*2.2, img});
+}
+function spawnGem(){
+  const size=24;
+  gems.push({x:Math.random()*(cv.width-size), y:-size, w:size, h:size, vy:1.8});
 }
 function rectHit(a,b){ return !(a.x+a.w<b.x||a.x>b.x+b.w||a.y+a.h<b.y||a.y>b.y+b.h); }
 
@@ -89,36 +107,99 @@ function update(dt){
   if((keys[' ']||keys['spacebar']) && shootCd<=0){ shoot(); shootCd=14; }
   shootCd--;
 
-  for(let i=bullets.length-1;i>=0;i--){ const b=bullets[i]; b.y+=b.vy; if(b.y<-20) bullets.splice(i,1); }
+  // bullets
+  for(let i=bullets.length-1;i>=0;i--){
+    const b=bullets[i]; 
+    // basit açı: x ofseti
+    b.y += b.vy;
+    b.x += b.ang*0.6;
+    if(b.y<-20) bullets.splice(i,1);
+  }
 
+  // enemies
   lastSpawn+=dt; if(lastSpawn>700){ spawnEnemy(); lastSpawn=0; }
   enemies.forEach(e=>{ e.y+=e.vy; });
   for(let i=enemies.length-1;i>=0;i--) if(enemies[i].y>cv.height+50) enemies.splice(i,1);
 
+  // gems
+  gemTimer+=dt; if(gemTimer>5000){ spawnGem(); gemTimer=0; }
+  gems.forEach(g=>{ g.y+=g.vy; });
+  for(let i=gems.length-1;i>=0;i--) if(gems[i].y>cv.height+40) gems.splice(i,1);
+
+  // çarpışmalar
+  // kurşun ↔ düşman
   for(let i=enemies.length-1;i>=0;i--){
     const e=enemies[i];
     for(let j=bullets.length-1;j>=0;j--){
       const b=bullets[j];
       if(rectHit({x:b.x,y:b.y,w:b.w,h:b.h},{x:e.x,y:e.y,w:e.w,h:e.h})){
         enemies.splice(i,1); bullets.splice(j,1);
-        score++; scEl.textContent=score;
-        try{ hitS.currentTime=0; hitS.play(); }catch(_){}
+        score++; scEl.textContent=score; 
         break;
       }
+    }
+  }
+  // oyuncu ↔ gem
+  for(let i=gems.length-1;i>=0;i--){
+    const g=gems[i];
+    if(rectHit(player, g)){
+      gems.splice(i,1);
+      powerShots += 3; // iki-üç atış → 3 bonus
+      pxEl.textContent = powerShots;
     }
   }
 }
 
 function draw(){
   ctx.clearRect(0,0,cv.width,cv.height);
-  ctx.drawImage(playerImg, player.x, player.y, player.w, player.h);
+
+  // oyuncu
+  ctx.drawImage(playerImgKeyed, player.x, player.y, player.w, player.h);
+
+  // kurşunlar
   ctx.fillStyle="#00ffc8"; bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
-  enemies.forEach(e=>ctx.drawImage(e.img,e.x,e.y,e.w,e.h));
+
+  // düşmanlar
+  enemies.forEach(e=>ctx.drawImage(e.img, e.x, e.y, e.w, e.h));
+
+  // yeşil göltaşı (procedural çizim)
+  gems.forEach(g=>{
+    const {x,y,w,h}=g;
+    ctx.save();
+    ctx.translate(x+w/2,y+h/2);
+    ctx.scale(w/30,h/30);
+    drawGemShape(ctx);
+    ctx.restore();
+  });
 }
 
+// yeşil mücevher şekli
+function drawGemShape(ctx){
+  ctx.beginPath();
+  ctx.moveTo(0,-10); ctx.lineTo(8,-2); ctx.lineTo(5,10); ctx.lineTo(-5,10); ctx.lineTo(-8,-2); ctx.closePath();
+  ctx.fillStyle="#22c55e"; ctx.fill();
+  ctx.strokeStyle="#065f46"; ctx.lineWidth=1.8; ctx.stroke();
+  // parıltı
+  ctx.beginPath();
+  ctx.moveTo(-3,-3); ctx.lineTo(0,-6); ctx.lineTo(3,-3); ctx.lineTo(0,0); ctx.closePath();
+  ctx.fillStyle="#86efac"; ctx.fill();
+}
+
+// ---- Döngü ----
 let last=performance.now();
 function loop(t){ const dt=t-last; last=t; if(started){ update(dt); draw(); } requestAnimationFrame(loop); }
 requestAnimationFrame(loop);
+
+// ---- Asset preload + keying ----
+let playerImgKeyed, enemyImgs=[];
+(async function(){
+  const p = await loadImage(PLAYER_SRC);
+  playerImgKeyed = keyOutBlack(p); // siyah arka planı at
+  for(const src of ENEMY_SRCS){
+    const i = await loadImage(src);
+    enemyImgs.push(keyOutBlack(i));
+  }
+})();
 </script>
 </body>
 </html>
