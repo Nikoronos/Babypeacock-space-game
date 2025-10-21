@@ -29,13 +29,13 @@
   <div id="startOverlay">
     <div style="margin-bottom:8px">🎮 Oyuna Hazır mısın?</div>
     <div style="font-size:14px;opacity:.85;margin-bottom:10px">Basılı tutup sürükle • Basılıyken otomatik ateş</div>
-    <button id="startBtn" class="btn">BAŞLA</button>
+    <button id="startBtn" class="btn" type="button">BAŞLA</button>
     <div style="font-size:12px;opacity:.7;margin-top:8px">Ekrana dokunmak da başlatır</div>
   </div>
 
   <div id="gameOver">
     <div>💀 Oyun Bitti 💀</div>
-    <button id="restart" class="btn">Yeniden Başlat</button>
+    <button id="restart" class="btn" type="button">Yeniden Başlat</button>
   </div>
 
   <canvas id="game" width="420" height="700"></canvas>
@@ -56,7 +56,7 @@ const scEl=document.getElementById("sc"),pxEl=document.getElementById("px"),
       boom=document.getElementById("boom");
 
 /* ====== Utils ====== */
-function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
+function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.crossOrigin="anonymous";i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
 function keyOutDark(img,TH=80){
   const w=img.width,h=img.height,off=document.createElement("canvas");
   off.width=w;off.height=h;const ox=off.getContext("2d");ox.drawImage(img,0,0);
@@ -89,7 +89,7 @@ const starAV=0.4*density, starBV=0.9*density;
 /* ====== Can & HUD ====== */
 function updateLivesDisplay(){ livesEl.innerHTML="❤️".repeat(lives); }
 
-/* ====== Başlatma: click + pointerdown + touchstart + canvas/klavye yedek ====== */
+/* ====== Başlatma: tüm yollar + tek seferlik yedek ====== */
 function startGame(){
   if(started) return;
   started=true;
@@ -100,9 +100,11 @@ startOverlay.style.display="flex";
   startBtn.addEventListener(ev, startGame, {passive:false});
   startOverlay.addEventListener(ev, startGame, {passive:false});
 });
-// Canvas’a dokunmak da başlatır (yedek)
-cv.addEventListener("pointerdown", ()=>startGame(), {passive:true});
-// Klavyeden Space/Enter ile başlat (masaüstü)
+// Yedek: body/canvas/klavye ilk etkileşim → başlat
+["pointerdown","touchstart","mousedown"].forEach(ev=>{
+  document.body.addEventListener(ev, startGame, {once:true, passive:true});
+  cv.addEventListener(ev, startGame, {once:true, passive:true});
+});
 window.addEventListener("keydown",(e)=>{ if(e.key===" "||e.key==="Enter") startGame(); });
 
 /* ====== Kontrol: basılı tut & sürükle ====== */
@@ -124,10 +126,14 @@ function shoot(){
   else addBullet(player.x+player.w/2-2,-10,0);
 }
 
-/* ====== Enemy / Gem / Patlama ====== */
-function spawnEnemy(){ if(enemies.length>10) return;
+/* ====== Enemy / Gem / Patlama (GÜVENLİ) ====== */
+function spawnEnemy(){
+  if(enemies.length>10) return;
+  if(!enemiesImgs || enemiesImgs.length===0) return; // 🔒 görsel yoksa doğurma
   const img=enemiesImgs[Math.floor(Math.random()*enemiesImgs.length)];
-  const size=52+Math.random()*24; enemies.push({x:Math.random()*(cv.width-size), y:-size, w:size, h:size, vy:(1.4+Math.random()*2.1)*density, img});
+  if(!img) return; // 🔒 ekstra güvenlik
+  const size=52+Math.random()*24;
+  enemies.push({x:Math.random()*(cv.width-size), y:-size, w:size, h:size, vy:(1.4+Math.random()*2.1)*density, img});
 }
 function spawnGem(){ if(gems.length>5) return; const s=24; gems.push({x:Math.random()*(cv.width-s), y:-s, w:s, h:s, vy:1.6*density}); }
 function rectHit(a,b){ return !(a.x+a.w<b.x||a.x>b.x+b.w||a.y+a.h<b.y||a.y>b.y+b.h); }
@@ -184,10 +190,18 @@ function draw(){
   ctx.fillStyle="rgba(190,220,255,.8)"; for(const s of starA) ctx.fillRect(s.x,s.y,1,1);
   ctx.fillStyle="rgba(255,255,255,.9)";  for(const s of starB) ctx.fillRect(s.x,s.y,1.2,1.2);
 
-  // oyuncu / mermi / düşman
-  ctx.drawImage(playerImgKeyed, player.x, player.y, player.w, player.h);
+  // oyuncu (görsel yoksa yer tutucu)
+  if(playerImgKeyed) ctx.drawImage(playerImgKeyed, player.x, player.y, player.w, player.h);
+  else { ctx.fillStyle="#38bdf8"; ctx.fillRect(player.x,player.y,player.w,player.h); }
+
+  // mermiler
   ctx.fillStyle="#00ffc8"; bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
-  enemies.forEach(e=>ctx.drawImage(e.img,e.x,e.y,e.w,e.h));
+
+  // düşmanlar (görsel yoksa atla)
+  enemies.forEach(e=>{
+    if(e.img) ctx.drawImage(e.img,e.x,e.y,e.w,e.h);
+    else { ctx.fillStyle="#ef4444"; ctx.fillRect(e.x,e.y,e.w,e.h); }
+  });
 
   // güç taşı (basit)
   ctx.fillStyle="#22c55e"; ctx.strokeStyle="#065f46"; ctx.lineWidth=1.6;
@@ -206,11 +220,15 @@ restartBtn.onclick=()=>{ score=0; powerShots=0; lives=3; gameOver=false; bullets
 function loop(t){ let dt=t-(window._lt||t); window._lt=t; if(dt>32) dt=32; update(dt); draw(); requestAnimationFrame(loop); }
 requestAnimationFrame(loop);
 
-/* ====== Preload (asenkron) ====== */
-let playerImgKeyed,enemiesImgs=[];
+/* ====== Preload (asenkron & güvenli) ====== */
+let playerImgKeyed=null, enemiesImgs=[];
 (async function(){
-  try{ const p=await loadImage(PLAYER_SRC); playerImgKeyed=keyOutDark(p,80); }catch{ playerImgKeyed=new Image(); }
-  enemiesImgs=[]; for(const s of ENEMY_SRCS){ try{ const i=await loadImage(s); enemiesImgs.push(keyOutDark(i,80)); } catch{ enemiesImgs.push(new Image()); } }
+  try{ const p=await loadImage(PLAYER_SRC); playerImgKeyed=keyOutDark(p,80); }catch{ playerImgKeyed=null; }
+  enemiesImgs=[];
+  for(const s of ENEMY_SRCS){
+    try{ const i=await loadImage(s); enemiesImgs.push(keyOutDark(i,80)); }
+    catch{ /* boş ekleme yok */ }
+  }
 })();
 updateLivesDisplay();
 </script>
