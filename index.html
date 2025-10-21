@@ -9,7 +9,7 @@
   #score{position:fixed;top:10px;left:0;right:0;text-align:center;color:#00ffc8;font-weight:700}
   canvas{display:block;margin:50px auto 0 auto;background:linear-gradient(#020617,#0b1220)}
   #start{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-         background:rgba(0,0,0,.8);color:#fff;font-weight:700;letter-spacing:.5px}
+         background:rgba(0,0,0,.8);color:#fff;font-weight:700;letter-spacing:.5px;z-index:10}
   #start .box{padding:18px 22px;border:1px solid #2dd4bf;border-radius:12px;text-align:center}
   #hint{font-size:14px;opacity:.8;margin-top:6px}
 </style>
@@ -21,7 +21,7 @@
   </div></div>
   <canvas id="game" width="480" height="720"></canvas>
 
-  <!-- Sesler (ilk dokunuştan sonra çalışacak) -->
+  <!-- Sesler -->
   <audio id="shoot" preload="auto" playsinline>
     <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_3b4b5f10a0.mp3" type="audio/mpeg">
   </audio>
@@ -36,73 +36,65 @@ const startEl = document.getElementById('start');
 const shootS = document.getElementById('shoot');
 const hitS = document.getElementById('hit');
 
-// Görseller (senin repo yapına göre)
 const playerImg = new Image(); playerImg.src = "img/player/bpc_mini.png";
-const enemySrcs = [
-  "bpc_enemy_green.png",
-  "bpc_enemy_red.png",
-  "bpc_enemy_ufo_gray.png",
-  "bpc_enemy_ufo_red.png"
-];
+const enemySrcs = ["bpc_enemy_green.png","bpc_enemy_red.png","bpc_enemy_ufo_gray.png","bpc_enemy_ufo_red.png"];
 const enemyImgs = enemySrcs.map(s=>{ const i=new Image(); i.src=s; return i; });
 
-// Ekrana göre tuval yüksekliğini ayarla
-function fitCanvas(){
-  const h = Math.min(820, window.innerHeight-20);
-  cv.height = Math.max(620, h);
-}
+function fitCanvas(){ const h = Math.min(820, window.innerHeight-20); cv.height = Math.max(620, h); }
 fitCanvas(); addEventListener('resize', fitCanvas);
 
-// Oyun durumu
 const bullets=[], enemies=[];
 let score=0, keys={}, started=false, lastSpawn=0, shootCd=0;
 const player = {x: cv.width/2-28, y: cv.height-110, w:56, h:56, speed:5};
 
-document.addEventListener('keydown', e=>{keys[e.key.toLowerCase()]=true;});
-document.addEventListener('keyup',   e=>{keys[e.key.toLowerCase()]=false;});
+addEventListener('keydown', e=>{keys[e.key.toLowerCase()]=true;});
+addEventListener('keyup',   e=>{keys[e.key.toLowerCase()]=false;});
 
-// Dokunmatik: sürükle → hareket, dokun → ateş
-let touchX=null;
-cv.addEventListener('pointerdown', e=>{
-  if(!started) begin(); 
-  touchX = e.offsetX; shoot();
-});
-cv.addEventListener('pointermove', e=>{
-  if(touchX!=null){ player.x = e.offsetX - player.w/2; clampPlayer(); }
-});
-cv.addEventListener('pointerup', ()=>{ touchX=null; });
+// 🔴 ÖNEMLİ: Başlatmayı overlay'e de bağladık
+function begin(){
+  if (started) return;
+  started = true;
+  startEl.style.display='none';
+  // mobil ses izni
+  [shootS, hitS].forEach(a=>{
+    a.muted=true; a.play().then(()=>{ a.pause(); a.currentTime=0; a.muted=false; }).catch(()=>{});
+  });
+}
+startEl.addEventListener('click', begin);
+startEl.addEventListener('touchstart', (e)=>{ e.preventDefault(); begin(); }, {passive:false});
+document.addEventListener('keydown', (e)=>{ if(!started){ begin(); } }, {once:false});
+
+// Dokunmatik kontroller
+let touching=false;
+cv.addEventListener('pointerdown', e=>{ if(!started) begin(); touching=true; moveTo(e); shoot(); });
+cv.addEventListener('pointermove', e=>{ if(touching) moveTo(e); });
+cv.addEventListener('pointerup',   ()=>{ touching=false; });
+function moveTo(e){ player.x = e.offsetX - player.w/2; clampPlayer(); }
 
 function clampPlayer(){ player.x = Math.max(0, Math.min(cv.width-player.w, player.x)); }
-
 function shoot(){
   bullets.push({x:player.x+player.w/2-2, y:player.y-12, w:4,h:12, vy:-9});
   try{ shootS.currentTime=0; shootS.play(); }catch(_){}
 }
 function spawnEnemy(){
   const img = enemyImgs[Math.floor(Math.random()*enemyImgs.length)];
-  const size = 44 + Math.random()*28;
-  enemies.push({x:Math.random()*(cv.width-size), y:-size, w:size, h:size, vy:1.3+Math.random()*2.2, img});
+  const size = 52 + Math.random()*30; // biraz daha büyük
+  enemies.push({x:Math.random()*(cv.width-size), y:-size, w:size, h:size, vy:1.5+Math.random()*2.2, img});
 }
 function rectHit(a,b){ return !(a.x+a.w<b.x||a.x>b.x+b.w||a.y+a.h<b.y||a.y>b.y+b.h); }
 
 function update(dt){
-  // klavye hareket
   if(keys['arrowleft']||keys['a']) { player.x-=player.speed; clampPlayer(); }
   if(keys['arrowright']||keys['d']){ player.x+=player.speed; clampPlayer(); }
-  // ateş
   if((keys[' ']||keys['spacebar']) && shootCd<=0){ shoot(); shootCd=14; }
   shootCd--;
 
-  // mermiler
-  for(let i=bullets.length-1;i>=0;i--){
-    const b=bullets[i]; b.y+=b.vy; if(b.y<-20) bullets.splice(i,1);
-  }
-  // düşmanlar
-  lastSpawn+=dt; if(lastSpawn>800){ spawnEnemy(); lastSpawn=0; }
+  for(let i=bullets.length-1;i>=0;i--){ const b=bullets[i]; b.y+=b.vy; if(b.y<-20) bullets.splice(i,1); }
+
+  lastSpawn+=dt; if(lastSpawn>700){ spawnEnemy(); lastSpawn=0; }
   enemies.forEach(e=>{ e.y+=e.vy; });
   for(let i=enemies.length-1;i>=0;i--) if(enemies[i].y>cv.height+50) enemies.splice(i,1);
 
-  // çarpışma
   for(let i=enemies.length-1;i>=0;i--){
     const e=enemies[i];
     for(let j=bullets.length-1;j>=0;j--){
@@ -119,30 +111,13 @@ function update(dt){
 
 function draw(){
   ctx.clearRect(0,0,cv.width,cv.height);
-  // player
   ctx.drawImage(playerImg, player.x, player.y, player.w, player.h);
-  // bullets
   ctx.fillStyle="#00ffc8"; bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
-  // enemies
   enemies.forEach(e=>ctx.drawImage(e.img,e.x,e.y,e.w,e.h));
 }
 
 let last=performance.now();
-function loop(t){
-  const dt = t-last; last=t;
-  update(dt);
-  draw();
-  requestAnimationFrame(loop);
-}
-
-function begin(){
-  started=true;
-  startEl.style.display='none';
-  // mobil ses izni: sessiz çalıp izin al
-  shootS.muted=true; shootS.play().then(()=>{ shootS.pause(); shootS.muted=false; });
-  hitS.muted=true; hitS.play().then(()=>{ hitS.pause(); hitS.muted=false; });
-}
-
+function loop(t){ const dt=t-last; last=t; if(started){ update(dt); draw(); } requestAnimationFrame(loop); }
 requestAnimationFrame(loop);
 </script>
 </body>
