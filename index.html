@@ -79,7 +79,7 @@ let score=0,powerShots=0,holding=false,pointerId=null,fireTimer=0,FIRE_MS=170;
 let lives=3,gameOver=false, started=false;
 const player={x:cv.width/2-33,y:cv.height-120,w:66,h:66};
 
-/* ====== Çok hafif arkaplan: iki yıldız katmanı ====== */
+/* ====== Hafif arkaplan: iki yıldız katmanı ====== */
 const density = (cv.width<380?0.6:(cv.width<420?0.8:1));
 const starA=[], starB=[];
 for(let i=0;i<Math.round(40*density);i++) starA.push({x:Math.random()*cv.width,y:Math.random()*cv.height});
@@ -89,15 +89,21 @@ const starAV=0.4*density, starBV=0.9*density;
 /* ====== Can & HUD ====== */
 function updateLivesDisplay(){ livesEl.innerHTML="❤️".repeat(lives); }
 
-/* ====== Başlatma (her dokunuş + buton) ====== */
+/* ====== Başlatma: click + pointerdown + touchstart + canvas/klavye yedek ====== */
 function startGame(){
   if(started) return;
   started=true;
   startOverlay.style.display='none';
 }
 startOverlay.style.display="flex";
-startBtn.addEventListener('click', startGame);
-startOverlay.addEventListener('pointerdown', startGame);
+["click","pointerdown","touchstart"].forEach(ev=>{
+  startBtn.addEventListener(ev, startGame, {passive:false});
+  startOverlay.addEventListener(ev, startGame, {passive:false});
+});
+// Canvas’a dokunmak da başlatır (yedek)
+cv.addEventListener("pointerdown", ()=>startGame(), {passive:true});
+// Klavyeden Space/Enter ile başlat (masaüstü)
+window.addEventListener("keydown",(e)=>{ if(e.key===" "||e.key==="Enter") startGame(); });
 
 /* ====== Kontrol: basılı tut & sürükle ====== */
 function canvasXFromEvent(e){ const r=cv.getBoundingClientRect(); const cx=(e.clientX!==undefined)?e.clientX:(e.touches?e.touches[0].clientX:0); return cx-r.left; }
@@ -183,7 +189,7 @@ function draw(){
   ctx.fillStyle="#00ffc8"; bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
   enemies.forEach(e=>ctx.drawImage(e.img,e.x,e.y,e.w,e.h));
 
-  // güç taşı (çok basit çizim)
+  // güç taşı (basit)
   ctx.fillStyle="#22c55e"; ctx.strokeStyle="#065f46"; ctx.lineWidth=1.6;
   gems.forEach(g=>{ const {x,y,w,h}=g; ctx.fillRect(x+w*0.25,y+h*0.2,w*0.5,h*0.6); ctx.strokeRect(x+w*0.25,y+h*0.2,w*0.5,h*0.6); });
 
@@ -200,17 +206,11 @@ restartBtn.onclick=()=>{ score=0; powerShots=0; lives=3; gameOver=false; bullets
 function loop(t){ let dt=t-(window._lt||t); window._lt=t; if(dt>32) dt=32; update(dt); draw(); requestAnimationFrame(loop); }
 requestAnimationFrame(loop);
 
-/* ====== Preload (asenkron; oyun görsel gelmese de başlar) ====== */
+/* ====== Preload (asenkron) ====== */
 let playerImgKeyed,enemiesImgs=[];
 (async function(){
-  try{
-    const p=await loadImage(PLAYER_SRC); playerImgKeyed=keyOutDark(p,80);
-  }catch{ playerImgKeyed=new Image(); }
-  enemiesImgs=[];
-  for(const s of ENEMY_SRCS){
-    try{ const i=await loadImage(s); enemiesImgs.push(keyOutDark(i,80)); }
-    catch{ enemiesImgs.push(new Image()); }
-  }
+  try{ const p=await loadImage(PLAYER_SRC); playerImgKeyed=keyOutDark(p,80); }catch{ playerImgKeyed=new Image(); }
+  enemiesImgs=[]; for(const s of ENEMY_SRCS){ try{ const i=await loadImage(s); enemiesImgs.push(keyOutDark(i,80)); } catch{ enemiesImgs.push(new Image()); } }
 })();
 updateLivesDisplay();
 </script>
