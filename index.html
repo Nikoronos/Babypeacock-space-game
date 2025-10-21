@@ -8,7 +8,7 @@
   html,body{margin:0;height:100%;background:#000;font-family:system-ui}
   /* Brand */
   #brand{
-    position:fixed;top:6px;left:12px;z-index:3;
+    position:fixed;top:6px;left:12px;z-index:4;
     font-weight:900;letter-spacing:.3px;
     background:linear-gradient(90deg,#22d3ee,#34d399);
     -webkit-background-clip:text;background-clip:text;color:transparent;
@@ -17,18 +17,18 @@
   }
   #brand small{opacity:.9;font-weight:700}
   /* HUD */
-  #score{position:fixed;top:8px;left:0;right:0;text-align:center;color:#00ffc8;font-weight:700;z-index:2}
-  #power{position:fixed;top:8px;right:10px;color:#a7f3d0;font-weight:700;z-index:2}
-  #lives{position:fixed;bottom:10px;left:0;right:0;text-align:center;color:#f87171;font-weight:700;z-index:2}
+  #score{position:fixed;top:8px;left:0;right:0;text-align:center;color:#00ffc8;font-weight:700;z-index:4}
+  #power{position:fixed;top:8px;right:10px;color:#a7f3d0;font-weight:700;z-index:4}
+  #lives{position:fixed;bottom:10px;left:0;right:0;text-align:center;color:#f87171;font-weight:700;z-index:4}
   #gameOver, #startOverlay{
     position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
-    background:rgba(0,0,0,0.8);color:#fff;font-size:20px;font-weight:800;z-index:5
+    background:rgba(0,0,0,0.82);color:#fff;font-size:20px;font-weight:800;z-index:6
   }
   .btn{
-    margin-top:12px;padding:10px 18px;border:1px solid #00ffc8;background:#0b1220;
-    color:#00ffc8;border-radius:10px;font-weight:800;
+    margin-top:12px;padding:12px 22px;border:1px solid #00ffc8;background:#0b1220;
+    color:#00ffc8;border-radius:12px;font-weight:900;letter-spacing:.3px
   }
-  /* Canvas telefona sığsın: iç çözünürlük sabit, görünüş esnek */
+  /* Canvas: iç çözünürlük sabit, görünüş esnek */
   canvas{
     display:block;margin:44px auto 0 auto;
     background:linear-gradient(#020617,#0b1220);
@@ -45,9 +45,10 @@
 
   <!-- Başlangıç ekranı -->
   <div id="startOverlay">
-    <div>🎮 Oyuna Hazır mısın?</div>
-    <div style="font-size:14px;opacity:.85;margin-top:6px">Parmağını basılı tutup sürükle • Basılıyken otomatik ateş</div>
+    <div style="margin-bottom:8px">🎮 Oyuna Hazır mısın?</div>
+    <div style="font-size:14px;opacity:.85;margin-bottom:10px">Basılı tutup sürükle • Basılıyken otomatik ateş</div>
     <button id="startBtn" class="btn">BAŞLA</button>
+    <div style="font-size:12px;opacity:.7;margin-top:8px">ya da ekrana dokun</div>
   </div>
 
   <!-- Oyun bitti -->
@@ -82,8 +83,7 @@ function keyOutDark(img,TH=80){
   off.width=w;off.height=h;const ox=off.getContext("2d");ox.drawImage(img,0,0);
   const d=ox.getImageData(0,0,w,h),a=d.data;
   for(let p=0;p<a.length;p+=4){
-    const r=a[p],g=a[p+1],b=a[p+2];
-    const lum=0.2126*r+0.7152*g+0.0722*b;
+    const r=a[p],g=a[p+1],b=a[p+2],lum=0.2126*r+0.7152*g+0.0722*b;
     if((r<TH&&g<TH&&b<TH)||lum<TH*0.8)a[p+3]=0; else if(lum<TH*1.1)a[p+3]=Math.max(0,a[p+3]-120);
   }
   ox.putImageData(d,0,0); return off;
@@ -99,20 +99,39 @@ let score=0,powerShots=0,holding=false,pointerId=null,fireTimer=0,FIRE_MS=160;
 let lives=3,gameOver=false, started=false;
 const player={x:cv.width/2-33,y:cv.height-120,w:66,h:66}; // 1 tık büyük
 
+/* ====== Arkaplan: yıldızlar + küçük gezegenler ====== */
+const stars=[], planets=[];
+for(let i=0;i<120;i++){
+  stars.push({x:Math.random()*cv.width, y:Math.random()*cv.height, s:Math.random()*1.6+0.4, v:0.3+Math.random()*0.9, tw:Math.random()*2*Math.PI});
+}
+function spawnPlanet(){
+  const r=8+Math.random()*12;
+  planets.push({
+    x:Math.random()*(cv.width-r*2)+r, y:-r, r,
+    v:0.3+Math.random()*0.5,
+    hue: 180+Math.random()*120
+  });
+}
+let planetT=0;
+
+/* ====== Can, skor ====== */
 function updateLivesDisplay(){ livesEl.innerHTML="❤️".repeat(lives); }
 
-/* ====== Başlatma (butonla) + ses izni ====== */
+/* ====== Başlatma (buton + her dokunuş) & ses izni ====== */
 let audioArmed=false;
 function armAudio(){
   if(audioArmed) return;
   try{ boom.muted=true; boom.play().then(()=>{boom.pause(); boom.muted=false; boom.currentTime=0; audioArmed=true;}); }catch{}
 }
-startOverlay.style.display="flex";
-startBtn.addEventListener('click', ()=>{
+function startGame(){
+  if(started) return;
   armAudio();
   started=true;
   startOverlay.style.display='none';
-});
+}
+startOverlay.style.display="flex";
+startBtn.addEventListener('click', startGame);
+startOverlay.addEventListener('click', startGame); // overlay'e dokunmak da başlatır
 
 /* ====== Kontrol: basılı tut & sürükle ====== */
 function canvasXFromEvent(e){
@@ -121,7 +140,7 @@ function canvasXFromEvent(e){
   return cx-r.left;
 }
 function startPointer(e){
-  if(!started) return;          // oyun başlamadan kontrol yok
+  if(!started) return;
   if(holding) return;
   holding=true;
   if(e.pointerId!==undefined){ pointerId=e.pointerId; cv.setPointerCapture(pointerId); }
@@ -185,8 +204,14 @@ function spawnExplosion(x,y,count=16){
 }
 
 /* ====== Update & Draw ====== */
-let spawnT=0, gemT=0;
+let spawnT=0, gemT=0, last=performance.now();
 function update(dt){
+  // Arkaplan her zaman akar
+  stars.forEach(s=>{ s.y+=s.v; if(s.y>cv.height) s.y=0, s.x=Math.random()*cv.width; s.tw+=0.04; });
+  planetT+=dt; if(planetT>5000){ spawnPlanet(); planetT=0; }
+  planets.forEach(p=>{ p.y+=p.v; });
+  for(let i=planets.length-1;i>=0;i--) if(planets[i].y>cv.height+p[i]?.r) planets.splice(i,1);
+
   if(gameOver || !started) return;
 
   // basılıyken sürekli ateş
@@ -201,7 +226,7 @@ function update(dt){
   spawnT+=dt; if(spawnT>700){ spawnEnemy(); spawnT=0; }
   enemies.forEach(e=>{ e.y+=e.vy; });
 
-  // ❗ Kaçırılan düşman: altı geçerse 1 can gider
+  // kaçan düşman → can eksilt
   for(let i=enemies.length-1;i>=0;i--){
     if(enemies[i].y>cv.height+10){
       enemies.splice(i,1);
@@ -210,7 +235,7 @@ function update(dt){
     }
   }
 
-  // power-up
+  // power-up akışı
   gemT+=dt; if(gemT>5200){ spawnGem(); gemT=0; }
   gems.forEach(g=>{ g.y+=g.vy; });
   for(let i=gems.length-1;i>=0;i--) if(gems[i].y>cv.height+40) gems.splice(i,1);
@@ -235,7 +260,7 @@ function update(dt){
     if(rectHit(player,g)){ gems.splice(i,1); powerShots+=3; pxEl.textContent=powerShots; }
   }
 
-  // oyuncu - düşman (temas: 1 can)
+  // oyuncu - düşman
   for(let i=enemies.length-1;i>=0;i--){
     const e=enemies[i];
     if(rectHit(player,e)){
@@ -256,16 +281,28 @@ function update(dt){
 }
 
 function draw(){
+  // arkaplan (yıldız+gezegen)
   ctx.clearRect(0,0,cv.width,cv.height);
+  // yıldızlar
+  stars.forEach(s=>{
+    const a = 0.6 + 0.4*Math.sin(s.tw);
+    ctx.fillStyle = `rgba(180,220,255,${a})`;
+    ctx.fillRect(s.x, s.y, s.s, s.s);
+  });
+  // gezegenler
+  planets.forEach(p=>{
+    const g=ctx.createRadialGradient(p.x,p.y,1,p.x,p.y,p.r);
+    g.addColorStop(0,`hsla(${p.hue},90%,70%,.95)`);
+    g.addColorStop(1,`hsla(${p.hue},70%,35%,.85)`);
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+  });
+
   // oyuncu
   ctx.drawImage(playerImgKeyed, player.x, player.y, player.w, player.h);
-
   // mermiler
   ctx.fillStyle="#00ffc8"; bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
-
   // düşmanlar
   enemies.forEach(e=>ctx.drawImage(e.img,e.x,e.y,e.w,e.h));
-
   // power-up taş
   gems.forEach(g=>{
     const {x,y,w,h}=g; ctx.save(); ctx.translate(x+w/2,y+h/2); ctx.scale(w/30,h/30);
@@ -274,7 +311,6 @@ function draw(){
     ctx.beginPath(); ctx.moveTo(-3,-3); ctx.lineTo(0,-6); ctx.lineTo(3,-3); ctx.lineTo(0,0); ctx.closePath();
     ctx.fillStyle="#86efac"; ctx.fill(); ctx.restore();
   });
-
   // patlama parçacıkları
   particles.forEach(p=>{
     const alpha=Math.max(0, p.life/500);
@@ -290,22 +326,19 @@ restartBtn.onclick=()=>{
   bullets.length=enemies.length=gems.length=particles.length=0;
   scEl.textContent=score; pxEl.textContent=powerShots; updateLivesDisplay();
   overEl.style.display="none";
-  // tekrar başlama ekranına dön
   started=false;
   startOverlay.style.display='flex';
 };
 
 /* ====== Döngü ====== */
-let last=performance.now();
-function loop(t){ const dt=t-last; last=t; update(dt); draw(); requestAnimationFrame(loop); }
+function loop(t){ const dt=t-(window._lt||t); window._lt=t; update(dt); draw(); requestAnimationFrame(loop); }
 requestAnimationFrame(loop);
 
 /* ====== Preload ====== */
 let playerImgKeyed, enemiesImgs=[];
 (async function(){
   const p=await loadImage(PLAYER_SRC); playerImgKeyed=keyOutDark(p,80);
-  enemiesImgs=[];
-  for(const s of ENEMY_SRCS){ const i=await loadImage(s); enemiesImgs.push(keyOutDark(i,80)); }
+  enemiesImgs=[]; for(const s of ENEMY_SRCS){ const i=await loadImage(s); enemiesImgs.push(keyOutDark(i,80)); }
 })();
 updateLivesDisplay();
 </script>
