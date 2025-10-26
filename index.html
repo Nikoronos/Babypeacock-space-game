@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
 <title>Babypeacock — BPC Space Game</title>
 <style>
-  html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden} /* scroll kilit */
+  html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   #brand{position:fixed;top:6px;left:12px;z-index:4;font-weight:900;
     background:linear-gradient(90deg,#22d3ee,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent}
   #score{position:fixed;top:8px;left:0;right:0;text-align:center;color:#00ffc8;font-weight:700;z-index:4}
@@ -34,7 +34,7 @@
     <button id="restart" class="btn">Restart</button>
     <!-- 🌍 Global counter (English) -->
     <div id="globalCounterBox" style="margin-top:10px;font-size:14px">
-      🌍 Global plays: <span id="globalCounter">0</span>
+      🌍 Global plays: <span id="globalCounter">…</span>
     </div>
   </div>
 
@@ -344,16 +344,18 @@ let playerImg=null, enemyImg={red:null,green:null,ufo_red:null,ufo_gray:null}, p
 })();
 </script>
 
-<!-- 🔌 Firebase global counter (persistent) -->
+<!-- 🔌 Firebase global counter (persistent + cache + correct region URL) -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getDatabase, ref, onValue, runTransaction, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-  /* ✅ IMPORTANT: Using the correct RTDB domain so it doesn't reset */
+  // ✅ EXACT instance URL from your console (Belgium / europe-west1)
+  const INSTANCE_URL = "https://bpc-space-default-rtdb.europe-west1.firebasedatabase.app/";
+
   const firebaseConfig = {
     apiKey: "AIzaSyAm65sARsGDTVkqe6MXcb8OObug17SEFpY",
     authDomain: "bpc-space.firebaseapp.com",
-    databaseURL: "https://bpc-space-default-rtdb.firebasedatabase.app/",  /* <- correct domain */
+    databaseURL: INSTANCE_URL,
     projectId: "bpc-space",
     storageBucket: "bpc-space.firebasestorage.app",
     messagingSenderId: "954298087029",
@@ -362,19 +364,36 @@ let playerImg=null, enemyImg={red:null,green:null,ufo_red:null,ufo_gray:null}, p
   };
 
   const app = initializeApp(firebaseConfig);
-  const db  = getDatabase(app); // with the config URL above
+  const db  = getDatabase(app, INSTANCE_URL);
 
   const refCounter = ref(db, "stats/globalPlays");
+  const el = document.getElementById("globalCounter");
 
-  // Live display in English
+  // show last known value immediately (no flash/0)
+  const cached = Number(localStorage.getItem("bpc_global_plays") || 0);
+  if (el) el.textContent = cached ? cached.toLocaleString("en-US") : "…";
+
+  // live value from Firebase
   onValue(refCounter, snap => {
-    const el = document.getElementById("globalCounter");
-    if (el) el.textContent = (snap.val() ?? 0).toLocaleString("en-US");
-  });
+    const val = Number(snap.val() ?? 0);
+    if (el) el.textContent = val.toLocaleString("en-US");
+    localStorage.setItem("bpc_global_plays", String(val));
+    console.log("✅ [BPC-FB] onValue:", val);
+  }, err => console.error("❌ [BPC-FB] onValue error (Rules/URL?)", err));
 
-  // +1 on each finished game (safe under concurrency)
+  // initial get (debug)
+  get(refCounter).then(s => console.log("✅ [BPC-FB] initial get:", s.val()))
+                 .catch(e => console.error("❌ [BPC-FB] initial get error:", e));
+
+  // +1 on each finished game (transaction = safe)
   window.incrementGlobalPlays = () => {
-    runTransaction(refCounter, v => (v || 0) + 1);
+    runTransaction(refCounter, v => (v || 0) + 1).then(res => {
+      if (!res.committed) return console.error("❌ [BPC-FB] not committed (Rules?)");
+      const val = Number(res.snapshot.val() ?? 0);
+      localStorage.setItem("bpc_global_plays", String(val));
+      if (el) el.textContent = val.toLocaleString("en-US");
+      console.log("✅ [BPC-FB] committed:", val);
+    }).catch(e => console.error("❌ [BPC-FB] transaction error:", e));
   };
 </script>
 
