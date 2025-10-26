@@ -32,6 +32,10 @@
   <div id="gameOver">
     <div style="font-weight:900;margin-bottom:8px">GAME OVER</div>
     <button id="restart" class="btn">Restart</button>
+    <!-- 🌍 Global sayaç (Game Over altında gösterilir) -->
+    <div id="globalCounterBox" style="margin-top:10px;font-size:14px">
+      🌍 Dünya çapında oynanma sayısı: <span id="globalCounter">0</span>
+    </div>
   </div>
 
   <canvas id="game" width="420" height="700"></canvas>
@@ -219,7 +223,13 @@ function renderFinalScore(t){
 }
 
 /* ---------- Main loop ---------- */
-function endGame(){ gameOver=true; overEl.style.display="flex"; overEl.style.background="transparent"; }
+// 🔧 DEĞİŞTİRİLDİ: Game Over tetiklenince global sayaç +1
+function endGame(){
+  gameOver=true;
+  overEl.style.display="flex";
+  overEl.style.background="transparent";
+  if (window.incrementGlobalPlays) incrementGlobalPlays(); // 🌍 sayaç +1
+}
 function update(dt){
   starsA.forEach(s=>{ s.y+=0.35; if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} });
   starsB.forEach(s=>{ s.y+=0.9;  if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} });
@@ -333,5 +343,38 @@ let playerImg=null, enemyImg={red:null,green:null,ufo_red:null,ufo_gray:null}, p
   try{ const bird=await loadImage(PEACOCK_SRC); peacockImg=keyOutDark(bird,70);}catch{}
 })();
 </script>
+
+<!-- 🔌 Firebase Global Sayaç (Game Over'da +1 ve canlı gösterge) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAm65sARsGDTVkqe6MXcb8OObug17SEFpY",
+    authDomain: "bpc-space.firebaseapp.com",
+    databaseURL: "https://bpc-space-default-rtdb.firebaseio.com/",
+    projectId: "bpc-space",
+    storageBucket: "bpc-space.firebasestorage.app",
+    messagingSenderId: "954298087029",
+    appId: "1:954298087029:web:3583f27fdd97d932de6a3c",
+    measurementId: "G-9XN8DJSYRH"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+  const refCounter = ref(db, "stats/globalPlays");
+
+  // Sayaç değerini canlı göster
+  onValue(refCounter, s => {
+    const el = document.getElementById("globalCounter");
+    if (el) el.textContent = (s.val() ?? 0).toLocaleString("tr-TR");
+  });
+
+  // Game Over → +1
+  window.incrementGlobalPlays = () => {
+    runTransaction(refCounter, v => (v || 0) + 1);
+  };
+</script>
+
 </body>
 </html>
