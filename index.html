@@ -25,7 +25,7 @@
   <div id="power">💎 x <span id="px">0</span></div>
   <div id="lives">❤️❤️❤️</div>
 
-  <div id="startOverlay">
+  <div id="startOverlay" style="display:flex">
     <div style="margin-bottom:8px">🎮 Ready?</div>
     <div style="font-size:14px;opacity:.85;margin-bottom:10px">Hold & drag to move</div>
     <button id="startBtn" class="btn" type="button">START</button>
@@ -44,54 +44,37 @@ ctx.imageSmoothingEnabled=false;
 const scEl=document.getElementById("sc"),pxEl=document.getElementById("px"),livesEl=document.getElementById("lives");
 const startOverlay=document.getElementById("startOverlay"),startBtn=document.getElementById("startBtn"),overEl=document.getElementById("gameOver"),restartBtn=document.getElementById("restart");
 
-/* -------- Utils -------- */
+/* Utils */
 function clamp(v,min,max){return v<min?min:(v>max?max:v);}
 function rectHit(a,b){return !(a.x+a.w<b.x||a.x>b.x+b.w||a.y+a.h<b.y||a.y>b.y+b.h);}
 function rand(a,b){return a+Math.random()*(b-a);}
-function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.crossOrigin="anonymous";i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
-function keyOutDark(img,TH=80){
-  const off=document.createElement("canvas"); off.width=img.width; off.height=img.height;
-  const ox=off.getContext("2d"); ox.drawImage(img,0,0);
-  const d=ox.getImageData(0,0,off.width,off.height),a=d.data;
-  for(let p=0;p<a.length;p+=4){
-    const r=a[p],g=a[p+1],b=a[p+2],lum=0.2126*r+0.7152*g+0.0722*b;
-    if((r<TH&&g<TH&&b<TH)||lum<TH*0.8)a[p+3]=0; else if(lum<TH*1.1)a[p+3]=Math.max(0,a[p+3]-120);
-  }
-  ox.putImageData(d,0,0); return off;
-}
 
-/* -------- Assets (opsiyonel) -------- */
-const PLAYER_SRC="img/player/bpc_mini.png";
-const ENEMY_SRC={ red:"img/enemy/bpc_enemy_red.png", green:"img/enemy/bpc_enemy_green.png" };
-let playerImg=null, enemyImg={red:null,green:null};
-
-/* -------- State -------- */
+/* State */
 let bullets=[], enemies=[], gems=[], enemyBullets=[], particles=[];
 let score=0,powerShots=0,lives=3,started=false,gameOver=false;
 let fireTimer=0,FIRE_MS=170;
 const player={x:cv.width/2-33,y:cv.height-120,w:66,h:66};
 
-/* -------- Background stars (stabil kayar) -------- */
+/* Background stars (FIXED: both arrays initialized) */
 const density=(cv.width<380?0.6:(cv.width<420?0.8:1));
-const starsA=[],starsB[];
+const starsA=[], starsB=[];  /* ✅ HATA DÜZELTİLDİ */
 for(let i=0;i<Math.round(60*density);i++) starsA.push({x:Math.random()*cv.width,y:Math.random()*cv.height});
 for(let i=0;i<Math.round(35*density);i++) starsB.push({x:Math.random()*cv.width,y:Math.random()*cv.height});
 const vA=0.35*density,vB=0.9*density;
 
-/* -------- Start & Controls -------- */
-function updateLives(){livesEl.innerHTML="❤️".repeat(lives);}
-updateLives();
-function startGame(){if(started)return; started=true; startOverlay.style.display="none";}
+/* Start & Controls */
+function updateLives(){livesEl.innerHTML="❤️".repeat(lives);} updateLives();
+function startGame(){ if(started) return; started=true; startOverlay.style.display="none"; }
 startBtn.onclick=startGame; cv.onclick=startGame;
 
 let holding=false;
 function getX(e){return (e.clientX ?? (e.touches?e.touches[0].clientX:0)) - cv.getBoundingClientRect().left;}
-cv.addEventListener("pointerdown",(e)=>{if(!started)return; holding=true; player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w);});
-cv.addEventListener("pointermove",(e)=>{if(!holding)return; player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w);});
+cv.addEventListener("pointerdown",(e)=>{ if(!started) return; holding=true; player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w);});
+cv.addEventListener("pointermove",(e)=>{ if(!holding) return; player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w);});
 cv.addEventListener("pointerup",()=>holding=false);
 cv.addEventListener("pointercancel",()=>holding=false);
 
-/* -------- Player Fire -------- */
+/* Player fire */
 function shoot(){
   if(powerShots>0){
     bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10,ang:3});
@@ -101,7 +84,7 @@ function shoot(){
   bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10,ang:0});
 }
 
-/* -------- Enemy visuals (fallback drawing) -------- */
+/* Vector enemy drawing */
 function drawEnemyShip(ctx,e){
  ctx.save(); ctx.translate(e.x+e.w/2,e.y+e.h/2); const W=e.w,H=e.h;
  if(e.kind==="red"){
@@ -109,38 +92,30 @@ function drawEnemyShip(ctx,e){
    ctx.fillRect(-W*0.35,-H*0.3,W*0.7,H*0.6);
    ctx.fillStyle="#f87171"; ctx.fillRect(-W*0.5,-H*0.1,W*0.2,H*0.2); ctx.fillRect(W*0.3,-H*0.1,W*0.2,H*0.2);
    ctx.fillStyle="#b91c1c"; ctx.fillRect(-3,H*0.25,6,H*0.4);
- }else if(e.kind==="green"){
-   ctx.fillStyle="#22c55e"; ctx.beginPath(); ctx.ellipse(0,H*0.05,W*0.45,H*0.28,0,0,6.283); ctx.fill();
+ } else {
+   ctx.fillStyle="#22c55e";
+   ctx.beginPath(); ctx.ellipse(0,H*0.05,W*0.45,H*0.28,0,0,6.283); ctx.fill();
    ctx.fillStyle="#86efac"; ctx.beginPath(); ctx.ellipse(0,-H*0.12,W*0.25,H*0.18,0,0,6.283); ctx.fill();
    ctx.fillStyle="#16a34a"; ctx.fillRect(-2,H*0.2,4,H*0.35);
- }else{
-   ctx.fillStyle="#9ca3af"; ctx.fillRect(-W*0.4,-H*0.4,W*0.8,H*0.8);
  }
  ctx.restore();
 }
 
-/* -------- Spawns -------- */
+/* Spawns */
 function spawnEnemy(){
   if(enemies.length>12) return;
   const size=rand(48,70);
   const kind=Math.random()<0.5?"red":"green";
-  // görsel varsa bağla
-  let img=null;
-  if(kind==="red" && enemyImg.red) img=enemyImg.red;
-  if(kind==="green" && enemyImg.green) img=enemyImg.green;
-  enemies.push({x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3),kind,img,shootT:0,shootInt:500});
+  enemies.push({x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3),kind,shootT:0,shootInt:500});
 }
 function enemyShoot(e){
   const cx=e.x+e.w/2;
-  if(e.kind==="red"){
-    enemyBullets.push({x:cx-2,y:e.y+e.h,w:4,h:12,vy:5,color:"#ef4444"});
-  }else{
-    enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6,color:"#22c55e"});
-  }
+  if(e.kind==="red") enemyBullets.push({x:cx-2,y:e.y+e.h,w:4,h:12,vy:5,color:"#ef4444"});
+  else enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6,color:"#22c55e"});
 }
 function spawnGem(){const s=22;gems.push({x:rand(0,cv.width-s),y:-s,w:s,h:s,vy:1.5});}
 
-/* -------- Game Loop -------- */
+/* Game loop */
 function endGame(){gameOver=true;overEl.style.display="flex";}
 
 let enT=0,gemT=0;
@@ -183,22 +158,18 @@ function update(dt){
 function draw(){
   ctx.clearRect(0,0,cv.width,cv.height);
 
-  // stars (stable)
+  // stars
   ctx.fillStyle="rgba(190,220,255,.8)"; starsA.forEach(s=>ctx.fillRect(s.x,s.y,1,1));
   ctx.fillStyle="rgba(255,255,255,.9)";  starsB.forEach(s=>ctx.fillRect(s.x,s.y,1.2,1.2));
 
-  // player
-  if(playerImg) ctx.drawImage(playerImg,player.x,player.y,player.w,player.h);
-  else{ ctx.fillStyle="#38bdf8"; ctx.fillRect(player.x,player.y,player.w,player.h); }
+  // player (placeholder)
+  ctx.fillStyle="#38bdf8"; ctx.fillRect(player.x,player.y,player.w,player.h);
 
   // player bullets
   ctx.fillStyle="#00ffc8"; bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
 
-  // enemies (image if exists, else vector)
-  enemies.forEach(e=>{
-    if(e.img) ctx.drawImage(e.img,e.x,e.y,e.w,e.h);
-    else drawEnemyShip(ctx,e);
-  });
+  // enemies
+  enemies.forEach(e=>drawEnemyShip(ctx,e));
 
   // enemy bullets
   enemyBullets.forEach(m=>{ ctx.fillStyle=m.color; ctx.fillRect(m.x,m.y,m.w,m.h); });
@@ -212,13 +183,6 @@ function loop(t){ const dt=Math.min(t-(window._lt||t),32); window._lt=t; update(
 requestAnimationFrame(loop);
 
 restartBtn.onclick=()=>{ score=0; powerShots=0; lives=3; updateLives(); bullets=[]; enemies=[]; enemyBullets=[]; gems=[]; gameOver=false; started=false; overEl.style.display="none"; startOverlay.style.display="flex"; };
-
-/* -------- Preload images (optional) -------- */
-(async function(){
-  try{ const p=await loadImage(PLAYER_SRC); playerImg=keyOutDark(p,80);}catch{}
-  try{ const r=await loadImage(ENEMY_SRC.red); enemyImg.red=keyOutDark(r,80);}catch{}
-  try{ const g=await loadImage(ENEMY_SRC.green); enemyImg.green=keyOutDark(g,80);}catch{}
-})();
 </script>
 </body>
 </html>
