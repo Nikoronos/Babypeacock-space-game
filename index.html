@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
 <title>Babypeacock — BPC Space Game</title>
 <style>
-  html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
+  html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden} /* scroll kilit */
   #brand{position:fixed;top:6px;left:12px;z-index:4;font-weight:900;
     background:linear-gradient(90deg,#22d3ee,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent}
   #score{position:fixed;top:8px;left:0;right:0;text-align:center;color:#00ffc8;font-weight:700;z-index:4}
@@ -349,11 +349,11 @@ let playerImg=null, enemyImg={red:null,green:null,ufo_red:null,ufo_gray:null}, p
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getDatabase, ref, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-  // Your config (includes the Realtime DB URL)
+  /* ✅ IMPORTANT: Using the correct RTDB domain so it doesn't reset */
   const firebaseConfig = {
     apiKey: "AIzaSyAm65sARsGDTVkqe6MXcb8OObug17SEFpY",
     authDomain: "bpc-space.firebaseapp.com",
-    databaseURL: "https://bpc-space-default-rtdb.firebasedatabase.app/",  // <- regionless endpoint; works with new RTDB
+    databaseURL: "https://bpc-space-default-rtdb.firebasedatabase.app/",  /* <- correct domain */
     projectId: "bpc-space",
     storageBucket: "bpc-space.firebasestorage.app",
     messagingSenderId: "954298087029",
@@ -362,16 +362,17 @@ let playerImg=null, enemyImg={red:null,green:null,ufo_red:null,ufo_gray:null}, p
   };
 
   const app = initializeApp(firebaseConfig);
-  const db  = getDatabase(app);
+  const db  = getDatabase(app); // with the config URL above
+
   const refCounter = ref(db, "stats/globalPlays");
 
-  // Live display
+  // Live display in English
   onValue(refCounter, snap => {
     const el = document.getElementById("globalCounter");
     if (el) el.textContent = (snap.val() ?? 0).toLocaleString("en-US");
   });
 
-  // +1 on each finished game (transaction = safe under concurrency)
+  // +1 on each finished game (safe under concurrency)
   window.incrementGlobalPlays = () => {
     runTransaction(refCounter, v => (v || 0) + 1);
   };
