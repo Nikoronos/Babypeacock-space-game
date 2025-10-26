@@ -68,7 +68,7 @@ function keyOutDark(img,TH=80){
   return off;
 }
 
-/* ====== Asset paths (SENİN REPO) ====== */
+/* ====== Asset paths ====== */
 const PLAYER_SRC = "img/player/bpc_mini.png";
 const ENEMY_SRC  = {
   red:  "bpc_enemy_red.png",
@@ -76,11 +76,10 @@ const ENEMY_SRC  = {
   ufo_red:  "bpc_enemy_ufo_red.png",
   ufo_gray: "bpc_enemy_ufo_gray.png",
 };
-const PEACOCK_SRC = "yc3ku6.jpg"; // 🦚 maskot (arka siyah silinecek)
+const PEACOCK_SRC = "yc3ku6.jpg"; // 🦚 kuş power-up
 
 /* ====== State ====== */
-let bullets=[], enemies=[], gems=[], enemyBullets=[], particles=[];
-let mascots=[]; // 🦚 kuş power-up listesi
+let bullets=[], enemies=[], gems=[], enemyBullets=[], particles=[], mascots=[];
 let score=0,powerShots=0,lives=3,started=false,gameOver=false;
 let fireTimer=0,FIRE_MS=170;
 const player={x:cv.width/2-33,y:cv.height-120,w:66,h:66};
@@ -114,7 +113,7 @@ function shoot(){
   bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10,ang:0});
 }
 
-/* ====== Vector fallback for UFOs / enemies ====== */
+/* ====== Vector fallback for enemies (if PNG missing) ====== */
 function drawEnemyShip(ctx,e){
   ctx.save(); ctx.translate(e.x+e.w/2,e.y+e.h/2); const W=e.w,H=e.h;
   if(e.kind==="red"){
@@ -133,28 +132,32 @@ function drawEnemyShip(ctx,e){
   ctx.restore();
 }
 
-/* ====== Spawns ====== */
-function spawnEnemy(){
+/* ====== SPAWN: wave takvimi (yoğunluk aynı kalır) ====== */
+let elapsed=0, enT=0, gemT=0, mascotT=0; // elapsed: saniye
+const ENEMY_INTERVAL_MS = 600;           // mevcut yoğunluk (değiştirmedik)
+function allowedKindsByTime(tSec){
+  if (tSec < 10) return ['ufo_red','ufo_gray'];
+  if (tSec < 40) return ['ufo_red','ufo_gray','green'];
+  return ['ufo_red','ufo_gray','green','red'];
+}
+function spawnEnemy(allowedKinds){
   if(enemies.length>12) return;
   const size=rand(48,70);
-  // dağılım: %30 red, %30 green, %20 ufo_red, %20 ufo_gray
-  const r=Math.random();
-  const kind = r<0.30?'red': r<0.60?'green': r<0.80?'ufo_red':'ufo_gray';
+  const kind=allowedKinds[Math.floor(Math.random()*allowedKinds.length)];
   const img = enemyImg[kind] || null;
   enemies.push({
     x:rand(0,cv.width-size), y:-size, w:size, h:size,
-    vy:rand(1.4,3),
-    kind, img,
+    vy:rand(1.4,3), kind, img,
     canShoot:(kind==='red'||kind==='green'),
     shootT:0, shootInt:500
   });
 }
 function enemyShoot(e){
-  if(!e.canShoot) return; // UFO'lar ateş etmiyor
+  if(!e.canShoot) return; // UFO ateş etmez
   const cx=e.x+e.w/2;
   if(e.kind==="red"){
     enemyBullets.push({x:cx-2,y:e.y+e.h,w:4,h:12,vy:5,color:"#ef4444"});
-  }else if(e.kind==="green"){
+  }else{
     enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6,color:"#22c55e"});
   }
 }
@@ -163,10 +166,9 @@ function spawnGem(){const s=22;gems.push({x:rand(0,cv.width-s),y:-s,w:s,h:s,vy:1
 /* ====== Mascot (🦚) ====== */
 let peacockImg=null;
 function spawnMascot(){
-  if(!peacockImg) return;             // görsel yüklenmediyse ertele
-  if(mascots.length>1) return;        // ekranda en fazla 1 kuş
-  const s=22; // mavi ödül ile aynı
-  mascots.push({x:rand(0,cv.width-s),y:-s,w:s,h:s,vy:1.4});
+  if(!peacockImg) return;
+  if(mascots.length>1) return;
+  const s=22; mascots.push({x:rand(0,cv.width-s),y:-s,w:s,h:s,vy:1.4});
 }
 
 /* ====== Particles / explosion ====== */
@@ -182,7 +184,6 @@ function explosion(x,y,count=14){
 /* ====== Loop ====== */
 function endGame(){gameOver=true;overEl.style.display="flex";}
 
-let enT=0,gemT=0,mascotT=0;
 function update(dt){
   // stars scroll
   starsA.forEach(s=>{s.y+=vA; if(s.y>cv.height){s.y=0; s.x=Math.random()*cv.width;}});
@@ -190,29 +191,39 @@ function update(dt){
 
   if(!started||gameOver) return;
 
+  // zaman + wave
+  elapsed += dt/1000;
+  enT += dt; gemT += dt; mascotT += dt;
+
+  // oyuncu ateşi
   fireTimer+=dt; if(holding && fireTimer>FIRE_MS){ shoot(); fireTimer=0; }
 
-  enT+=dt; if(enT>600){ spawnEnemy(); enT=0; }
-  gemT+=dt; if(gemT>6000){ spawnGem(); gemT=0; }
-  mascotT+=dt; if(mascotT>12000){ spawnMascot(); mascotT=0; } // 12 sn'de bir kuş
+  // düşman doğur (mevcut yoğunluk: 600ms)
+  if(enT>ENEMY_INTERVAL_MS){
+    spawnEnemy(allowedKindsByTime(elapsed));
+    enT=0;
+  }
 
+  // power-ups
+  if(gemT>6000){ spawnGem(); gemT=0; }
+  if(mascotT>12000){ spawnMascot(); mascotT=0; }
+
+  // player bullets
   bullets.forEach(b=>{ b.y+=b.vy; b.x+=(b.ang||0)*0.45; });
   bullets=bullets.filter(b=>b.y>-20);
 
-  enemies.forEach(e=>{
-    e.y+=e.vy;
-    e.shootT+=dt; if(e.shootT>=e.shootInt){ e.shootT=0; enemyShoot(e); }
-  });
-  enemies=enemies.filter(e=> e.y<=cv.height+30 ); // kaçan can götürmez
+  // enemies
+  enemies.forEach(e=>{ e.y+=e.vy; e.shootT+=dt; if(e.canShoot && e.shootT>=e.shootInt){ e.shootT=0; enemyShoot(e); } });
+  // kaçan can götürmez
+  enemies=enemies.filter(e=> e.y<=cv.height+30 );
 
+  // enemy bullets
   enemyBullets.forEach(m=>{ m.y+=m.vy; });
-  enemyBullets=enemyBullets.filter(m=>m.y<cv.height+40);
+  enemyBullets=enemyBullets.filter(m=> m.y<cv.height+40 );
 
-  gems.forEach(g=>{ g.y+=g.vy; });
-  gems=gems.filter(g=>g.y<cv.height+40);
-
-  mascots.forEach(m=>{ m.y+=m.vy; });
-  mascots=mascots.filter(m=>m.y<cv.height+40);
+  // gems & mascots
+  gems.forEach(g=>{ g.y+=g.vy; });       gems=gems.filter(g=> g.y<cv.height+40 );
+  mascots.forEach(m=>{ m.y+=m.vy; });    mascots=mascots.filter(m=> m.y<cv.height+40 );
 
   // collisions
   for(const e of enemies){
@@ -230,9 +241,7 @@ function update(dt){
     if(rectHit(player,g)){ powerShots+=3; pxEl.textContent=powerShots; g.dead=true; }
   }
   for(const m of mascots){
-    if(rectHit(player,m)){ // 🦚 ödül: +1 can (max 5)
-      lives=Math.min(5,lives+1); updateLives(); m.dead=true;
-    }
+    if(rectHit(player,m)){ lives=Math.min(5,lives+1); updateLives(); m.dead=true; }
   }
 
   enemies=enemies.filter(o=>!o.dead);
@@ -275,13 +284,9 @@ function draw(){
   ctx.fillStyle="#38bdf8"; ctx.strokeStyle="#0e7490"; ctx.lineWidth=1.6;
   gems.forEach(g=>{ ctx.fillRect(g.x+g.w*0.2,g.y+g.h*0.2,g.w*0.6,g.h*0.6); ctx.strokeRect(g.x+g.w*0.2,g.y+g.h*0.2,g.w*0.6,g.h*0.6); });
 
-  // mascot 🦚 (transparan arka plan)
-  if (peacockImg){
-    mascots.forEach(m=>ctx.drawImage(peacockImg,m.x,m.y,m.w,m.h));
-  } else {
-    ctx.fillStyle="#60a5fa";
-    mascots.forEach(m=>ctx.fillRect(m.x,m.y,m.w,m.h));
-  }
+  // mascot 🦚
+  if (peacockImg) mascots.forEach(m=>ctx.drawImage(peacockImg,m.x,m.y,m.w,m.h));
+  else { ctx.fillStyle="#60a5fa"; mascots.forEach(m=>ctx.fillRect(m.x,m.y,m.w,m.h)); }
 
   // particles
   ctx.fillStyle="rgba(255,200,80,.95)";
@@ -296,7 +301,7 @@ restartBtn.onclick=()=>{ score=0; powerShots=0; lives=3; updateLives();
   gameOver=false; started=false; overEl.style.display="none"; startOverlay.style.display="flex";
 };
 
-/* ====== PRELOAD (PNG/JPG'leri yükle) ====== */
+/* ====== PRELOAD (assets) ====== */
 let playerImg=null, enemyImg={red:null, green:null, ufo_red:null, ufo_gray:null};
 (async function(){
   try{ const p=await loadImage(PLAYER_SRC); playerImg=keyOutDark(p,80);}catch{}
