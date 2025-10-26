@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
 <title>Babypeacock — BPC Space Game</title>
 <style>
-  html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden} /* scroll kilit */
+  html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   #brand{position:fixed;top:6px;left:12px;z-index:4;font-weight:900;
     background:linear-gradient(90deg,#22d3ee,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent}
   #score{position:fixed;top:8px;left:0;right:0;text-align:center;color:#00ffc8;font-weight:700;z-index:4}
@@ -32,9 +32,9 @@
   <div id="gameOver">
     <div style="font-weight:900;margin-bottom:8px">GAME OVER</div>
     <button id="restart" class="btn">Restart</button>
-    <!-- 🌍 Global sayaç (Game Over altında gösterilir) -->
+    <!-- 🌍 Global counter (English) -->
     <div id="globalCounterBox" style="margin-top:10px;font-size:14px">
-      🌍 Dünya çapında oynanma sayısı: <span id="globalCounter">0</span>
+      🌍 Global plays: <span id="globalCounter">0</span>
     </div>
   </div>
 
@@ -223,12 +223,12 @@ function renderFinalScore(t){
 }
 
 /* ---------- Main loop ---------- */
-// 🔧 DEĞİŞTİRİLDİ: Game Over tetiklenince global sayaç +1
 function endGame(){
   gameOver=true;
   overEl.style.display="flex";
   overEl.style.background="transparent";
-  if (window.incrementGlobalPlays) incrementGlobalPlays(); // 🌍 sayaç +1
+  // 🌍 Global counter: +1 on each finished game
+  if (window.incrementGlobalPlays) incrementGlobalPlays();
 }
 function update(dt){
   starsA.forEach(s=>{ s.y+=0.35; if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} });
@@ -344,15 +344,16 @@ let playerImg=null, enemyImg={red:null,green:null,ufo_red:null,ufo_gray:null}, p
 })();
 </script>
 
-<!-- 🔌 Firebase Global Sayaç (Game Over'da +1 ve canlı gösterge) -->
+<!-- 🔌 Firebase global counter (persistent) -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getDatabase, ref, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
+  // Your config (includes the Realtime DB URL)
   const firebaseConfig = {
     apiKey: "AIzaSyAm65sARsGDTVkqe6MXcb8OObug17SEFpY",
     authDomain: "bpc-space.firebaseapp.com",
-    databaseURL: "https://bpc-space-default-rtdb.firebaseio.com/",
+    databaseURL: "https://bpc-space-default-rtdb.firebasedatabase.app/",  // <- regionless endpoint; works with new RTDB
     projectId: "bpc-space",
     storageBucket: "bpc-space.firebasestorage.app",
     messagingSenderId: "954298087029",
@@ -364,13 +365,13 @@ let playerImg=null, enemyImg={red:null,green:null,ufo_red:null,ufo_gray:null}, p
   const db  = getDatabase(app);
   const refCounter = ref(db, "stats/globalPlays");
 
-  // Sayaç değerini canlı göster
-  onValue(refCounter, s => {
+  // Live display
+  onValue(refCounter, snap => {
     const el = document.getElementById("globalCounter");
-    if (el) el.textContent = (s.val() ?? 0).toLocaleString("tr-TR");
+    if (el) el.textContent = (snap.val() ?? 0).toLocaleString("en-US");
   });
 
-  // Game Over → +1
+  // +1 on each finished game (transaction = safe under concurrency)
   window.incrementGlobalPlays = () => {
     runTransaction(refCounter, v => (v || 0) + 1);
   };
