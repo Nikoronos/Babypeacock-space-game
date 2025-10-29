@@ -1,306 +1,233 @@
 <!doctype html>
 <html lang="tr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>BPC Space — Level 1 (Wolf)</title>
-  <style>
-    :root{
-      --bg:#001b23; --ink:#f5f7fa; --accent:#00d1c7; --danger:#ff4d4f; --dim:#0b2a33;
-    }
-    html,body{margin:0;height:100%;background:#000;color:var(--ink);font:600 16px system-ui,Segoe UI,Roboto,Arial}
-    #wrap{display:flex;min-height:100%;align-items:center;justify-content:center}
-    canvas{background:var(--bg);touch-action:none;border-radius:12px;box-shadow:0 10px 40px #000a;display:block}
-    #hud{position:fixed;inset:0 0 auto 0;display:flex;gap:10px;align-items:center;justify-content:center;height:44px}
-    #hud button{background:var(--accent);border:0;color:#002024;font-weight:800;padding:9px 16px;border-radius:10px}
-    #scorebar{position:fixed;left:10px;top:10px;right:10px;height:20px;display:flex;align-items:center;gap:10px}
-    #scoreTxt{font-weight:800}
-    #bossbar{position:fixed;left:10px;right:10px;top:38px;height:14px;background:#19343f;border-radius:8px;display:none}
-    #bossfill{height:100%;width:0;background:#19d34b;border-radius:8px}
-    #over{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55)}
-    #panel{background:#071e25;border:1px solid #0d323d;padding:24px 26px;border-radius:16px;box-shadow:0 20px 60px #0008;text-align:center}
-    #panel h2{margin:0 0 16px;font-size:28px;color:#ff5d63}
-    #panel button{background:var(--accent);border:0;color:#002024;font-weight:900;padding:10px 18px;border-radius:12px}
-    .hpLabel{position:fixed;left:10px;top:18px;font-weight:900;letter-spacing:.5px}
-  </style>
-
-  <!-- Firebase (v8) — istersen v9 modular ile değiştirebilirsin -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>BPC Space — Level 1 (Wolf)</title>
+<style>
+  :root{ --bg:#001b23; --ink:#eaf6ff; --accent:#00d1c7; --danger:#ff4d4f; }
+  html,body{margin:0;background:#000;color:var(--ink);font:600 16px system-ui,Segoe UI,Roboto,Arial}
+  #wrap{display:flex;align-items:center;justify-content:center;min-height:100vh}
+  canvas{background:var(--bg);touch-action:none;border-radius:12px;box-shadow:0 10px 40px #000a;display:block}
+  #hud{position:fixed;inset:0 0 auto 0;height:44px;display:flex;gap:10px;align-items:center;justify-content:center}
+  #scoreTxt{font-weight:900}
+  #bossbar{position:fixed;left:10px;right:10px;top:42px;height:12px;background:#15323b;border-radius:10px;display:none}
+  #bossfill{height:100%;width:0;background:#19d34b;border-radius:10px}
+  #start,#over{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55)}
+  .panel{background:#071e25;border:1px solid #0d323d;padding:22px 24px;border-radius:16px;box-shadow:0 20px 60px #0008;text-align:center}
+  .panel h2{margin:0 0 14px}
+  .btn{background:var(--accent);border:0;color:#002024;font-weight:900;padding:10px 18px;border-radius:12px}
+  #over{display:none}
+</style>
 </head>
 <body>
-  <div id="scorebar"><span id="scoreTxt">SCORE: 0</span></div>
+  <div id="hud"><span id="scoreTxt">SCORE: 0</span></div>
   <div id="bossbar"><div id="bossfill"></div></div>
-  <div id="hud"><button id="startBtn">START</button></div>
-  <div id="wrap"><canvas id="game" width="420" height="740"></canvas></div>
 
-  <div id="over">
-    <div id="panel">
-      <h2>GAME OVER</h2>
-      <p id="finalTxt" style="margin:0 0 14px"></p>
-      <button id="retryBtn">RETRY</button>
+  <div id="start">
+    <div class="panel">
+      <h2>BPC Space — Level 1</h2>
+      <button id="startBtn" class="btn">START</button>
     </div>
   </div>
 
+  <div id="over">
+    <div class="panel">
+      <h2 style="color:#ff6a6a">GAME OVER</h2>
+      <p id="finalTxt" style="margin:0 0 12px"></p>
+      <button id="retryBtn" class="btn">RETRY</button>
+    </div>
+  </div>
+
+  <div id="wrap"><canvas id="game" width="420" height="740"></canvas></div>
+
+  <!-- Senin fribase.js'in varsa otomatik çağırır; yoksa sessiz geçer -->
+  <script>
+    (function(){
+      const s=document.createElement('script'); s.src='Js/fribase.js';
+      s.onload=()=>{ try{window.BPC_incrementOnStart&&window.BPC_incrementOnStart();}catch{} try{window.BPC_logCountryOnStart&&window.BPC_logCountryOnStart();}catch{} };
+      s.onerror=()=>{}; document.head.appendChild(s);
+    })();
+  </script>
+
 <script>
 /* =========================
-   SPRITES (repo kökü)
+   KANVAS / UI
    ========================= */
-const SPRITES = {
-  red:  'bpc_enemy_red.png',
+const cvs=document.getElementById('game'); const ctx=cvs.getContext('2d'); ctx.imageSmoothingEnabled=false;
+const W=cvs.width,H=cvs.height;
+const startDlg=document.getElementById('start'), startBtn=document.getElementById('startBtn');
+const overDlg=document.getElementById('over'), finalTxt=document.getElementById('finalTxt'), retryBtn=document.getElementById('retryBtn');
+const scoreTxt=document.getElementById('scoreTxt'), bossbar=document.getElementById('bossbar'), bossfill=document.getElementById('bossfill');
+
+let running=false, gameOver=false, last=0, score=0, lives=1;
+
+/* =========================
+   SPRITES (root)
+   ========================= */
+const SPRITES={
+  red:'bpc_enemy_red.png',
   green:'bpc_enemy_green.png',
-  ufo:  'bpc_enemy_ufo_gray.png',
-  boss: 'enemy_wolf.png'
+  ufo:'bpc_enemy_ufo_gray.png',
+  wolf:'enemy_wolf.png'
 };
-
-/* =========================
-   FIREBASE — sayaç + ülke
-   ========================= */
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://YOUR_DB_ID.europe-west1.firebasedatabase.app",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID",
-};
-try { firebase.initializeApp(firebaseConfig); } catch(e){ /* zaten init’se sessiz */ }
-const db = (firebase.apps && firebase.apps.length) ? firebase.database() : null;
-
-async function BPC_trackOnStart(){
-  if(!db) return;
-  try{
-    // ülke
-    let country = "Unknown";
-    try{
-      const r = await fetch("https://ipapi.co/json/");
-      const j = await r.json(); country = j?.country_name || "Unknown";
-    }catch(e){}
-    // toplam ve ülke sayaçları
-    await db.ref("stats/totalStarts").transaction(v => (v||0)+1);
-    await db.ref("stats/locations/"+country).transaction(v => (v||0)+1);
-    await db.ref("stats/lastCountry").set(country);
-  }catch(e){ /* sessiz */ }
-}
-
-/* =========================
-   KANVAS ve OYUN DURUMU
-   ========================= */
-const cvs = document.getElementById('game');
-const ctx = cvs.getContext('2d');
-ctx.imageSmoothingEnabled = false;
-
-const startBtn = document.getElementById('startBtn');
-const retryBtn = document.getElementById('retryBtn');
-const overLay  = document.getElementById('over');
-const finalTxt = document.getElementById('finalTxt');
-const scoreTxt = document.getElementById('scoreTxt');
-const bossbar  = document.getElementById('bossbar');
-const bossfill = document.getElementById('bossfill');
-
-let running=false, started=false, last=0;
-let score=0, lives=1;
-
-const player = { x:cvs.width/2, y:cvs.height-80, w:32, h:38, vx:0, speed:3.2, fireCD:0 };
-
-const bullets=[], enemies=[], ebullets=[];
-
-/* ===== controls: parmakla sürükle + otomatik ateş ===== */
-cvs.addEventListener('mousemove', e=>{
-  const r = cvs.getBoundingClientRect();
-  player.x = Math.max(16, Math.min(cvs.width-16, e.clientX - r.left));
-});
-cvs.addEventListener('touchmove', e=>{
-  const t=e.touches[0], r=cvs.getBoundingClientRect();
-  player.x = Math.max(16, Math.min(cvs.width-16, t.clientX - r.left));
-}, {passive:false});
-
-/* =========================
-   ENEMY YÜKLERİ
-   ========================= */
-function loadImage(src){ return new Promise(res=>{ const i=new Image(); i.src=src; i.onload=()=>res(i); }); }
-const GFX = {};
+function load(src){return new Promise(res=>{const i=new Image(); i.src=src; i.onload=()=>res(i);});}
+const GFX={};
 (async()=>{
-  GFX.red  = await loadImage(SPRITES.red);
-  GFX.green= await loadImage(SPRITES.green);
-  GFX.ufo  = await loadImage(SPRITES.ufo);
-  // boss PNG’yi beyaz arka plan varsa temizle
-  const raw = await loadImage(SPRITES.boss);
-  const off = document.createElement('canvas'), octx = off.getContext('2d');
-  off.width = raw.width; off.height = raw.height; octx.drawImage(raw,0,0);
-  const img = octx.getImageData(0,0,off.width,off.height);
-  const d = img.data;
-  for(let i=0;i<d.length;i+=4){
-    // tam beyaz/koyu beyazı transparan yap
-    if(d[i]>240 && d[i+1]>240 && d[i+2]>240){ d[i+3]=0; }
-  }
-  octx.putImageData(img,0,0);
-  GFX.boss = new Image(); GFX.boss.src = off.toDataURL();
+  GFX.red   = await load(SPRITES.red);
+  GFX.green = await load(SPRITES.green);
+  GFX.ufo   = await load(SPRITES.ufo);
+  // Wolf PNG'deki beyaz arka planı otomatik şeffafla
+  const raw = await load(SPRITES.wolf);
+  const off = document.createElement('canvas'), g=off.getContext('2d');
+  off.width=raw.width; off.height=raw.height; g.drawImage(raw,0,0);
+  const img=g.getImageData(0,0,off.width,off.height), d=img.data;
+  for(let i=0;i<d.length;i+=4){ if(d[i]>240&&d[i+1]>240&&d[i+2]>240) d[i+3]=0; }
+  g.putImageData(img,0,0); GFX.wolf=new Image(); GFX.wolf.src=off.toDataURL();
 })();
 
 /* =========================
-   DALGA & BOSS EŞİKLERİ
+   OYUN DURUMU
    ========================= */
-const SCORE_FOR_BOSS = 500;
-let boss=null;
+const player={x:W/2,y:H-80,w:28,h:34,fireCD:0};
+const bullets=[], enemies=[], ebullets=[];
 
+const WOLF_SPAWN_SCORE=500;
+const NEXT_LEVEL_URL='merkur/index.html';
+let wolfActive=false;
+const wolf={x:W/2,y:-160,w:200,h:200,vx:1.2,vy:1.1,dir:1,hpMax:25,hp:25,entered:false,fireT:26};
+
+/* =========================
+   KONTROLLER
+   ========================= */
+const keys={}; addEventListener('keydown',e=>keys[e.key]=true); addEventListener('keyup',e=>keys[e.key]=false);
+cvs.addEventListener('mousemove',e=>{const r=cvs.getBoundingClientRect();player.x=Math.max(16,Math.min(W-16,e.clientX-r.left));});
+cvs.addEventListener('touchmove',e=>{const t=e.touches[0],r=cvs.getBoundingClientRect();player.x=Math.max(16,Math.min(W-16,t.clientX-r.left)); e.preventDefault();},{passive:false});
+
+/* =========================
+   DÜŞMANLAR (RED/GREEN/UFO)
+   ========================= */
 function spawnEnemy(){
-  if(boss) return;
-  // dalga yoğunluğu skora göre artsın
-  const r = Math.random();
-  let type = 'red';
-  if(r>0.65) type='green';
-  if(r>0.88) type='ufo';
-  const img = GFX[type];
-  if(!img) return;
-
-  const w = img.width/2, h = img.height/2;
-  const e = {
-    type, img, w, h,
-    x: 30 + Math.random()*(cvs.width-60),
-    y: -h,
-    hp: (type==='ufo'? 3 : 1),
-    vy: (type==='ufo'? 1.2 : (type==='green'? 1.6 : 1.9)),
+  if (wolfActive) return; // boss varken normal spawn olmasın
+  const r=Math.random();
+  let type='red'; if(r>0.65) type='green'; if(r>0.88) type='ufo';
+  const img=GFX[type]; if(!img) return;
+  const e={
+    type, img, w:Math.max(28, img.width*0.5), h:Math.max(22, img.height*0.5),
+    x: 30 + Math.random()*(W-60), y: -40,
+    hp: (type==='ufo'?3:1),
+    vy: (type==='ufo'?1.2:(type==='green'?1.6:1.9)),
     fireT: 60 + Math.random()*120
   };
   enemies.push(e);
 }
 
-function spawnBoss(){
-  const img = GFX.boss; if(!img) return;
-  boss = {
-    img, w: img.width*0.5, h: img.height*0.5,
-    x: cvs.width/2, y: -180,
-    vx: 1.2, vy: 0.7,
-    hp: 25, fireT: 40
-  };
-  bossbar.style.display='block';
-}
-
 /* =========================
-   GAME LOOP
+   BAŞLAT / BİTİR
    ========================= */
+startBtn.onclick=()=>{ startDlg.style.display='none'; startGame(); };
+retryBtn.onclick=()=>location.reload();
+
 function startGame(){
-  if(started) return;
-  started=true; running=true;
-  overLay.style.display='none';
-  score=0; lives=1; bullets.length=enemies.length=ebullets.length=0; boss=null;
+  running=true; gameOver=false; last=performance.now();
+  score=0; lives=1; bullets.length=enemies.length=ebullets.length=0;
+  wolfActive=false; Object.assign(wolf,{x:W/2,y:-160,hp:25,entered:false,fireT:26});
   bossbar.style.display='none'; bossfill.style.width='0%';
-  scoreTxt.textContent = 'SCORE: 0';
-  // firebase sayaç
-  BPC_trackOnStart();
-  last = performance.now();
   requestAnimationFrame(loop);
 }
+function endGame(){ running=false; gameOver=true; overDlg.style.display='flex'; finalTxt.textContent='Toplam skor: '+score; }
 
-function endGame(){
-  running=false;
-  finalTxt.textContent = `Toplam skor: ${score}`;
-  overLay.style.display='flex';
-}
-
+/* =========================
+   ANA DÖNGÜ
+   ========================= */
 function loop(t){
   if(!running) return;
-  const dt = Math.min(33, t-last); last=t;
+  const dt=Math.min(33, t-(last||t)); last=t;
 
-  // arka plan
-  ctx.fillStyle = '#082831'; ctx.fillRect(0,0,cvs.width,cvs.height);
+  // Arka plan
+  ctx.fillStyle='#082831'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#0b3c49'; for(let i=0;i<36;i++){ ctx.fillRect((i*33 + t*0.05)%W, (i*21 + t*0.09)%H, 2, 2); }
 
-  // oyuncu ateş
-  if(player.fireCD>0) player.fireCD -= dt;
-  if(player.fireCD<=0){
-    bullets.push({x:player.x, y:player.y-22, vy:-4.2, r:3});
-    player.fireCD = 160; // ms
+  // Oyuncu hareket
+  if(keys['ArrowLeft'])  player.x-=3.2;
+  if(keys['ArrowRight']) player.x+=3.2;
+  player.x=Math.max(16,Math.min(W-16,player.x));
+
+  // Oyuncu ateş
+  if(player.fireCD>0) player.fireCD-=dt;
+  if(player.fireCD<=0){ bullets.push({x:player.x,y:player.y-20,vy:-4.4,r:3}); player.fireCD=150; }
+
+  // Mermiler
+  for(let i=bullets.length-1;i>=0;i--){ const b=bullets[i]; b.y+=b.vy; if(b.y<-10){bullets.splice(i,1);} }
+  ctx.fillStyle='#ffd54a'; bullets.forEach(b=>{ ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,6.283); ctx.fill(); });
+
+  // Spawn / skor → boss
+  if(!wolfActive && Math.random()<0.035) spawnEnemy();
+  if(!wolfActive && score>=WOLF_SPAWN_SCORE){
+    wolfActive=true; bossbar.style.display='block'; Object.assign(wolf,{y:-160,entered:false,hp:25});
   }
 
-  // mermi güncelle
-  for(let i=bullets.length-1;i>=0;i--){
-    const b=bullets[i]; b.y += b.vy;
-    ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.fillStyle='#ffd54a'; ctx.fill();
-    if(b.y<-10) bullets.splice(i,1);
-  }
-
-  // düşman spawn
-  if(!boss){
-    if(Math.random()<0.035) spawnEnemy();
-    if(score>=SCORE_FOR_BOSS) spawnBoss();
-  }
-
-  // düşmanlar
+  // Düşmanlar
   for(let i=enemies.length-1;i>=0;i--){
-    const e = enemies[i];
-    e.y += e.vy;
-    if(e.type==='ufo'){ e.x += Math.sin(t*0.003+i)*0.9; e.fireT-=1; if(e.fireT<=0){ ebullets.push({x:e.x, y:e.y+e.h*0.4, vy:2.4, r:3, col:'#ff3b3b'}); e.fireT=90+Math.random()*120; } }
-    ctx.drawImage(e.img, e.x-e.w/2, e.y-e.h/2, e.w, e.h);
-    if(e.y>cvs.height+60){ enemies.splice(i,1); continue; }
-    // çarpışma (oyuncu mermisi)
+    const e=enemies[i]; e.y+=e.vy;
+    if(e.type==='ufo'){ e.x += Math.sin(t*0.003+i)*0.9; e.fireT-=1; if(e.fireT<=0){ e.fireT=90+Math.random()*120; ebullets.push({x:e.x,y:e.y+e.h*0.3,vy:2.6,r:3,col:'#ff3b3b'}); } }
+    // çizim
+    if(e.img?.complete) ctx.drawImage(e.img, e.x-e.w/2, e.y-e.h/2, e.w, e.h); else { ctx.fillStyle='#ccc'; ctx.fillRect(e.x-14,e.y-10,28,20); }
+    if(e.y>H+40){ enemies.splice(i,1); continue; }
+    // vurulma
     for(let k=bullets.length-1;k>=0;k--){
       const b=bullets[k];
       if(Math.abs(b.x-e.x)<e.w*0.45 && Math.abs(b.y-e.y)<e.h*0.45){
-        bullets.splice(k,1);
-        e.hp -= 1;
-        if(e.hp<=0){ enemies.splice(i,1); score += (e.type==='ufo'?40:20); scoreTxt.textContent='SCORE: '+score; }
+        bullets.splice(k,1); e.hp--; if(e.hp<=0){ enemies.splice(i,1); score += (e.type==='ufo'?40:20); scoreTxt.textContent='SCORE: '+score; }
         break;
       }
     }
   }
 
-  // boss
-  if(boss){
-    if(boss.y<120) boss.y += boss.vy; else boss.x += boss.vx;
-    if(boss.x<100 || boss.x>cvs.width-100) boss.vx*=-1;
-    ctx.drawImage(boss.img, boss.x-boss.w/2, boss.y-boss.h/2, boss.w, boss.h);
-
-    // boss fire
-    boss.fireT -= 1;
-    if(boss.fireT<=0){
-      // iki yandan kırmızı
-      ebullets.push({x:boss.x-boss.w*0.28, y:boss.y+boss.h*0.1, vy:2.8, r:3, col:'#ff3b3b'});
-      ebullets.push({x:boss.x+boss.w*0.28, y:boss.y+boss.h*0.1, vy:2.8, r:3, col:'#ff3b3b'});
-      boss.fireT = 26;
+  // Boss davranış (sadece aktifken)
+  if(wolfActive){
+    if(!wolf.entered){ wolf.y += wolf.vy; if(wolf.y>=110){ wolf.entered=true; } }
+    else{
+      wolf.x += wolf.vx*wolf.dir; if(wolf.x<100||wolf.x>W-100) wolf.dir*=-1;
+      // yanlardan kırmızı atış
+      wolf.fireT -= 1;
+      if(wolf.fireT<=0){
+        wolf.fireT=26;
+        ebullets.push({x:wolf.x-wolf.w*0.28, y:wolf.y+wolf.h*0.1, vy:2.8, r:3, col:'#ff3b3b'});
+        ebullets.push({x:wolf.x+wolf.w*0.28, y:wolf.y+wolf.h*0.1, vy:2.8, r:3, col:'#ff3b3b'});
+      }
     }
-
     // boss hasarı
     for(let k=bullets.length-1;k>=0;k--){
       const b=bullets[k];
-      if(Math.abs(b.x-boss.x)<boss.w*0.44 && Math.abs(b.y-boss.y)<boss.h*0.44){
-        bullets.splice(k,1);
-        boss.hp -= 1;
-        const ratio = Math.max(0, Math.min(1, boss.hp/25));
-        bossfill.style.width = (ratio*100)+'%';
-        if(boss.hp<=0){
-          // Level 2
-          setTimeout(()=>{ window.location.href = 'merkur/index.html?v=1'; }, 600);
-          running=false; return;
+      if(Math.abs(b.x-wolf.x)<wolf.w*0.44 && Math.abs(b.y-wolf.y)<wolf.h*0.44){
+        bullets.splice(k,1); wolf.hp--; const ratio=Math.max(0,Math.min(1,wolf.hp/wolf.hpMax)); bossfill.style.width=(ratio*100)+'%';
+        if(wolf.hp<=0){ // Level-2’ye geç
+          running=false; setTimeout(()=>{ window.location.assign(NEXT_LEVEL_URL+'?v=1'); }, 500);
         }
       }
     }
   }
 
-  // düşman mermileri
-  for(let i=ebullets.length-1;i>=0;i--){
-    const b=ebullets[i]; b.y += b.vy;
-    ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.fillStyle=b.col||'#ff3b3b'; ctx.fill();
-    if(b.y>cvs.height+10){ ebullets.splice(i,1); continue; }
-    if(Math.abs(b.x-player.x)<14 && Math.abs(b.y-player.y)<18){
-      ebullets.splice(i,1); lives--; if(lives<=0){ endGame(); return; }
-    }
+  // Boss çizimi (yalnızca aktif + sahneye girdiyse)
+  if(wolfActive && wolf.entered && GFX.wolf?.complete){
+    ctx.drawImage(GFX.wolf, wolf.x-wolf.w/2, wolf.y-wolf.h/2, wolf.w, wolf.h);
   }
 
-  // oyuncu
-  ctx.fillStyle='#8be9fd'; // gövde
+  // Düşman mermileri
+  for(let i=ebullets.length-1;i>=0;i--){
+    const b=ebullets[i]; b.y+=b.vy;
+    if(b.y>H+10){ ebullets.splice(i,1); continue; }
+    if(Math.abs(b.x-player.x)<14 && Math.abs(b.y-player.y)<18){ ebullets.splice(i,1); lives--; if(lives<=0){ endGame(); return; } }
+  }
+  ebullets.forEach(b=>{ ctx.fillStyle=b.col||'#ff3b3b'; ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,6.283); ctx.fill(); });
+
+  // Oyuncu çiz
+  ctx.fillStyle='#8be9fd';
   ctx.beginPath(); ctx.moveTo(player.x,player.y-18); ctx.lineTo(player.x-14,player.y+18); ctx.lineTo(player.x+14,player.y+18); ctx.closePath(); ctx.fill();
 
   requestAnimationFrame(loop);
 }
-
-/* ===== UI ===== */
-startBtn.onclick = ()=>{ startBtn.style.display='none'; cvs.focus(); startGame(); };
-retryBtn.onclick = ()=>{ overLay.style.display='none'; startBtn.style.display='inline-block'; started=false; };
-
-/* ===== mobile tap başlangıcı için ===== */
-document.addEventListener('touchstart', ()=>{}, {passive:true});
 </script>
 </body>
 </html>
