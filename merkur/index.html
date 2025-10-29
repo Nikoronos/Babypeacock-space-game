@@ -3,287 +3,289 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-<title>BPC Space — Level 1</title>
+<title>BPC Space — Level 1 (Wolf)</title>
 <style>
-  html,body{margin:0;height:100%;background:#062;overflow:hidden;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial}
-  #ui{position:fixed;left:0;top:0;right:0;height:36px;display:flex;align-items:center;gap:12px;padding:6px 10px;color:#fff;background:rgba(0,0,0,.15);backdrop-filter:saturate(120%) blur(3px)}
+  html,body{margin:0;background:#000;color:#0ff;font-family:system-ui,Segoe UI,Roboto,Arial}
+  canvas{display:block;margin:0 auto;background:#081b23;touch-action:none}
+  .hud{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.75)}
+  #start{gap:16px;flex-direction:column}
+  #over {gap:14px;flex-direction:column;display:none}
+  button{padding:10px 16px;border-radius:10px;border:0;background:#0ff;color:#012;font-weight:800}
+  #topbar{position:fixed;left:0;top:0;right:0;height:34px;display:flex;align-items:center;gap:12px;padding:6px 10px;color:#aef;background:linear-gradient(180deg,rgba(0,0,0,.35),rgba(0,0,0,0))}
   #score{margin-left:auto;font-weight:700}
   #bossbar{position:absolute;left:60px;top:10px;height:10px;width:calc(100vw - 120px);background:#1a1a1a;border-radius:4px;overflow:hidden;display:none}
   #bossfill{height:100%;width:0;background:#19d34b}
-  canvas{display:block;margin:0 auto;background:#083c2f}
-  #stick{position:fixed;left:18px;bottom:18px;width:120px;height:120px;touch-action:none;opacity:.8}
-  #stick>i,#stick>i:before{position:absolute;border-radius:50%}
-  #stick>i{left:0;top:0;right:0;bottom:0;border:2px solid #8ff}
-  #stick>i:before{content:"";left:40px;top:40px;width:40px;height:40px;background:#8ff44c99;border:2px solid #8ff}
 </style>
 </head>
 <body>
-<div id="ui">
+<div id="topbar">
   <span>🦚 BPC Space — Level 1</span>
   <div id="bossbar"><div id="bossfill"></div></div>
   <span id="score">SCORE: 0</span>
 </div>
-<canvas id="cv" width="420" height="740"></canvas>
 
-<!-- Basit sanal joystick -->
-<div id="stick"><i></i></div>
+<canvas id="game" width="420" height="740"></canvas>
 
-<!-- Firebase sayaç (varsa) -->
-<script>
-(function(){
-  // Reponda /Js/fribase.js varsa otomatik yükle; yoksa sessiz.
-  const s=document.createElement('script');
-  s.src='Js/fribase.js';  // sende dosya adı 'fribase.js'
-  s.onload=()=>{ if(window.BPC_incrementOnStart) try{ window.BPC_incrementOnStart(); }catch(e){} };
-  s.onerror=()=>{};
-  document.head.appendChild(s);
-})();
-</script>
+<div id="start" class="hud">
+  <button id="startBtn">START</button>
+</div>
+
+<div id="over" class="hud">
+  <div style="color:#f55;font-weight:900;font-size:24px">GAME OVER</div>
+  <button id="retryBtn">RETRY</button>
+</div>
 
 <script>
-const W = 420, H = 740;
-const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
-const uiScore = document.getElementById('score');
-const bossBar  = document.getElementById('bossbar');
-const bossFill = document.getElementById('bossfill');
+/* ========= CANVAS & STATE ========= */
+const cvs = document.getElementById('game'), ctx = cvs.getContext('2d'); ctx.imageSmoothingEnabled=false;
+const W = cvs.width, H = cvs.height;
+const startEl = document.getElementById('start'), startBtn = document.getElementById('startBtn');
+const overEl  = document.getElementById('over'),  retryBtn = document.getElementById('retryBtn');
+const scoreEl = document.getElementById('score'), bossBar = document.getElementById('bossbar'), bossFill = document.getElementById('bossfill');
 
-let started=true, gameOver=false;
+let started=false, gameOver=false, lastT=0, running=true;
 
-const keys = {};
+/* ========= PLAYER ========= */
+const player = { x:W/2, y:H-80, r:12, vx:0, vy:0, spd:3.2, fireCD:0 };
+const keys={};
 addEventListener('keydown',e=>keys[e.key]=true);
 addEventListener('keyup',e=>keys[e.key]=false);
+cvs.addEventListener('mousemove',e=>{
+  const r=cvs.getBoundingClientRect();
+  player.x = Math.max(16, Math.min(W-16, e.clientX - r.left));
+});
 
-// ---- Sanal joystick ----
-const stick = document.getElementById('stick');
-let joy = {ax:0, ay:0};
-(function(){
-  let active=false, cx=0, cy=0;
-  const ring = stick.querySelector('i');
-  const knob = ring;
-  function setKnob(dx,dy){
-    const r=40, k=40;
-    const len=Math.hypot(dx,dy);
-    const m=len>r? r/len : 1;
-    const nx=dx*m, ny=dy*m;
-    knob.style.setProperty('--x',nx+'px');
-    knob.style.setProperty('--y',ny+'px');
-    knob.style.transform=`translate(${nx}px,${ny}px)`;
-    joy.ax = nx/r; joy.ay = ny/r;
-  }
-  stick.addEventListener('pointerdown',e=>{
-    active=true;
-    const r=stick.getBoundingClientRect();
-    cx=r.left+r.width/2; cy=r.top+r.height/2;
-    stick.setPointerCapture(e.pointerId);
-  });
-  stick.addEventListener('pointermove',e=>{
-    if(!active)return;
-    setKnob(e.clientX-cx,e.clientY-cy);
-  });
-  function end(e){ active=false; joy.ax=joy.ay=0; knob.style.transform=''; }
-  stick.addEventListener('pointerup', end);
-  stick.addEventListener('pointercancel', end);
-})();
-
-// ---- Sprites ----
-const wolfRaw = new Image();
-wolfRaw.src = 'enemy_wolf.png';     // kökte
-let wolfImg = null;                 // beyazı temizlenmiş sprite
-
-wolfRaw.onload = () => {
-  // Beyaza yakın pikselleri şeffafla (beyaz kutuyu kaldır)
-  const off = document.createElement('canvas');
-  off.width = wolfRaw.width; off.height = wolfRaw.height;
-  const ictx = off.getContext('2d');
-  ictx.drawImage(wolfRaw,0,0);
-  const img = ictx.getImageData(0,0,off.width,off.height);
-  const d = img.data;
-  for(let i=0;i<d.length;i+=4){
-    if(d[i]>245 && d[i+1]>245 && d[i+2]>245) d[i+3]=0;
-  }
-  ictx.putImageData(img,0,0);
-  wolfImg = new Image();
-  wolfImg.src = off.toDataURL();
-};
-
-// ---- Game state ----
-const player = {x:W/2, y:H-80, r:16, vx:0, vy:0, spd:3.2, fireCD:0};
-let shots=[], enemies=[], eBullets=[];
+/* ========= BULLETS / ENEMIES ========= */
+let bullets=[], enemies=[], enemyBullets=[];
 let score=0, scoreTick=0;
 
 const WOLF_SPAWN_SCORE = 500;
+const NEXT_LEVEL_URL = 'merkur/index.html';
 let wolfActive=false;
-const wolf = {x:W/2, y:-120, w:200, h:200, vx:1.6, dir:1, hp:25, entered:false, redCD:0, eyeCD:420, eyeTime:0};
 
-// basic small enemies for early game (sarı mermiler)
-function spawnEnemy(){
-  const x = 30 + Math.random()*(W-60);
-  enemies.push({x, y:-20, vx:(Math.random()<.5? -0.7:0.7), vy:1.2, r:14, fire:60+Math.random()*60});
+const wolf = { x:W/2, y:-140, w:200, h:200, vx:1.6, dir:1, hp:25, entered:false, redCD:0, eyeCD:480, eyeTime:0 };
+
+/* ========= ASSETS (wolf PNG'i beyazdan arındır) ========= */
+const wolfRaw = new Image(); wolfRaw.src = 'enemy_wolf.png';
+let wolfImg = null;
+wolfRaw.onload = () => {
+  const off = document.createElement('canvas');
+  off.width = wolfRaw.width; off.height = wolfRaw.height;
+  const g = off.getContext('2d');
+  g.drawImage(wolfRaw,0,0);
+  const img = g.getImageData(0,0,off.width,off.height), d = img.data;
+  for(let i=0;i<d.length;i+=4){ if(d[i]>245 && d[i+1]>245 && d[i+2]>245) d[i+3]=0; }
+  g.putImageData(img,0,0);
+  wolfImg = new Image(); wolfImg.src = off.toDataURL();
+};
+
+/* ========= GAME FLOW ========= */
+function startGame(){
+  if(started) return; started=true; startEl.style.display='none';
+  // Firebase (varsa) – start'ta sayaç + ülke
+  if (window.BPC_incrementOnStart) try{ window.BPC_incrementOnStart(); }catch(_){}
+  if (window.BPC_logCountryOnStart) try{ window.BPC_logCountryOnStart(); }catch(_){}
 }
-setInterval(spawnEnemy, 1200);
+startBtn.onclick = startGame;
 
-// ---- Controls ----
-function handleInput(){
-  let ax = (keys['ArrowRight']||keys['d']?1:0) - (keys['ArrowLeft']||keys['a']?1:0) + joy.ax;
-  let ay = (keys['ArrowDown']||keys['s']?1:0) - (keys['ArrowUp']||keys['w']?1:0) + joy.ay;
-  const len=Math.hypot(ax,ay); if(len>1){ ax/=len; ay/=len; }
-  player.x += ax*player.spd; player.y += ay*player.spd;
-  if(player.x<18) player.x=18; if(player.x>W-18) player.x=W-18;
-  if(player.y<60) player.y=60; if(player.y>H-18) player.y=H-18;
+function resetGame(){
+  started=false; gameOver=false; running=true;
+  bullets=[]; enemies=[]; enemyBullets=[];
+  score=0; scoreTick=0; wolfActive=false;
+  player.x=W/2; player.y=H-80; player.fireCD=0;
+  Object.assign(wolf, { x:W/2, y:-140, vx:1.6, dir:1, hp:25, entered:false, redCD:0, eyeCD:480, eyeTime:0 });
+}
+retryBtn.onclick = ()=>{ resetGame(); startEl.style.display='flex'; overEl.style.display='none'; };
 
-  // fire
+/* ========= SIMPLE EARLY ENEMIES (skor için) ========= */
+function spawnGrunt(){
+  const x = 30 + Math.random()*(W-60);
+  enemies.push({ kind:'grunt', x, y:-24, r:12, vx:(Math.random()<.5?-0.8:0.8), vy:1.2, fire:60+Math.random()*60 });
+}
+const spawnTimer = setInterval(()=>{ if(started && !wolfActive) spawnGrunt(); }, 1200);
+
+/* ========= HELPERS ========= */
+function circleHit(ax,ay,ar, bx,by,br){ return Math.hypot(ax-bx,ay-by) < ar+br; }
+
+/* ========= UPDATE ========= */
+function update(dt){
+  if(!started || gameOver) return;
+
+  /* movement */
+  let ax=(keys['ArrowRight']||keys['d']?1:0)-(keys['ArrowLeft']||keys['a']?1:0);
+  let ay=(keys['ArrowDown']||keys['s']?1:0)-(keys['ArrowUp']||keys['w']?1:0);
+  if(ax||ay){ const L=Math.hypot(ax,ay)||1; ax/=L; ay/=L; }
+  player.x = Math.max(16, Math.min(W-16, player.x + ax*player.spd));
+  player.y = Math.max(50, Math.min(H-16, player.y + ay*player.spd));
+
+  /* fire */
   if(player.fireCD>0) player.fireCD--;
-  if(keys[' '] || keys['Enter'] || keys['z'] || keys['Z']){
+  if(keys[' ']||keys['Enter']||keys['z']||keys['Z']){
     if(player.fireCD===0){
-      shots.push({x:player.x-4,y:player.y-20,v: -6});
-      shots.push({x:player.x+4,y:player.y-20,v: -6});
+      bullets.push({x:player.x-4,y:player.y-20,v:-7,r:4});
+      bullets.push({x:player.x+4,y:player.y-20,v:-7,r:4});
       player.fireCD=8;
     }
   }
-}
 
-// ---- Boss attacks ----
-function spawnWolfReds(){
-  // kanat uçlarından 2 kırmızı top
-  const left = {x:wolf.x-86, y:wolf.y+86, vx:0, vy:2.6, r:6, col:'#f33'};
-  const right= {x:wolf.x+86, y:wolf.y+86, vx:0, vy:2.6, r:6, col:'#f33'};
-  eBullets.push(left,right);
-}
-function spawnWolfBeam(){
-  // 2 sn’lik ileri lazer (görsel için parlak çubuk)
-  wolf.eyeTime = 120;
-}
+  /* score */
+  scoreTick += dt; if(scoreTick>=60){ score += 10; scoreTick -= 60; }
+  scoreEl.textContent = 'SCORE: ' + score;
 
-// ---- Update ----
-function update(){
-  if(gameOver||!started) return;
-
-  handleInput();
-
-  // skor artışı
-  scoreTick++; if(scoreTick>=60){ score+=10; scoreTick=0; }
-  uiScore.textContent = 'SCORE: '+score;
-
-  // küçük düşmanlar
-  enemies.forEach(e=>{
-    e.x += e.vx; e.y += e.vy;
-    if(e.x<20||e.x>W-20) e.vx*=-1;
+  /* grunts */
+  for(const e of enemies){
+    if(e.kind!=='grunt') continue;
+    e.x+=e.vx; e.y+=e.vy;
+    if(e.x<16||e.x>W-16) e.vx*=-1;
     e.fire -= 1;
-    if(e.fire<=0){ eBullets.push({x:e.x,y:e.y+6,vx:0,vy:3,r:4,col:'#ff0'}); e.fire=90; }
+    if(e.fire<=0){ enemyBullets.push({x:e.x,y:e.y+6,vy:3,r:4,col:'#ffd54a'}); e.fire = 90; }
+  }
+  enemies = enemies.filter(e=> e.y < H+40 && !e.dead);
+
+  /* player bullets */
+  bullets.forEach(b=> b.y += b.v);
+  bullets = bullets.filter(b=> b.y>-12 && !b.dead);
+
+  /* enemy bullets */
+  enemyBullets.forEach(b=>{ b.y += b.vy; if(b.vx) b.x += b.vx; });
+  enemyBullets = enemyBullets.filter(b=>{
+    if(b.y>H+20) return false;
+    if(circleHit(player.x,player.y,10, b.x,b.y,b.r||4)){ gameOver=true; overEl.style.display='flex'; }
+    return !gameOver;
   });
-  enemies = enemies.filter(e=> e.y< H+30);
 
-  // player shots
-  shots.forEach(s=> s.y += s.v);
-  shots = shots.filter(s=> s.y>-10);
-
-  // enemy bullets
-  eBullets.forEach(b=>{ b.x += b.vx||0; b.y += b.vy||2.2;});
-  eBullets = eBullets.filter(b=> b.y< H+20);
-
-  // çarpışmalar (küçük düşmanlar)
-  for(let i=enemies.length-1;i>=0;i--){
-    const e=enemies[i];
-    for(let j=shots.length-1;j>=0;j--){
-      const s=shots[j];
-      if(Math.hypot(e.x-s.x,e.y-s.y) < e.r+4){
-        enemies.splice(i,1); shots.splice(j,1); score+=20; break;
-      }
+  /* bullet -> grunt */
+  for(const b of bullets){
+    for(const e of enemies){
+      if(e.kind!=='grunt') continue;
+      if(circleHit(b.x,b.y,b.r, e.x,e.y,e.r)){ b.dead=1; e.dead=1; score+=20; break; }
     }
   }
 
-  // Boss spawn
-  if(!wolfActive && score>=WOLF_SPAWN_SCORE){
-    wolfActive=true; bossBar.style.display='block';
-    wolf.y=-140; wolf.entered=false; wolf.hp=25;
+  /* boss spawn threshold */
+  if(!wolfActive && score >= WOLF_SPAWN_SCORE){
+    wolfActive = true; bossBar.style.display='block';
+    wolf.y = -140; wolf.entered=false; wolf.hp=25;
   }
 
-  // Boss davranış
+  /* boss behavior */
   if(wolfActive){
-    if(!wolf.entered){
-      wolf.y += 1.1;
-      if(wolf.y>=120) wolf.entered=true;
-    }else{
+    if(!wolf.entered){ wolf.y += 1.1; if(wolf.y>=120) wolf.entered=true; }
+    else{
       wolf.x += wolf.vx*wolf.dir;
       if(wolf.x<120 || wolf.x>W-120) wolf.dir*=-1;
 
-      if(wolf.redCD>0) wolf.redCD--; else{ spawnWolfReds(); wolf.redCD=72; }
-      if(wolf.eyeCD>0) wolf.eyeCD--; else{ spawnWolfBeam(); wolf.eyeCD=480; }
-    }
-
-    // boss’a isabet
-    for(let j=shots.length-1;j>=0;j--){
-      const s=shots[j];
-      if(s.x> wolf.x-90 && s.x< wolf.x+90 && s.y> wolf.y-90 && s.y< wolf.y+90){
-        shots.splice(j,1); wolf.hp--; if(wolf.hp<=0){ wolfActive=false; bossBar.style.display='none'; score+=300; }
+      if(wolf.redCD>0) wolf.redCD--; else{
+        // yan toplar: kırmızı mermiler
+        enemyBullets.push({x:wolf.x-86,y:wolf.y+86,vy:2.8,r:6,col:'#f33'});
+        enemyBullets.push({x:wolf.x+86,y:wolf.y+86,vy:2.8,r:6,col:'#f33'});
+        wolf.redCD=72;
+      }
+      if(wolf.eyeCD>0) wolf.eyeCD--; else{
+        wolf.eyeTime=120; wolf.eyeCD=480; // ~2 sn beam, 8 sn bekleme
       }
     }
 
-    // boss lazeri (görsel ve temas)
+    // oyuncu mermisi → boss
+    for(const b of bullets){
+      if(b.dead) continue;
+      if(b.x > wolf.x-90 && b.x < wolf.x+90 && b.y > wolf.y-90 && b.y < wolf.y+90){
+        b.dead=1; wolf.hp--;
+        if(wolf.hp<=0){
+          wolfActive=false; bossBar.style.display='none'; score+=300;
+          running=false; // loop’u durdur
+          setTimeout(()=>{ window.location.href = NEXT_LEVEL_URL; }, 1200);
+        }
+      }
+    }
+
+    // boss beam teması: itme (ölüm yok)
     if(wolf.eyeTime>0){
       wolf.eyeTime--;
-      // isabet kontrol (ortadaki kolon)
-      if(Math.abs(player.x - wolf.x) < 20 && player.y < H && player.y > wolf.y){
-        // oyuncuyu geriye it (ölüm yok; sade itme)
-        player.y += 3;
-      }
+      if(Math.abs(player.x-wolf.x)<16 && player.y<wolf.y+H) player.y += 3;
     }
 
     // boss HP bar
-    const pct = Math.max(0,wolf.hp)/25;
-    bossFill.style.width = (pct*100)+'%';
+    bossFill.style.width = (Math.max(0,wolf.hp)/25*100).toFixed(1)+'%';
   }
 }
 
-// ---- Draw ----
+/* ========= DRAW ========= */
 function draw(){
   ctx.clearRect(0,0,W,H);
+  // basit arka plan
+  ctx.fillStyle='#081b23'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#0b2a36';
+  for(let i=0;i<10;i++){ ctx.fillRect((i*47 + (Date.now()/60+i)%47)%W, (i*73)%H, 2, 9); }
 
-  // yıldızlı basit arka plan
-  ctx.fillStyle='#083c2f'; ctx.fillRect(0,0,W,H);
-  ctx.fillStyle='#0b5442';
-  for(let i=0;i<10;i++){ ctx.fillRect((i*47+ (Date.now()/60+i)%47)%W, i*72%H, 2, 10); }
-
-  // player
-  ctx.fillStyle='#8ff'; // basit gemi (üçgen)
+  // player (üçgen gemi)
+  ctx.fillStyle='#8ff';
   ctx.beginPath();
-  ctx.moveTo(player.x, player.y-18);
-  ctx.lineTo(player.x-12, player.y+14);
-  ctx.lineTo(player.x+12, player.y+14);
+  ctx.moveTo(player.x, player.y-16);
+  ctx.lineTo(player.x-10, player.y+12);
+  ctx.lineTo(player.x+10, player.y+12);
   ctx.closePath(); ctx.fill();
 
-  // shots
-  ctx.fillStyle='#ffda3a';
-  shots.forEach(s=>{ ctx.beginPath(); ctx.arc(s.x,s.y,4,0,Math.PI*2); ctx.fill(); });
+  // bullets
+  ctx.fillStyle='#ffd54a';
+  bullets.forEach(b=>{ ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.fill(); });
 
-  // enemies
-  ctx.fillStyle='#e0ffe0';
-  enemies.forEach(e=>{ ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,Math.PI*2); ctx.fill(); });
+  // enemies (grunt)
+  ctx.fillStyle='#cde';
+  enemies.forEach(e=>{ if(e.kind==='grunt'){ ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,Math.PI*2); ctx.fill(); } });
 
   // enemy bullets
-  eBullets.forEach(b=>{
-    ctx.fillStyle=b.col||'#ff0';
-    ctx.beginPath(); ctx.arc(b.x,b.y,b.r||3,0,Math.PI*2); ctx.fill();
-  });
+  enemyBullets.forEach(b=>{ ctx.fillStyle=b.col||'#ff0'; ctx.beginPath(); ctx.arc(b.x,b.y,b.r||4,0,Math.PI*2); ctx.fill(); });
 
   // boss
   if(wolfActive && wolfImg){
     ctx.drawImage(wolfImg, wolf.x-100, wolf.y-100, 200, 200);
-    // göz lazeri
     if(wolf.eyeTime>0){
-      ctx.globalAlpha = .8;
-      ctx.fillStyle='#ff2a2a';
-      ctx.fillRect(wolf.x-4, wolf.y+10, 8, H - (wolf.y+10));
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha=.85; ctx.fillStyle='#2ac0ff';
+      ctx.fillRect(wolf.x-4, wolf.y+10, 8, H-(wolf.y+10)); ctx.globalAlpha=1;
     }
   }
-
-  requestAnimationFrame(draw);
 }
 
-// ---- Loop ----
-function tick(){ update(); setTimeout(tick, 1000/60); }
-tick(); draw();
+/* ========= LOOP ========= */
+function loop(t){
+  if(!running) return;
+  const dt = Math.min(t-(lastT||t), 32); lastT=t;
+  update(dt); draw(); requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+
+<!-- ========= FIREBASE (start’ta sayaç + ülke, oyuncuya görünmez) ========= -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, runTransaction, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const INSTANCE_URL="https://bpc-space-default-rtdb.europe-west1.firebasedatabase.app/";
+const firebaseConfig={
+  apiKey:"AIzaSyAm65sARsGDTVkqe6MXcb8OObug17SEFpY",
+  authDomain:"bpc-space.firebaseapp.com",
+  databaseURL:INSTANCE_URL,
+  projectId:"bpc-space",
+  storageBucket:"bpc-space.firebasestorage.app",
+  messagingSenderId:"954298087029",
+  appId:"1:954298087029:web:3583f27fdd97d932de6a3c"
+};
+const app=initializeApp(firebaseConfig);
+const db =getDatabase(app,INSTANCE_URL);
+
+// Start'ta +1
+window.BPC_incrementOnStart=()=>runTransaction(ref(db,"stats/totalStarts"),v=>(v||0)+1);
+
+// Start'ta ülke kaydı (sadece DB)
+window.BPC_logCountryOnStart=async()=>{
+  try{
+    const r=await fetch("https://ipapi.co/json/"); const j=await r.json();
+    const country=j?.country_name||"Unknown"; const ts=Date.now();
+    await set(ref(db,"stats/lastCountry"),{country,ts});
+    await runTransaction(ref(db,`stats/locations/${country}`),v=>(v||0)+1);
+  }catch(e){ /* sessiz geç */ }
+};
 </script>
 </body>
 </html>
