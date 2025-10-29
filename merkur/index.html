@@ -9,9 +9,9 @@
   html,body{margin:0;background:#000;color:var(--ink);font:600 16px system-ui,Segoe UI,Roboto,Arial}
   #wrap{display:flex;align-items:center;justify-content:center;min-height:100vh}
   canvas{background:var(--bg);touch-action:none;border-radius:12px;box-shadow:0 10px 40px #000a;display:block}
-  #hud{position:fixed;inset:0 0 auto 0;height:44px;display:flex;gap:10px;align-items:center;justify-content:center}
+  #hud{position:fixed;left:0;right:0;top:0;height:44px;display:flex;gap:10px;align-items:center;justify-content:center}
   #scoreTxt{font-weight:900}
-  #bossbar{position:fixed;left:10px;right:10px;top:42px;height:12px;background:#15323b;border-radius:10px;display:none}
+  #bossbar{position:fixed;left:10px;right:10px;top:46px;height:12px;background:#15323b;border-radius:10px;display:none}
   #bossfill{height:100%;width:0;background:#19d34b;border-radius:10px}
   #start,#over{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55)}
   .panel{background:#071e25;border:1px solid #0d323d;padding:22px 24px;border-radius:16px;box-shadow:0 20px 60px #0008;text-align:center}
@@ -41,7 +41,7 @@
 
   <div id="wrap"><canvas id="game" width="420" height="740"></canvas></div>
 
-  <!-- Senin fribase.js'in varsa otomatik çağırır; yoksa sessiz geçer -->
+  <!-- (Opsiyonel) Firebase sayaç + ülke: varsa Js/fribase.js yüklenir -->
   <script>
     (function(){
       const s=document.createElement('script'); s.src='Js/fribase.js';
@@ -92,9 +92,9 @@ const GFX={};
 const player={x:W/2,y:H-80,w:28,h:34,fireCD:0};
 const bullets=[], enemies=[], ebullets=[];
 
-const WOLF_SPAWN_SCORE=500;
+const WOLF_SPAWN_SCORE=500;           // <- eşiğimiz
 const NEXT_LEVEL_URL='merkur/index.html';
-let wolfActive=false;
+let wolfActive=false;                 // <- boss kapısı
 const wolf={x:W/2,y:-160,w:200,h:200,vx:1.2,vy:1.1,dir:1,hpMax:25,hp:25,entered:false,fireT:26};
 
 /* =========================
@@ -153,7 +153,7 @@ function loop(t){
   if(keys['ArrowRight']) player.x+=3.2;
   player.x=Math.max(16,Math.min(W-16,player.x));
 
-  // Oyuncu ateş
+  // Oyuncu ateş (auto)
   if(player.fireCD>0) player.fireCD-=dt;
   if(player.fireCD<=0){ bullets.push({x:player.x,y:player.y-20,vy:-4.4,r:3}); player.fireCD=150; }
 
@@ -161,10 +161,10 @@ function loop(t){
   for(let i=bullets.length-1;i>=0;i--){ const b=bullets[i]; b.y+=b.vy; if(b.y<-10){bullets.splice(i,1);} }
   ctx.fillStyle='#ffd54a'; bullets.forEach(b=>{ ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,6.283); ctx.fill(); });
 
-  // Spawn / skor → boss
+  // Spawn / skor → boss (giriş KAPISI)
   if(!wolfActive && Math.random()<0.035) spawnEnemy();
-  if(!wolfActive && score>=WOLF_SPAWN_SCORE){
-    wolfActive=true; bossbar.style.display='block'; Object.assign(wolf,{y:-160,entered:false,hp:25});
+  if(!wolfActive && Number(score) >= Number(WOLF_SPAWN_SCORE)){
+    wolfActive=true; bossbar.style.display='block'; Object.assign(wolf,{y:-160,entered:false,hp:25,fireT:26});
   }
 
   // Düşmanlar
@@ -184,7 +184,7 @@ function loop(t){
     }
   }
 
-  // Boss davranış (sadece aktifken)
+  // Boss davranış (SADECE aktifken)
   if(wolfActive){
     if(!wolf.entered){ wolf.y += wolf.vy; if(wolf.y>=110){ wolf.entered=true; } }
     else{
@@ -222,7 +222,7 @@ function loop(t){
   }
   ebullets.forEach(b=>{ ctx.fillStyle=b.col||'#ff3b3b'; ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,6.283); ctx.fill(); });
 
-  // Oyuncu çiz
+  // Oyuncu
   ctx.fillStyle='#8be9fd';
   ctx.beginPath(); ctx.moveTo(player.x,player.y-18); ctx.lineTo(player.x-14,player.y+18); ctx.lineTo(player.x+14,player.y+18); ctx.closePath(); ctx.fill();
 
