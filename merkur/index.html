@@ -1,376 +1,292 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8" />
+<meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
-<title>Babypeacock – Mars (Level 2)</title>
+<title>BPC – Mars (Level 2)</title>
 <style>
   :root{
-    --hud-h:56px;
-    --bg:#0b0f14;
-    --mars:#6b2f1c;           /* taban */
-    --mars2:#7a3a22;          /* yumuşak ton */
-    --text:#cfe6ff;
-    --brand:#5ec8ff;
+    --hud-h: 54px;
+    --brand: #9ec3ff;
+    --txt: #dfe8ff;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;height:100%;background:#000;color:var(--text);font-family:system-ui,Segoe UI,Roboto,Arial}
+  html,body{margin:0;height:100%;background:#000;color:var(--txt);font-family:system-ui,Segoe UI,Roboto,Arial}
   header{
     height:var(--hud-h);
-    display:flex;align-items:center;gap:14px;
-    padding:10px 12px;background:rgba(0,0,0,.88);
-    position:sticky;top:0;z-index:5;
+    display:flex;align-items:center;gap:10px;
+    padding: max(8px, env(safe-area-inset-top)) 12px 8px;
+    background:rgba(0,0,0,.9);position:sticky;top:0;z-index:5
   }
-  header .brand{font-weight:800;font-size:26px;letter-spacing:.5px;color:#8db7ff}
-  header .label{opacity:.85}
-  header .score{font-weight:800;min-width:80px;text-align:left}
-  header .hearts{margin-left:auto;font-size:26px;letter-spacing:2px}
-  /* Canvas, ekrana gerçek pikselde oturur (scale yok) */
-  #game{display:block;width:100vw;height:calc(100svh - var(--hud-h));margin:0 auto;touch-action:none;background:#000}
-  /* Overlaylar */
-  .overlay{
-    position:fixed;inset:var(--hud-h) 0 0 0;display:grid;place-items:center;
-    background:linear-gradient(180deg,rgba(0,0,0,.75),rgba(0,0,0,.55));z-index:10;
-  }
-  .card{
-    background:#0e1116;border:1px solid #1f2630;border-radius:16px;padding:22px 20px;min-width:260px;
-    box-shadow:0 10px 30px rgba(0,0,0,.35);text-align:center
-  }
-  .card h1{margin:.2em 0 .6em;font-size:22px}
-  .btn{
-    background:#14b8a6;color:#041016;border:none;border-radius:12px;padding:12px 18px;
-    font-weight:800;font-size:18px;cursor:pointer
-  }
-  .hint{opacity:.8;margin-top:10px;font-size:13px}
-  /* HUD küçük emojiler */
-  .hud-emoji{filter:drop-shadow(0 0 6px rgba(94,200,255,.35))}
+  .brand{font-weight:800; color:#7fb0ff; font-size:clamp(16px, 5.2vw, 26px); letter-spacing:.3px}
+  .label{opacity:.85; font-size:clamp(12px, 3.8vw, 16px)}
+  .score{font-weight:800; min-width:48px; text-align:left; font-size:clamp(14px, 4.2vw, 20px)}
+  .hearts{margin-left:auto; font-size:clamp(18px, 5.2vw, 26px); letter-spacing:2px}
+  #game{display:block; width:100vw; height:calc(100svh - var(--hud-h)); touch-action:none; background:#000}
+  .overlay{position:fixed; inset:var(--hud-h) 0 0 0; display:grid; place-items:center; background:linear-gradient(180deg,rgba(0,0,0,.75),rgba(0,0,0,.5)); z-index:10}
+  .card{background:#0f131a; border:1px solid #1e2732; border-radius:16px; padding:20px; width:min(92vw,380px); text-align:center}
+  .card h1{margin:.2em 0 .6em; font-size:clamp(18px, 5vw, 24px)}
+  .btn{background:#14b8a6; color:#041016; border:none; border-radius:12px; padding:12px 18px; font-weight:800; font-size:clamp(16px,4.6vw,18px)}
+  .hint{opacity:.8; margin-top:10px; font-size:12px}
 </style>
 </head>
 <body>
   <header>
-    <div class="brand">Babypeacock <span class="hud-emoji">🦚</span></div>
+    <div class="brand">Babypeacock 🦚</div>
     <div class="label">Mars (Level 2)</div>
-    <div class="label">SCORE:</div><div id="score" class="score">0</div>
-    <div id="gemTimer" class="label">💎 <span id="gemSec">0</span>s</div>
+    <div class="label">Score:</div><div id="score" class="score">0</div>
+    <div class="label">💎 <span id="gemSec">0</span>s</div>
     <div id="hearts" class="hearts">❤️❤️❤️</div>
   </header>
 
   <canvas id="game"></canvas>
 
-  <div id="startOv" class="overlay">
+  <div id="ovStart" class="overlay">
     <div class="card">
       <h1>Mars Görevi</h1>
-      <p>Green(2), Yellow(3), White(3), Red(5). Çarpınca can gider.<br/>💎 = 15sn üçlü ateş.</p>
-      <button id="startBtn" class="btn">START</button>
-      <div class="hint">Sürükle veya parmakla hareket — atış otomatik</div>
+      <p style="opacity:.9">Green 2p · Yellow 3p · White 3p · Red 5p<br/>💎 = 15sn üçlü ateş. Çarpınca can gider.</p>
+      <button id="btnStart" class="btn">START</button>
+      <div class="hint">Parmağınla sürükle — atış otomatik</div>
     </div>
   </div>
 
-  <div id="gameOverOv" class="overlay" style="display:none">
+  <div id="ovOver" class="overlay" style="display:none">
     <div class="card">
       <h1>GAME OVER</h1>
       <div style="margin:8px 0 16px">Skor: <b id="finalScore">0</b></div>
-      <button id="retryBtn" class="btn">RETRY</button>
+      <button id="btnRetry" class="btn">RETRY</button>
     </div>
   </div>
 
 <script>
-/* ------------------ KURULUM ------------------ */
-const cvs = document.getElementById('game');
-const ctx = cvs.getContext('2d');
-let W=0, H=0, DPR=1;
-
-function resizeCanvas(){
-  DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-  const w = window.innerWidth;
-  const h = Math.max(480, window.innerHeight - document.querySelector('header').offsetHeight);
-  cvs.style.width = w+'px';
-  cvs.style.height = h+'px';
-  cvs.width  = Math.floor(w * DPR);
-  cvs.height = Math.floor(h * DPR);
+const cvs=document.getElementById('game'), ctx=cvs.getContext('2d');
+let W=0,H=0,DPR=1;
+function resize(){
+  DPR=Math.max(1, Math.min(2, devicePixelRatio||1));
+  const w=innerWidth, h=Math.max(460, innerHeight - document.querySelector('header').offsetHeight);
+  cvs.style.width=w+'px'; cvs.style.height=h+'px';
+  cvs.width=Math.floor(w*DPR); cvs.height=Math.floor(h*DPR);
   ctx.setTransform(DPR,0,0,DPR,0,0);
-  W = w; H = h;
-  if (player) { player.y = Math.min(player.y, H-90); }
+  W=w; H=h;
+  if(player) player.y=Math.min(player.y, H-72);
 }
-addEventListener('resize', resizeCanvas);
+addEventListener('resize', resize);
 
-/* ------------------ VARLIKLAR ------------------ */
-function loadImg(src){ const i=new Image(); i.src=src; return i; }
-const ASSETS = {
-  player: loadImg('../img/player/bpc_mini.png'),
-  green:  loadImg('../mars_enemy_green.png'),
-  yellow: loadImg('../mars_enemy_yellow.png'),
-  white:  loadImg('../mars_enemy_white.png'),
-  red:    loadImg('../bpc_enemy_red.png') // repo'da var
+/* ---- assets ---- */
+function img(s){const i=new Image(); i.src=s; return i;}
+const ASSETS={
+  player: img('../img/player/bpc_mini.png'),
+  green:  img('../mars_enemy_green.png'),
+  yellow: img('../mars_enemy_yellow.png'),
+  white:  img('../mars_enemy_white.png'),
+  red:    img('../bpc_enemy_red.png')
 };
 
-/* ------------------ OYUN DURUMU ------------------ */
-let running=false, started=false;
-let score=0, lives=3;
-let bullets=[], enemies=[], eBullets=[], particles=[];
-let spawnTimer=0, levelUp=0, t=0;
-let tripleUntil=0; // ms
-const scoreEl = document.getElementById('score');
-const heartsEl= document.getElementById('hearts');
-const gemSecEl= document.getElementById('gemSec');
+/* ---- state ---- */
+let running=false, score=0, lives=3, t=0;
+let bullets=[], enemies=[], eBullets=[], parts=[], drops=[];
+let spawn=0, tripleUntil=0;
 
-const player = {
-  x: 0, y: 0, w: 44, h: 44, speed: 360,
-  fireCd: 0, fireRate: 110, // ms
-};
+const scoreEl=document.getElementById('score');
+const heartsEl=document.getElementById('hearts');
+const gemSecEl=document.getElementById('gemSec');
 
-function resetGame(){
-  score=0; lives=3; bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0;
-  spawnTimer=0; levelUp=0; t=performance.now(); tripleUntil=0;
-  scoreEl.textContent='0'; heartsEl.textContent='❤️'.repeat(lives);
-  player.x = W*0.5; player.y = H-90;
+const player={x:0,y:0,w:40,h:40, fireCd:0, fireRate:120, sp:Math.min(420, innerWidth*0.9)};
+
+function reset(){
+  bullets.length=enemies.length=eBullets.length=parts.length=drops.length=0;
+  score=0; lives=3; spawn=0; tripleUntil=0; t=performance.now();
+  scoreEl.textContent=0; heartsEl.textContent='❤️❤️❤️';
+  // ölçekli boyutlar
+  const base = Math.max(36, Math.min(54, W*0.11));
+  player.w=player.h=base; player.x=W*0.5; player.y=H-80;
 }
 
-/* ------------------ GİRİŞ ------------------ */
-let pointer=null;
-cvs.addEventListener('pointerdown', (e)=>{ pointer={id:e.pointerId, x:e.clientX, y:e.clientY}; movePlayer(e); });
-cvs.addEventListener('pointermove', (e)=>{ if(pointer && pointer.id===e.pointerId) movePlayer(e); });
-addEventListener('pointerup',   (e)=>{ if(pointer && pointer.id===e.pointerId) pointer=null;});
-function movePlayer(e){
-  const rect = cvs.getBoundingClientRect();
-  const x = (e.clientX - rect.left);
-  const y = (e.clientY - rect.top);
-  player.x = Math.max(24, Math.min(W-24, x));
-  player.y = Math.max(24, Math.min(H-24, y));
+/* ---- input ---- */
+let ptr=null;
+cvs.addEventListener('pointerdown',e=>{ ptr={id:e.pointerId}; move(e);});
+cvs.addEventListener('pointermove',e=>{ if(ptr&&ptr.id===e.pointerId) move(e);});
+addEventListener('pointerup',e=>{ if(ptr&&ptr.id===e.pointerId) ptr=null;});
+function move(e){
+  const r=cvs.getBoundingClientRect(); const x=e.clientX-r.left, y=e.clientY-r.top;
+  player.x=Math.max(player.w*0.5, Math.min(W-player.w*0.5, x));
+  player.y=Math.max(player.h*0.5, Math.min(H-player.h*0.5, y));
 }
 
-/* ------------------ YARDIMCI ------------------ */
-function rand(a,b){return Math.random()*(b-a)+a}
-function chance(p){return Math.random()<p}
-function clamp(v,a,b){return v<a?a:v>b?b:v}
-function addParticles(x,y,col,count=12){
-  for(let i=0;i<count;i++){
-    particles.push({x,y, vx:rand(-140,140), vy:rand(-220,40), r:rand(2,4), life:rand(300,600), c:col});
-  }
-}
+/* ---- utils ---- */
+const rand=(a,b)=>Math.random()*(b-a)+a;
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+function boom(x,y,c,n=14){for(let i=0;i<n;i++) parts.push({x,y,vx:rand(-140,140),vy:rand(-240,40),r:rand(2,4),life:rand(320,580),c});}
 
-/* ------------------ ARKA PLAN (Mars) ------------------ */
-let bgOffset=0;
-function drawMars(dt){
-  bgOffset += dt*40;
-  ctx.fillStyle='#2a160f';
-  ctx.fillRect(0,0,W,H);
-
-  // yumuşak degrade
-  const g = ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,'#5c2617');
-  g.addColorStop(1,'#7c3a24');
+/* ---- background Mars ---- */
+let bgOff=0;
+function mars(dt){
+  bgOff+=dt*40;
+  // degrade
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#5a2416'); g.addColorStop(1,'#7a3823');
   ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-
-  // ince kum benekleri
-  ctx.fillStyle='rgba(0,0,0,.25)';
-  for(let i=0;i<80;i++){
-    const x = (i*83.7 + (bgOffset*0.8))% (W+40) - 20;
-    const y = (i*57.3*1.1 + (bgOffset*1.1))% (H+40) - 20;
+  // kum benekleri (çizgi yok)
+  ctx.fillStyle='rgba(0,0,0,.22)';
+  for(let i=0;i<70;i++){
+    const x=(i*83.7+(bgOff*.8))%(W+30)-15;
+    const y=(i*57.3*1.1+(bgOff*1.1))%(H+30)-15;
     ctx.fillRect(x,y,2,2);
   }
-
-  // ufak dalgalar (çok ince)
-  ctx.strokeStyle='rgba(255,214,170,.12)';
-  ctx.lineWidth=2;
-  for(let i=0;i<4;i++){
-    const y = ((i*H/4) + (H - (bgOffset%H)) )%H;
-    ctx.beginPath();
-    ctx.moveTo(0,y);
-    for(let x=0;x<=W;x+=24){
-      const yy = y + Math.sin((x+bgOffset*0.2)*0.02)*3;
-      ctx.lineTo(x,yy);
-    }
-    ctx.stroke();
-  }
 }
 
-/* ------------------ DÜŞMAN ------------------ */
-const ENEMY = {
-  green:{ img:()=>ASSETS.green,  hp:1,  spMin:60, spMax:120, fire:false, points:2,  },
-  yellow:{img:()=>ASSETS.yellow, hp:1,  spMin:90, spMax:160, fire:true,  fireRate:900, bullet:'#f8d34b',  points:3 },
-  white:{ img:()=>ASSETS.white,  hp:2,  spMin:80, spMax:140, fire:true,  fireRate:950, dual:true, bullet:'#f1f1f1', points:3 },
-  red:{   img:()=>ASSETS.red,    hp:3,  spMin:70, spMax:120, fire:true,  fireRate:750, bullet:'#ff3b3b',  points:5 },
+/* ---- enemies ---- */
+const SIZES=()=>({
+  ew: Math.max(34, Math.min(56, W*0.12)),
+  eh: Math.max(34, Math.min(56, W*0.12)),
+});
+const ENEMY={
+  green:{hp:1, sp:[70,120], fire:false, pts:2},
+  yellow:{hp:1, sp:[90,160], fire:true,  rate:950, bullet:'#facc15', dual:false, pts:3},
+  white:{hp:2, sp:[80,140], fire:true,  rate:950, bullet:'#f1f1f1', dual:true,  pts:3},
+  red:{  hp:3, sp:[80,130], fire:true,  rate:750, bullet:'#ff3b3b', dual:false, pts:5},
 };
+const IMG={green:ASSETS.green,yellow:ASSETS.yellow,white:ASSETS.white,red:ASSETS.red};
 function spawnEnemy(){
-  // zorluk, skorla artar
-  const s = score;
-  let pool = ['green','green','yellow','green','white'];
-  if (s>120) pool.push('red');
-  if (s>280) pool.push('red','yellow','white');
-
-  const type = pool[Math.floor(Math.random()*pool.length)];
-  const spec = ENEMY[type];
-  enemies.push({
-    type, hp: spec.hp, img:spec.img(),
-    x: rand(28, W-28), y: -60,
-    vy: rand(spec.spMin, spec.spMax),
-    fireCd: 0,
-  });
+  const pool=['green','green','yellow','white']; if(score>120) pool.push('red'); if(score>260) pool.push('red');
+  const t=pool[Math.floor(Math.random()*pool.length)];
+  const sp=ENEMY[t].sp;
+  enemies.push({t, x:rand(24,W-24), y:-50, vy:rand(sp[0],sp[1]), hp:ENEMY[t].hp, cd:0});
 }
 
-/* ------------------ ÇATIŞMA ------------------ */
-function collRect(a,b){ return Math.abs(a.x-b.x) < (a.w+b.w)*0.5 && Math.abs(a.y-b.y) < (a.h+b.h)*0.5; }
-
-/* ------------------ OYUN DÖNGÜSÜ ------------------ */
+/* ---- main loop ---- */
 function loop(now){
   if(!running) return;
-  const dt = (now - t)/1000; t = now;
+  const dt=(now-t)/1000; t=now;
 
-  drawMars(dt);
+  mars(dt);
 
-  // Oyuncu otomatik atış
+  // player fire
   player.fireCd -= dt*1000;
-  const fireNow = player.fireCd<=0;
-  if (fireNow){
-    player.fireCd = player.fireRate;
-    const triple = now < tripleUntil;
+  if(player.fireCd<=0){
+    player.fireCd=player.fireRate;
+    const triple = now<tripleUntil;
     const offs = triple ? [-10,0,10] : [0];
-    for(const ox of offs){
-      bullets.push({x:player.x+ox, y:player.y-22, vy:-520, r:3, c:'#6cd3ff'});
-    }
+    offs.forEach(ox=> bullets.push({x:player.x+ox, y:player.y-player.h*0.5-6, vy:-520, c:'#7fd8ff'}));
   }
-  // Oyuncu çiz
-  const pImg = ASSETS.player; const pw=52, ph=52;
-  player.w=pw; player.h=ph;
-  ctx.drawImage(pImg, player.x-pw/2, player.y-ph/2, pw, ph);
+  // draw player
+  ctx.drawImage(ASSETS.player, player.x-player.w/2, player.y-player.h/2, player.w, player.h);
 
-  // Oyuncu mermileri
+  // bullets
   for(let i=bullets.length-1;i>=0;i--){
-    const b=bullets[i]; b.y += b.vy*dt;
-    ctx.fillStyle=b.c; ctx.fillRect(b.x-2,b.y-8,4,12);
-    if (b.y<-20) bullets.splice(i,1);
+    const b=bullets[i]; b.y+=b.vy*dt;
+    ctx.fillStyle=b.c; ctx.fillRect(b.x-2,b.y-10,4,12);
+    if(b.y<-20) bullets.splice(i,1);
   }
 
-  // Düşman üretimi
-  spawnTimer -= dt;
-  if(spawnTimer<=0){
+  // enemy spawn (skora göre hız)
+  spawn-=dt;
+  if(spawn<=0){
     spawnEnemy();
-    const base = 0.9, minGap = 0.28;       // skor arttıkça hızlan
-    const factor = clamp(1 - score/800, minGap, 1);
-    spawnTimer = base*factor;
+    const base=0.95, minGap=0.28;
+    spawn = base * clamp(1 - score/900, minGap, 1);
   }
 
-  // Düşmanlar
+  // enemies
+  const {ew,eh}=SIZES();
   for(let i=enemies.length-1;i>=0;i--){
-    const e=enemies[i]; const spec=ENEMY[e.type];
+    const e=enemies[i], spec=ENEMY[e.t];
     e.y += e.vy*dt;
 
-    // Ateş
-    if (spec.fire){
-      e.fireCd -= dt*1000;
-      if (e.fireCd<=0 && e.y>40){
-        e.fireCd = spec.fireRate * clamp(1 - score/900, .55, 1);
-        if (spec.dual){
-          eBullets.push({x:e.x-18,y:e.y+18,vy:240,c:spec.bullet});
-          eBullets.push({x:e.x+18,y:e.y+18,vy:240,c:spec.bullet});
+    // fire
+    if(spec.fire){
+      e.cd -= dt*1000;
+      if(e.cd<=0 && e.y>30){
+        e.cd = spec.rate * clamp(1 - score/900, .55, 1);
+        if(spec.dual){
+          eBullets.push({x:e.x-14,y:e.y+eh*0.35,vy:240,c:spec.bullet});
+          eBullets.push({x:e.x+14,y:e.y+eh*0.35,vy:240,c:spec.bullet});
         }else{
-          eBullets.push({x:e.x,y:e.y+18,vy: (e.type==='red'? 320:260), c:spec.bullet});
+          eBullets.push({x:e.x,y:e.y+eh*0.35,vy:(e.t==='red'?320:260),c:spec.bullet});
         }
       }
     }
 
-    // Çiz
-    const w=56, h=56; e.w=w; e.h=h;
-    ctx.drawImage(e.img, e.x-w/2, e.y-h/2, w, h);
+    ctx.drawImage(IMG[e.t], e.x-ew/2, e.y-eh/2, ew, eh);
 
-    // Oyuncu çarpışma
-    if (collRect({x:e.x,y:e.y,w,h},{x:player.x,y:player.y,w:pw,h:ph})){
-      addParticles(e.x,e.y, '#ff6b6b', 18);
+    // collide with player
+    if (Math.abs(e.x-player.x)<(ew+player.w)*0.42 && Math.abs(e.y-player.y)<(eh+player.h)*0.42){
       enemies.splice(i,1);
-      hitPlayer();
+      boom(e.x,e.y,'#ff6b6b',18);
+      hit();
       continue;
     }
-    // Ekran dışı
-    if (e.y > H+60) { enemies.splice(i,1); continue; }
+    // off-screen
+    if(e.y>H+60){ enemies.splice(i,1); continue; }
 
-    // Mermi çarpışma
+    // bullet hits
     for(let j=bullets.length-1;j>=0;j--){
       const b=bullets[j];
-      if (Math.abs(b.x-e.x)<28 && Math.abs(b.y-e.y)<28){
-        bullets.splice(j,1);
-        e.hp--;
-        if (e.hp<=0){
-          score += spec.points; scoreEl.textContent=score;
-          const col = (e.type==='green')? '#86efac' : (e.type==='yellow')? '#facc15' : (e.type==='white')? '#e5e7eb' : '#ff6b6b';
-          addParticles(e.x,e.y,col, 20);
+      if (Math.abs(b.x-e.x)<ew*0.45 && Math.abs(b.y-e.y)<eh*0.45){
+        bullets.splice(j,1); e.hp--;
+        if(e.hp<=0){
+          const col=e.t==='green'?'#86efac':e.t==='yellow'?'#facc15':e.t==='white'?'#e5e7eb':'#ff6b6b';
+          boom(e.x,e.y,col,20);
           enemies.splice(i,1);
+          score += ENEMY[e.t].pts; scoreEl.textContent=score;
         }
         break;
       }
     }
   }
 
-  // Düşman mermileri
+  // enemy bullets
   for(let i=eBullets.length-1;i>=0;i--){
-    const b=eBullets[i]; b.y += b.vy*dt;
+    const b=eBullets[i]; b.y+=b.vy*dt;
     ctx.fillStyle=b.c; ctx.fillRect(b.x-2,b.y-6,4,10);
-    if (b.y>H+20) { eBullets.splice(i,1); continue; }
-    if (Math.abs(b.x-player.x)<18 && Math.abs(b.y-player.y)<18){
-      eBullets.splice(i,1);
-      hitPlayer(); continue;
+    if(b.y>H+20){ eBullets.splice(i,1); continue; }
+    if(Math.abs(b.x-player.x)<player.w*0.35 && Math.abs(b.y-player.y)<player.h*0.35){
+      eBullets.splice(i,1); hit();
     }
   }
 
-  // Partiküller
-  for(let i=particles.length-1;i>=0;i--){
-    const p=particles[i]; p.life -= dt*1000; if (p.life<=0){particles.splice(i,1); continue;}
-    p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 420*dt*0.25;
-    ctx.fillStyle=p.c; ctx.globalAlpha = Math.max(0, p.life/600);
-    ctx.fillRect(p.x-2,p.y-2,4,4); ctx.globalAlpha=1;
+  // particles
+  for(let i=parts.length-1;i>=0;i--){
+    const p=parts[i]; p.life-=dt*1000; if(p.life<=0){parts.splice(i,1); continue;}
+    p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=120*dt;
+    ctx.globalAlpha=Math.max(0,p.life/600); ctx.fillStyle=p.c; ctx.fillRect(p.x-2,p.y-2,4,4); ctx.globalAlpha=1;
   }
 
-  // Güçlendirme süresi göstergesi
-  const remain = Math.max(0, Math.floor((tripleUntil - now)/1000));
-  gemSecEl.textContent = remain;
-
-  // Nadiren 💎 bırak
-  if (chance(0.0015 + Math.min(0.003, score/8000))){
-    drops.push({x:rand(30,W-30), y:-20, vy:110});
+  // diamonds (en fazla 2 ekranda)
+  if(drops.length<2 && Math.random()< (0.0012 + Math.min(0.002, score/10000))){
+    drops.push({x:rand(24,W-24), y:-20, vy:110});
   }
-  // Drop'lar
   for(let i=drops.length-1;i>=0;i--){
-    const d=drops[i]; d.y += d.vy*dt;
-    ctx.font='20px system-ui'; ctx.fillStyle='#9ee5ff'; ctx.fillText('💎', d.x-10, d.y+6);
-    if (d.y>H+30){ drops.splice(i,1); continue; }
-    if (Math.abs(d.x-player.x)<18 && Math.abs(d.y-player.y)<18){
-      tripleUntil = performance.now() + 15000;
-      drops.splice(i,1);
+    const d=drops[i]; d.y+=d.vy*dt;
+    ctx.font='22px system-ui'; ctx.fillStyle='#9ee5ff'; ctx.fillText('💎', d.x-10, d.y+6);
+    if(d.y>H+30){ drops.splice(i,1); continue; }
+    if(Math.abs(d.x-player.x)<18 && Math.abs(d.y-player.y)<18){
+      drops.splice(i,1); tripleUntil=performance.now()+15000;
     }
   }
 
+  // gem timer
+  gemSecEl.textContent=Math.max(0, Math.floor((tripleUntil-now)/1000));
+
   requestAnimationFrame(loop);
 }
 
-function hitPlayer(){
+function hit(){
   lives--; heartsEl.textContent='❤️'.repeat(Math.max(0,lives));
-  addParticles(player.x, player.y, '#ff6961', 26);
-  if (lives<=0){ gameOver(); }
+  boom(player.x, player.y, '#ff6961', 22);
+  if(lives<=0){ running=false; document.getElementById('finalScore').textContent=score; document.getElementById('ovOver').style.display='grid'; }
 }
 
-/* ------------------ Drop nesneleri ------------------ */
-const drops=[];
-
-/* ------------------ BAŞLAT / BİTİR ------------------ */
-function startGame(){
-  document.getElementById('startOv').style.display='none';
-  document.getElementById('gameOverOv').style.display='none';
-  started=true; running=true;
-  resizeCanvas(); resetGame(); t=performance.now();
-  requestAnimationFrame(loop);
+/* ---- start/over ---- */
+function start(){
+  document.getElementById('ovStart').style.display='none';
+  document.getElementById('ovOver').style.display='none';
+  resize(); reset(); running=true; requestAnimationFrame(loop);
 }
-function gameOver(){
-  running=false;
-  document.getElementById('finalScore').textContent=score;
-  document.getElementById('gameOverOv').style.display='grid';
-}
+document.getElementById('btnStart').onclick=start;
+document.getElementById('btnRetry').onclick=start;
 
-/* ------------------ OLAYLAR ------------------ */
-document.getElementById('startBtn').onclick = startGame;
-document.getElementById('retryBtn').onclick = startGame;
-
-/* İlk kurulum */
-resizeCanvas();
+resize();
 </script>
 </body>
 </html>
