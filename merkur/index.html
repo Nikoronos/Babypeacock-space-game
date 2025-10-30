@@ -43,11 +43,11 @@
 </div>
 
 <script>
+/* ===== temel ===== */
 const cvs = document.getElementById('cv');
-const ctx = cvs.getContext('2d',{alpha:false}); // daha performanslı
+const ctx = cvs.getContext('2d',{alpha:false});
 ctx.imageSmoothingEnabled = false;
 const W=cvs.width,H=cvs.height;
-
 const uiScore=document.getElementById('score');
 const uiHearts=document.getElementById('hearts');
 const over=document.getElementById('over');
@@ -56,21 +56,16 @@ document.getElementById('retryBtn').onclick=()=>location.reload();
 
 let running=true,lastT=0,score=0;
 
-// Sprites
-const imgPlayer=new Image(); imgPlayer.src='img/player/bpc_mini.png';
-const imgG=new Image(); imgG.src='mars_enemy_green.png';
-const imgY=new Image(); imgY.src='mars_enemy_yellow.png';
-const imgW=new Image(); imgW.src='mars_enemy_white.png';
-const imgBoss=new Image(); imgBoss.src='mars_enemy_bigger_green.png';
+/* ===== sprites (merkur/ altından yollar) ===== */
+const imgPlayer=new Image(); imgPlayer.src='../img/player/bpc_mini.png';
+const imgG=new Image(); imgG.src='../mars_enemy_green.png';
+const imgY=new Image(); imgY.src='../mars_enemy_yellow.png';
+const imgW=new Image(); imgW.src='../mars_enemy_white.png';
+const imgBoss=new Image(); imgBoss.src='../mars_enemy_bigger_green.png';
 
-// Player
-const player={x:W/2,y:H-80,w:56,h:56,s:3.1,fireCD:0,lives:3};
-let bullets=[],eBullets=[],enemies=[];
-
-// Boss
-let boss={active:false,x:W/2,y:110,w:140,h:140,hp:180,t:0,fireCD:0};
-
-// Input
+/* ===== player & state ===== */
+const player={x:W/2,y:H-78,w:60,h:60,s:3.1,fireCD:0,lives:3};
+let bullets=[],eBullets=[],enemies=[],parts=[];
 const keys={};
 addEventListener('keydown',e=>{keys[e.key]=true});
 addEventListener('keyup',e=>{keys[e.key]=false});
@@ -79,14 +74,12 @@ cvs.addEventListener('pointermove',e=>{
   const px=(e.clientX-r.left)*(cvs.width/r.width);
   player.x=Math.min(W-28,Math.max(28,px));
 });
-
-// Helpers
 const hit=(a,b)=>Math.abs(a.x-b.x)<(a.w+b.w)/2&&Math.abs(a.y-b.y)<(a.h+b.h)/2;
 const setScore=v=>uiScore.textContent='SCORE: '+(score=v);
 const setHearts=()=>uiHearts.textContent='❤️'.repeat(Math.max(0,player.lives));
 const endGame=txt=>{running=false;overText.textContent=txt;over.style.display='grid'};
 
-// Mars background (çizgisiz-kumlu; boss gelince dağlı)
+/* ===== mars zemini ===== */
 function drawMars(bossMode){
   ctx.fillStyle='#6b2f1c'; ctx.fillRect(0,0,W,H);
   ctx.fillStyle='#2a120c';
@@ -106,21 +99,7 @@ function drawMars(bossMode){
   }
 }
 
-// Spawn
-function spawnEnemy(){
-  if(boss.active) return;
-  if(Math.random()>0.035) return; // yoğunluk kontrollü
-  const lane=Math.floor(Math.random()*6)+1;
-  const x=(W/7)*lane;
-  const r=Math.random();
-  let type='g',img=imgG,w=48,h=48,vy=1.0,hp=1,fire=0;
-  if(r>0.7&&r<=0.9){type='y';img=imgY;w=52;h=52;vy=1.15;hp=1;fire=0.35}
-  else if(r>0.9){type='w';img=imgW;w=60;h=60;vy=1.05;hp=2;fire=0.55}
-  enemies.push({type,img,x,y:-40,w,h,vy,hp,fireCD:0});
-}
-
-// Particles (explosion)
-let parts=[];
+/* ===== patlama parçacıkları ===== */
 function explode(x,y,color='#58c04d',n=22){
   for(let i=0;i<n;i++) parts.push({x,y,vx:(Math.random()*2-1)*2.2,vy:(Math.random()*2-1)*2.2,life:420+Math.random()*300,color,size:2+Math.random()*2});
 }
@@ -132,14 +111,30 @@ function drawParts(){
   }
 }
 
-// Loop
+/* ===== spawn ===== */
+function spawnEnemy(){
+  if(boss.active) return;
+  if(Math.random()>0.035) return; // yoğunluk dengesi
+  const lane=Math.floor(Math.random()*6)+1;
+  const x=(W/7)*lane;
+  const r=Math.random();
+  let type='g',img=imgG,w=52,h=52,vy=1.05,hp=1,fire=0;
+  if(r>0.7&&r<=0.9){type='y';img=imgY;w=56;h=56;vy=1.2;hp=1;fire=0.35}
+  else if(r>0.9){type='w';img=imgW;w=64;h=64;vy=1.08;hp=2;fire=0.55}
+  enemies.push({type,img,x,y:-40,w,h,vy,hp,fireCD:0});
+}
+
+/* ===== boss ===== */
+let boss={active:false,x:W/2,y:110,w:140,h:140,hp:180,t:0,fireCD:0};
+
+/* ===== loop ===== */
 function loop(t){
   if(!running) return;
   const dt=Math.min(40,t-lastT); lastT=t;
 
   drawMars(boss.active);
 
-  // Player move
+  // hareket
   if(keys['ArrowLeft'])  player.x-=player.s;
   if(keys['ArrowRight']) player.x+=player.s;
   if(keys['ArrowUp'])    player.y-=player.s;
@@ -147,40 +142,43 @@ function loop(t){
   player.x=Math.max(28,Math.min(W-28,player.x));
   player.y=Math.max(64,Math.min(H-40,player.y));
 
-  // Fire
+  // ateş (otomatik)
   player.fireCD-=dt;
-  if(keys[' ']||keys['Space']||keys['Enter']||true){ // otomatik sık
-    if(player.fireCD<=0){
-      bullets.push({x:player.x,y:player.y-24,w:6,h:14,vy:-4.4,color:'#66d6ff'});
-      player.fireCD=140;
-    }
+  if(player.fireCD<=0){
+    bullets.push({x:player.x,y:player.y-24,w:6,h:14,vy:-4.4,color:'#66d6ff'});
+    player.fireCD=140;
   }
 
-  // Draw player
+  // oyuncu çiz
   if(imgPlayer.complete) ctx.drawImage(imgPlayer,player.x-player.w/2,player.y-player.h/2,player.w,player.h);
   else {ctx.fillStyle='#20b7d7';ctx.beginPath();ctx.moveTo(player.x,player.y-18);ctx.lineTo(player.x-14,player.y+18);ctx.lineTo(player.x+14,player.y+18);ctx.closePath();ctx.fill();}
 
-  // Spawns
+  // spawn
   spawnEnemy();
 
-  // Enemies update
+  // düşmanlar
   for(let i=enemies.length-1;i>=0;i--){
     const e=enemies[i]; e.y+=e.vy*(1+score/1200);
     e.fireCD-=dt;
+
     if(e.type==='w' && e.fireCD<=0){
+      // white: iki kanat altı beyaz lazer
       eBullets.push({x:e.x-e.w*0.35,y:e.y+e.h*0.2,w:6,h:14,vy:2.2,color:'#ffffff'});
       eBullets.push({x:e.x+e.w*0.35,y:e.y+e.h*0.2,w:6,h:14,vy:2.2,color:'#ffffff'});
       e.fireCD=800;
     }
     if(e.type==='y' && Math.random()<0.012){
+      // yellow: tek sarı atış
       eBullets.push({x:e.x,y:e.y+e.h*0.2,w:6,h:14,vy:2.4,color:'#ffd12a'});
     }
+
     if(hit(e,player)){
       enemies.splice(i,1);
       if(--player.lives<=0){setHearts();return endGame('GAME OVER');}
       setHearts(); continue;
     }
-    // bullet hits
+
+    // player mermisi çarpışması
     for(let j=bullets.length-1;j>=0;j--){
       const b=bullets[j];
       if(hit(e,b)){
@@ -193,17 +191,18 @@ function loop(t){
         break;
       }
     }
+
     if(e.img.complete) ctx.drawImage(e.img,e.x-e.w/2,e.y-e.h/2,e.w,e.h);
     if(e.y-e.h/2>H) enemies.splice(i,1);
   }
 
-  // Player bullets
+  // player bullets
   for(let i=bullets.length-1;i>=0;i--){
     const b=bullets[i]; b.y+=b.vy; if(b.y<-20){bullets.splice(i,1);continue;}
     ctx.fillStyle=b.color; ctx.fillRect(b.x-3,b.y-10,6,14);
   }
 
-  // Enemy bullets
+  // enemy bullets
   for(let i=eBullets.length-1;i>=0;i--){
     const b=eBullets[i]; b.y+=b.vy;
     if(hit(player,b)){ eBullets.splice(i,1); if(--player.lives<=0){setHearts();return endGame('GAME OVER');} setHearts(); continue; }
@@ -211,7 +210,7 @@ function loop(t){
     ctx.fillStyle=b.color; ctx.fillRect(b.x-3,b.y-10,6,14);
   }
 
-  // Boss at 500
+  // boss tetik 500+
   if(!boss.active && score>=500){
     boss.active=true; boss.x=W/2; boss.y=110; boss.w=140; boss.h=140; boss.hp=180; boss.t=0; boss.fireCD=0;
   }
@@ -220,6 +219,7 @@ function loop(t){
     boss.fireCD-=dt;
     if(boss.fireCD<=0){
       const ly=boss.y+boss.h*0.25;
+      // kısa kırmızı lazerler
       eBullets.push({x:boss.x-26,y:ly,w:5,h:22,vy:3.2,color:'#ff4343'});
       eBullets.push({x:boss.x+26,y:ly,w:5,h:22,vy:3.2,color:'#ff4343'});
       boss.fireCD=420;
@@ -229,6 +229,7 @@ function loop(t){
       const b=bullets[i]; if(hit(boss,b)){ bullets.splice(i,1); boss.hp-=2; explode(b.x,b.y,'#ff7575',10); }
     }
     if(imgBoss.complete) ctx.drawImage(imgBoss,boss.x-boss.w/2,boss.y-boss.h/2,boss.w,boss.h);
+    // boss HP bar
     ctx.fillStyle='#0007'; ctx.fillRect(0,6,W,6);
     ctx.fillStyle='#0f0'; ctx.fillRect(0,6,Math.max(0,(boss.hp/180)*W),6);
     if(boss.hp<=0){
@@ -242,7 +243,7 @@ function loop(t){
   requestAnimationFrame(loop);
 }
 
-// Init
+/* ===== init ===== */
 setHearts(); setScore(0);
 requestAnimationFrame(loop);
 </script>
