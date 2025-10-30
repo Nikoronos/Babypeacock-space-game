@@ -7,7 +7,7 @@
 <style>
   html,body{margin:0;background:#0b0d10;color:#fff;font-family:system-ui,Segoe UI,Roboto,Arial}
   #hud{position:fixed;left:0;top:0;right:0;height:44px;display:flex;align-items:center;gap:10px;padding:8px 10px;
-       background:rgba(0,0,0,.5);backdrop-filter:saturate(120%) blur(8px);font-weight:700}
+       background:rgba(0,0,0,.55);backdrop-filter:saturate(120%) blur(8px);font-weight:800}
   #title{color:#9ecbff}
   #score{margin-left:auto}
   #hearts{letter-spacing:4px}
@@ -34,11 +34,10 @@
   </div></div>
 
 <script>
-/* ============ Canvas & State ============ */
+/* ============ Canvas & HUD ============ */
 const cvs = document.getElementById('cv');
 const ctx = cvs.getContext('2d');
 const W = cvs.width, H = cvs.height;
-
 const HUD = {
   scoreEl: document.getElementById('score'),
   heartsEl: document.getElementById('hearts'),
@@ -51,12 +50,25 @@ const HUD = {
 };
 HUD.hideOver();
 
-/* ============ Images ============ */
-function loadImage(src){
-  const img=new Image();
-  img.src = src; return img;
+/* ============ Image loader + auto-transparent ============ */
+function loadImage(src){ const i=new Image(); i.src=src; return i; }
+function makeTransparent(baseImg, isMatch){
+  // offscreen canvas ile belirli renkleri alfa 0 yap
+  const off=document.createElement('canvas'); const ox=off.getContext('2d');
+  off.width=baseImg.width; off.height=baseImg.height;
+  ox.drawImage(baseImg,0,0);
+  const img = ox.getImageData(0,0,off.width,off.height);
+  const d = img.data;
+  for(let p=0;p<d.length;p+=4){
+    const r=d[p], g=d[p+1], b=d[p+2];
+    if(isMatch(r,g,b)) d[p+3]=0;
+  }
+  ox.putImageData(img,0,0);
+  const out = new Image(); out.src = off.toDataURL('image/png');
+  return out;
 }
-const IMGS = {
+
+const RAW = {
   player: loadImage('../img/player/bpc_mini.png'),
   green:  loadImage('../mars_enemy_green.png'),
   yellow: loadImage('../mars_enemy_yellow.png'),
@@ -64,11 +76,30 @@ const IMGS = {
   boss:   loadImage('../mars_enemy_bigger_green.png')
 };
 
+const IMGS = { player:null, green:null, yellow:null, white:null, boss:RAW.boss };
+let imagesReady = false;
+function postProcessWhenReady(cb){
+  const all = Object.values(RAW);
+  let ok=0;
+  all.forEach(img=>{
+    if(img.complete) ok++; else img.onload=()=>{ if(++ok===all.length) go(); };
+  });
+  if(ok===all.length) go();
+  function go(){
+    // siyahı saydam (oyuncu)
+    IMGS.player = makeTransparent(RAW.player, (r,g,b)=> r<15 && g<15 && b<15);
+    // green’de beyaz zemini saydam
+    IMGS.green  = makeTransparent(RAW.green,  (r,g,b)=> r>240 && g>240 && b>240);
+    // yellow bazen açık zemin içermez, direkt kopyala
+    IMGS.yellow = RAW.yellow;
+    // white ters çizilecek, zemin zaten şeffaf
+    IMGS.white  = RAW.white;
+    imagesReady = true; if(cb) cb();
+  }
+}
+
 /* ============ Player ============ */
-const player = {
-  x: W/2, y: H-90, w: 44, h: 44,
-  speed: 3.2, fireCD: 0, lives: 3
-};
+const player = { x: W/2, y: H-90, w: 46, h: 46, speed: 3.2, lives: 3, fireTimer: 0 };
 HUD.setLives(player.lives);
 
 const keys={};
@@ -76,32 +107,33 @@ addEventListener('keydown',e=>keys[e.key]=true,{passive:true});
 addEventListener('keyup',e=>keys[e.key]=false,{passive:true});
 cvs.addEventListener('pointermove',e=>{
   const r=cvs.getBoundingClientRect();
-  player.x = Math.max(22, Math.min(W-22, e.clientX - r.left));
+  player.x = Math.max(23, Math.min(W-23, e.clientX - r.left));
 },{passive:true});
 
 /* ============ Bullets & Enemies ============ */
 let bullets=[], eBullets=[], enemies=[];
 let score=0, running=true, lastTime=0, boss=null;
 
-function firePlayer(){
-  if(player.fireCD>0) return;
-  player.fireCD=180; // ms
-  bullets.push({x:player.x, y:player.y-18, vy:-6, w:3, h:10});
+function autoFire(dt){
+  player.fireTimer -= dt;
+  if(player.fireTimer<=0){
+    player.fireTimer = 160; // ms
+    bullets.push({x:player.x, y:player.y-18, vy:-6, w:3, h:10});
+  }
 }
 function spawnEnemy(){
-  const r = Math.random();
-  const x = 30 + Math.random()*(W-60);
   if(score<500){
-    if(r<0.5) enemies.push(makeEnemy('green', x, -40));
-    else if(r<0.85) enemies.push(makeEnemy('yellow', x, -40));
+    const r = Math.random(), x = 30 + Math.random()*(W-60);
+    if(r<0.55) enemies.push(makeEnemy('green', x, -40));
+    else if(r<0.88) enemies.push(makeEnemy('yellow', x, -40));
     else enemies.push(makeEnemy('white', x, -40));
   }
 }
 function makeEnemy(type,x,y){
-  const base = {type, x, y, w:42, h:42, t:0, fireT: 800+Math.random()*700};
-  if(type==='yellow') base.vy = 1.5 + Math.random()*0.5;
+  const base = {type, x, y, w:42, h:42, t:0, fireT: 700+Math.random()*650};
+  if(type==='yellow') base.vy = 1.4 + Math.random()*0.5;
   else if(type==='white') base.vy = 1.2, base.w=54, base.h=54;
-  else base.vy = 1.3;
+  else base.vy = 1.25;
   base.img = IMGS[type];
   return base;
 }
@@ -109,75 +141,59 @@ function makeEnemy(type,x,y){
 /* ============ Boss (500 skor) ============ */
 function ensureBoss(){
   if(boss || score<500) return;
-  boss = {
-    x: W/2, y: -140, w: 160, h: 160, vy: 0.6, hp: 30,
-    dir: 1, t: 0, img: IMGS.boss
-  };
+  boss = { x:W/2, y:-140, w:160, h:160, vy:0.6, hp:30, dir:1, t:0, img:IMGS.boss };
 }
 
 /* ============ Helpers ============ */
-function aabb(a,b){
-  return Math.abs(a.x-b.x) < (a.w+b.w)/2 && Math.abs(a.y-b.y) < (a.h+b.h)/2;
-}
+function aabb(a,b){ return Math.abs(a.x-b.x)<(a.w+b.w)/2 && Math.abs(a.y-b.y)<(a.h+b.h)/2; }
 
-/* ============ Mars Background ============ */
+/* ============ Mars Background (kum+taş) ============ */
 function drawMarsBackground(){
   const g = ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,'#6b2b17');  // üst
-  g.addColorStop(1,'#3a140b');  // alt
-  ctx.fillStyle = g;
-  ctx.fillRect(0,0,W,H);
+  g.addColorStop(0,'#7a311b'); g.addColorStop(1,'#3b150c');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
 
-  // kum çizgileri (aşağı akıyor hissi)
-  ctx.strokeStyle='rgba(255,200,70,.25)';
-  ctx.lineWidth=4;
-  for(let i=0;i<7;i++){
-    const yy = (Date.now()*0.06 + i*110) % (H+50) - 50;
-    ctx.beginPath();
-    ctx.moveTo(0,yy);
-    ctx.lineTo(W,yy);
+  // Dune şeritleri (ince, hareketli)
+  ctx.strokeStyle='rgba(255,176,66,.35)'; ctx.lineWidth=3;
+  for(let i=0;i<5;i++){
+    const yy = (Date.now()*0.06 + i*150) % (H+60) - 60;
+    ctx.beginPath(); ctx.moveTo(0,yy);
+    for(let x=0;x<=W;x+=40){ ctx.lineTo(x, yy+Math.sin((x+i*20)*0.03)*2.2); }
     ctx.stroke();
   }
-
-  // taş benekleri
-  ctx.fillStyle='rgba(0,0,0,.25)';
-  for(let i=0;i<80;i++){
-    ctx.fillRect((i*53%W), (i*97 + (Date.now()*0.08))%H, 2, 2);
+  // Taş benekleri
+  ctx.fillStyle='rgba(0,0,0,.28)';
+  for(let i=0;i<90;i++){
+    const x=(i*53)%W, y=(i*97 + (Date.now()*0.08))%H;
+    ctx.fillRect(x,y,2,2);
   }
 }
 
-/* ============ Main Loop ============ */
+/* ============ Update & Draw ============ */
 function update(dt){
   // hareket
   if(keys['ArrowLeft'])  player.x-=player.speed;
   if(keys['ArrowRight']) player.x+=player.speed;
-  player.x = Math.max(22, Math.min(W-22, player.x));
+  player.x = Math.max(23, Math.min(W-23, player.x));
 
-  // ateş
-  if(keys[' '] || keys['Spacebar']) firePlayer();
-  player.fireCD = Math.max(0, player.fireCD - dt);
+  // oto-ateş
+  autoFire(dt);
 
-  // mermi hareket
+  // mermi
   for(let i=bullets.length-1;i>=0;i--){
-    const b=bullets[i]; b.y += b.vy;
-    if(b.y<-20) bullets.splice(i,1);
+    const b=bullets[i]; b.y += b.vy; if(b.y<-20) bullets.splice(i,1);
   }
 
-  // yeni düşmanlar
-  if(Math.random()<0.025) spawnEnemy();
+  // spawn
+  if(Math.random()<0.022) spawnEnemy();
 
-  // düşman hareket + atış
+  // düşmanlar
   for(let i=enemies.length-1;i>=0;i--){
     const e=enemies[i]; e.t+=dt; e.y += e.vy;
-
-    // sinus dalgaları ufoda (örnek; hepsi kullanır)
     if(e.type==='white') e.x += Math.sin(e.t*0.003)*0.6;
-
     if(e.y>H+60){ enemies.splice(i,1); continue; }
-
-    // ateş
     if(e.t > e.fireT){
-      if(e.type==='white'){ // çift beyaz lazer
+      if(e.type==='white'){ // iki beyaz lazer
         eBullets.push({x:e.x-12,y:e.y+20,vy:3.2,w:3,h:12,color:'#ffffff'});
         eBullets.push({x:e.x+12,y:e.y+20,vy:3.2,w:3,h:12,color:'#ffffff'});
       }else{ // tek
@@ -187,38 +203,30 @@ function update(dt){
     }
   }
 
-  // düşman vurulma
+  // vurulma
   for(let i=enemies.length-1;i>=0;i--){
     const e=enemies[i];
     for(let j=bullets.length-1;j>=0;j--){
       const b=bullets[j];
-      if(aabb(
-        {x:b.x,y:b.y,w:b.w,h:b.h},
-        {x:e.x,y:e.y,w:e.w,h:e.h}
-      )){
-        bullets.splice(j,1);
-        enemies.splice(i,1);
-        score+=10; HUD.setScore(score);
-        break;
+      if(aabb({x:b.x,y:b.y,w:b.w,h:b.h},{x:e.x,y:e.y,w:e.w,h:e.h})){
+        bullets.splice(j,1); enemies.splice(i,1);
+        score+=10; HUD.setScore(score); break;
       }
     }
   }
 
-  // boss ortaya çıkış ve davranış
+  // boss
   ensureBoss();
   if(boss){
-    if(boss.y < 110) boss.y += boss.vy; // sahneye insin
+    if(boss.y < 110) boss.y += boss.vy;
     else{
-      boss.x += 1.2*boss.dir;
-      if(boss.x<90) boss.dir= 1;
-      if(boss.x>W-90) boss.dir=-1;
-      // üçlü atış
+      boss.x += 1.2*boss.dir; if(boss.x<90) boss.dir=1; if(boss.x>W-90) boss.dir=-1;
       if(boss.t<=0){
-        const c = '#63ff63';
+        const c='#63ff63';
         eBullets.push({x:boss.x, y:boss.y+60, vy:3.2, w:4, h:12, color:c});
         eBullets.push({x:boss.x-20, y:boss.y+60, vy:3.0, w:4, h:12, color:c});
         eBullets.push({x:boss.x+20, y:boss.y+60, vy:3.0, w:4, h:12, color:c});
-        boss.t = 380; // ms
+        boss.t=380;
       } else boss.t -= dt;
     }
   }
@@ -226,22 +234,19 @@ function update(dt){
   // düşman mermileri
   for(let i=eBullets.length-1;i>=0;i--){
     const b=eBullets[i]; b.y += b.vy;
-    if(b.y>H+16) { eBullets.splice(i,1); continue; }
+    if(b.y>H+16){ eBullets.splice(i,1); continue; }
     if(aabb({x:b.x,y:b.y,w:b.w,h:b.h}, player)){
-      eBullets.splice(i,1);
-      player.lives--; HUD.setLives(player.lives);
+      eBullets.splice(i,1); player.lives--; HUD.setLives(player.lives);
       if(player.lives<=0){ running=false; HUD.showOver('GAME OVER'); }
     }
   }
 
-  // oyuncu mermileri boss hasarı
+  // boss hasar
   if(boss){
     for(let j=bullets.length-1;j>=0;j--){
       const b=bullets[j];
       if(aabb({x:b.x,y:b.y,w:b.w,h:b.h}, boss)){
-        bullets.splice(j,1);
-        boss.hp--;
-        if(boss.hp<=0){ running=false; HUD.showOver('LEVEL COMPLETE'); }
+        bullets.splice(j,1); boss.hp--; if(boss.hp<=0){ running=false; HUD.showOver('LEVEL COMPLETE'); }
       }
     }
   }
@@ -251,7 +256,7 @@ function draw(){
   drawMarsBackground();
 
   // oyuncu
-  if(IMGS.player.complete){
+  if(imagesReady && IMGS.player.complete){
     ctx.drawImage(IMGS.player, player.x-player.w/2, player.y-player.h/2, player.w, player.h);
   }else{
     ctx.fillStyle='#22d3ee';
@@ -260,58 +265,50 @@ function draw(){
 
   // oyuncu mermileri
   ctx.fillStyle='#ffd24a';
-  bullets.forEach(b=>{ ctx.fillRect(b.x-b.w/2, b.y-b.h/2, b.w, b.h); });
+  bullets.forEach(b=> ctx.fillRect(b.x-b.w/2, b.y-b.h/2, b.w, b.h));
 
-  // düşmanlar (white ters sprite düzeltmeli çizim!)
+  // düşmanlar (white ters)
   enemies.forEach(e=>{
-    if(e.type==='white' && e.img.complete){
-      ctx.save();
-      ctx.translate(e.x, e.y);
-      ctx.scale(1,-1);
-      ctx.drawImage(e.img, -e.w/2, -e.h/2, e.w, e.h);
-      ctx.restore();
-    }else if(e.img.complete){
-      ctx.drawImage(e.img, e.x-e.w/2, e.y-e.h/2, e.w, e.h);
+    if(imagesReady && e.img.complete){
+      if(e.type==='white'){
+        ctx.save(); ctx.translate(e.x,e.y); ctx.scale(1,-1);
+        ctx.drawImage(e.img, -e.w/2, -e.h/2, e.w, e.h); ctx.restore();
+      }else{
+        ctx.drawImage(e.img, e.x-e.w/2, e.y-e.h/2, e.w, e.h);
+      }
     }else{
       ctx.fillStyle = e.type==='yellow' ? '#ffe066' : '#6cff7d';
       ctx.fillRect(e.x-e.w/2, e.y-e.h/2, e.w, e.h);
     }
   });
 
-  // boss
+  // boss + hp bar
   if(boss && boss.img.complete){
     ctx.drawImage(boss.img, boss.x-boss.w/2, boss.y-boss.h/2, boss.w, boss.h);
-    // HP bar
     ctx.fillStyle='#1a2a23'; ctx.fillRect(10,8,W-20,8);
     ctx.fillStyle='#3cff86'; ctx.fillRect(10,8,(W-20)*Math.max(0,boss.hp/30),8);
   }
 
   // düşman mermileri
-  eBullets.forEach(b=>{
-    ctx.fillStyle = b.color || '#00ff9c';
-    ctx.fillRect(b.x-b.w/2, b.y-b.h/2, b.w, b.h);
-  });
+  eBullets.forEach(b=>{ ctx.fillStyle=b.color||'#00ff9c'; ctx.fillRect(b.x-b.w/2,b.y-b.h/2,b.w,b.h); });
 }
 
 function loop(ts){
   const dt = Math.min(32, ts - lastTime); lastTime = ts;
   if(!running) return;
-  update(dt);
-  draw();
-  requestAnimationFrame(loop);
+  update(dt); draw(); requestAnimationFrame(loop);
 }
 
 /* ============ Start ============ */
 function reset(){
-  bullets.length = 0; eBullets.length = 0; enemies.length = 0;
-  score = 0; HUD.setScore(score);
+  bullets.length=0; eBullets.length=0; enemies.length=0;
+  score=0; HUD.setScore(score);
   player.x=W/2; player.y=H-90; player.lives=3; HUD.setLives(player.lives);
   running=true; boss=null; lastTime=0; HUD.hideOver();
   requestAnimationFrame(loop);
 }
 HUD.btn.onclick = reset;
-reset();
-
+postProcessWhenReady(reset);
 </script>
 </body>
 </html>
