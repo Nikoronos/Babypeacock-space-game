@@ -2,376 +2,389 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
 <title>BPC Space — Mars (Level 2)</title>
 <style>
-  :root { --hud:#0ff; --bg:#081b23; --mars:#6b2d1e; --mars2:#562318; }
-  html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial}
-  #wrap{position:relative;max-width:480px;margin:0 auto;background:#000;height:100vh;overflow:hidden}
-  canvas{display:block;width:100%;height:100%}
-  /* HUD */
-  #hud{position:absolute;left:0;right:0;top:0;height:54px;display:flex;align-items:center;
-       justify-content:space-between;padding:8px 12px;box-sizing:border-box;
-       background:linear-gradient(180deg,rgba(0,0,0,.75),rgba(0,0,0,.25));color:#bcd7ff;
-       font-weight:800;letter-spacing:.3px;font-size:22px;user-select:none;pointer-events:none}
-  #brand{display:flex;gap:8px;align-items:center}
-  #brand .tree{filter:drop-shadow(0 0 6px #0f0)}
-  #right{display:flex;gap:18px;align-items:center}
-  #gems{font-size:14px;opacity:.85}
-  #hearts{font-size:24px}
-  /* Panels */
-  .panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.65)}
-  .card{background:#0c1622;border:1px solid #253445;color:#eaf6ff;border-radius:16px;padding:22px;max-width:360px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.5)}
-  .card h2{margin:0 0 12px 0;font-size:26px}
-  .card p{margin:0 0 14px 0;opacity:.85}
-  .btn{background:#12c6b3;color:#001316;border:none;border-radius:12px;padding:12px 20px;font-weight:800;font-size:18px;cursor:pointer}
+  :root{color-scheme:dark;}
+  html,body{margin:0;height:100%;background:#000;overscroll-behavior:none}
+  body{font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
+  #wrap{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr;}
+  header{
+    height:50px;background:linear-gradient(180deg,#060a12,rgba(6,10,18,.6));
+    color:#bcd3ff;display:flex;align-items:center;gap:14px;padding:0 12px;font-weight:700;
+    text-shadow:0 1px 0 #000;
+  }
+  header .title{font-size:24px;letter-spacing:.3px}
+  header .tag{opacity:.9;font-weight:700}
+  header .score{margin-left:auto}
+  #game{display:block;width:100%;height:100%;background:#0b0f17}
+  /* Start / GameOver overlay */
+  .overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.65);
+    display:flex;align-items:center;justify-content:center;z-index:9;backdrop-filter:saturate(110%) blur(2px);
+  }
+  .card{
+    background:#0b1320;border:1px solid rgba(255,255,255,.08);
+    border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.45);
+    padding:20px;max-width:92vw;width:420px;text-align:center;color:#dfe8ff;
+  }
+  .card h1{margin:0 0 8px;font-size:26px}
+  .card p{margin:0 0 16px;opacity:.9}
+  .btn{
+    display:inline-block;background:#0bb3a8;color:#021e1c;font-weight:800;
+    padding:12px 18px;border-radius:12px;border:none;cursor:pointer;font-size:18px;
+    box-shadow:0 6px 14px rgba(11,179,168,.35);
+  }
   .btn:active{transform:translateY(1px)}
-  #hint{margin-top:10px;font-size:13px;opacity:.7}
-  #over .card{padding:18px}
-  #over h3{margin:8px 0 14px 0;font-size:28px}
+  /* Mobile touch hint */
+  .hint{font-size:12px;opacity:.7;margin-top:8px}
+  canvas{touch-action:none}
 </style>
 </head>
 <body>
-<div id="wrap">
-  <canvas id="game"></canvas>
-
-  <div id="hud">
-    <div id="brand">Babypeacock <span class="tree">🦚</span></div>
-    <div id="title">Mars (Level 2)</div>
-    <div id="right">
-      <div id="score">Score: 0</div>
-      <div id="gems">💎 <span id="gemTimer">0</span>s</div>
-      <div id="hearts">❤️❤️❤️</div>
-    </div>
+  <div id="wrap">
+    <header>
+      <div class="title">Babypeacock 🦚</div>
+      <div class="tag">Mars (Level 2)</div>
+      <div class="score">Score: <span id="scoreTxt">0</span></div>
+      <div style="margin-left:12px;">💎 <span id="gemTime">0</span>s</div>
+    </header>
+    <canvas id="game"></canvas>
   </div>
 
-  <div id="start" class="panel">
+  <!-- Overlays -->
+  <div id="startOL" class="overlay">
     <div class="card">
-      <h2>Mars Görevi</h2>
-      <p>Parmağını sürükle • Mavi atışlar otomatik • Elmas = 12s üçlü atış</p>
-      <button id="btnStart" class="btn">BAŞLAT</button>
-      <div id="hint">(Görseller yüklenmezse dosya adlarını kontrol et)</div>
+      <h1>Mars Görevi</h1>
+      <p>Parmağını sürükleyerek gemiyi hareket ettir.<br>Elmas → 12s üçlü mavi atış.</p>
+      <button class="btn" id="startBtn">BAŞLAT</button>
+      <div class="hint">BPC: green=2 • yellow=3 • white=3 • red=4 puan</div>
     </div>
   </div>
 
-  <div id="over" class="panel" style="display:none">
+  <div id="gameOverOL" class="overlay" style="display:none">
     <div class="card">
-      <h3>GAME OVER</h3>
-      <button id="btnRetry" class="btn">TEKRAR</button>
+      <h1>GAME OVER</h1>
+      <p>Tekrar dener misin, çek? 🚀</p>
+      <button class="btn" id="retryBtn">TEKRAR</button>
     </div>
   </div>
-</div>
 
 <script>
 (() => {
-  // ---- Canvas & DPR
-  const cvs = document.getElementById('game');
-  const ctx = cvs.getContext('2d');
-  const DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  /* ---------- Canvas & sizing ---------- */
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d', { alpha: false });
+  const scoreTxt = document.getElementById('scoreTxt');
+  const gemTimeTxt = document.getElementById('gemTime');
+  const DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1)); // battery-friendly
+  let W=0,H=0;
   function resize(){
-    const W = document.getElementById('wrap').clientWidth;
-    const H = document.getElementById('wrap').clientHeight;
-    cvs.width = Math.floor(W * DPR);
-    cvs.height = Math.floor(H * DPR);
+    const r = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth = window.innerWidth;
+    const h = canvas.clientHeight = window.innerHeight - document.querySelector('header').offsetHeight;
+    canvas.width = Math.round(w * DPR);
+    canvas.height = Math.round(h * DPR);
+    W = canvas.width; H = canvas.height;
     ctx.setTransform(DPR,0,0,DPR,0,0);
   }
-  window.addEventListener('resize', resize, {passive:true});
+  addEventListener('resize', resize, {passive:true});
   resize();
 
-  // ---- HUD
-  const elScore = document.getElementById('score');
-  const elHearts = document.getElementById('hearts');
-  const elGemTimer = document.getElementById('gemTimer');
-  const startPanel = document.getElementById('start');
-  const overPanel  = document.getElementById('over');
-  document.getElementById('btnStart').onclick = startGame;
-  document.getElementById('btnRetry').onclick = startGame;
-
-  // ---- Assets (paths must exist exactly)
+  /* ---------- Assets (use YOUR repo names) ---------- */
   const SPR = {
     player: 'img/player/bpc_mini.png',
-    green : 'mars_enemy_green.png',
-    yellow: 'mars_enemy_yellow.png',
-    white : 'mars_enemy_white.png',
-    red   : 'mars_enemy_red.png'
+    green : 'mars%20enemy%20green.png',
+    yellow: 'Mars%20enemy%20yellow.png',
+    white : 'mars%20enemy%20white.png',
+    red   : 'mars%20enemy%20red%20.png' // NOTE: space before .png exists in repo
   };
   const IMG = {};
-  function loadOne(src){ return new Promise(res=>{ const im=new Image(); im.src=src; im.onload=()=>res(im); im.onerror=()=>res(null); }); }
-  async function loadAll(){
-    for(const k in SPR){ IMG[k] = await loadOne(SPR[k]); }
+  const toLoad = Object.entries(SPR).map(([k,src]) => new Promise(res=>{
+    const im = new Image(); im.src = src; im.onload=()=>res(IMG[k]=im); im.onerror=()=>res(IMG[k]=null);
+  }));
+
+  /* ---------- Game state ---------- */
+  let running=false, gameOver=false, tPrev=0, score=0;
+  let lives=3;
+  const player = {x:0,y:0,spd:0.36, w:44, h:44};
+  const bullets = [];
+  const enemies = [];
+  const eBullets = [];
+  const particles = [];
+  const powerups = []; // diamonds
+  let tripleUntil = 0; // timestamp ms
+
+  const POINTS = {green:2, yellow:3, white:3, red:4};
+
+  /* ---------- Helpers ---------- */
+  function clamp(v,mi,ma){return Math.max(mi,Math.min(ma,v))}
+  function rand(a,b){return Math.random()*(b-a)+a}
+  function now(){return performance.now()}
+  function collRect(a,b){
+    return Math.abs(a.x-b.x) < (a.w+b.w)*0.5 && Math.abs(a.y-b.y) < (a.h+b.h)*0.5;
   }
 
-  // ---- State
-  let running=false, t0=0, last=0, elapsed=0;
-  const player = {x:0,y:0,w:44,h:44,fireCD:0, inv:0};
-  let bullets=[], enemies=[], ebullets=[], sparks=[], gems=[];
-  let score=0, lives=3, triple=0, spawnTick=0, diff=0;
-
-  // ---- Input (touch/mouse)
-  const pointer = {x:0,y:0,down:false};
-  function setPointer(e){
-    const r = cvs.getBoundingClientRect();
-    const x = (e.touches?e.touches[0].clientX:e.clientX) - r.left;
-    const y = (e.touches?e.touches[0].clientY:e.clientY) - r.top;
-    pointer.x=x; pointer.y=y;
-  }
-  cvs.addEventListener('touchstart', e=>{pointer.down=true; setPointer(e); e.preventDefault();},{passive:false});
-  cvs.addEventListener('touchmove',  e=>{setPointer(e); e.preventDefault();},{passive:false});
-  cvs.addEventListener('touchend',   ()=>{pointer.down=false;});
-  cvs.addEventListener('mousemove',  e=>setPointer(e));
-
-  // ---- Helpers
-  const R = (a,b)=>a+Math.random()*(b-a);
-  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-  function rectHit(a,b){ return (Math.abs(a.x-b.x) < (a.w+b.w)*0.5) && (Math.abs(a.y-b.y) < (a.h+b.h)*0.5); }
-
-  // ---- Reset/Start
-  async function startGame(){
-    await loadAll();                // (sadece ilk sefer load olur, sonra cache)
-    overPanel.style.display='none';
-    startPanel.style.display='none';
-    running=true; t0=performance.now(); last=t0; elapsed=0;
-    bullets.length=enemies.length=ebullets.length=sparks.length=gems.length=0;
-    score=0; lives=3; triple=0; spawnTick=0; diff=0;
-    player.w=44; player.h=44;
-    player.x = cvs.clientWidth/2;
-    player.y = cvs.clientHeight - 90;
-    player.fireCD=0;
-    player.inv = 1000; // 1sn başlangıç koruma
-    loop();
+  // draw masked images to hide square backgrounds (until real PNGs are transparent)
+  function drawCircleImage(img, x, y, w, h, flipX=false){
+    if(!img) return;
+    const r = Math.max(w,h)*0.55;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.clip();
+    if(flipX){
+      ctx.translate(x,y); ctx.scale(-1,1);
+      ctx.drawImage(img, -w/2,-h/2,w,h);
+    }else{
+      ctx.drawImage(img, x-w/2,y-h/2,w,h);
+    }
+    ctx.restore();
   }
 
-  // ---- Spawners
+  function addParticles(x,y,color,count=10,spd=0.6){
+    for(let i=0;i<count;i++){
+      particles.push({
+        x,y, vx:rand(-spd,spd), vy:rand(-spd,spd),
+        life:rand(280,460), size:rand(2,3), col:color, born:now()
+      });
+    }
+  }
+
+  /* ---------- Background: Mars texture (no harsh lines) ---------- */
+  function drawMarsBG(dt){
+    ctx.fillStyle='#2b0f0c'; ctx.fillRect(0,0,canvas.clientWidth,canvas.clientHeight);
+    // gradient brown sand
+    const grd = ctx.createLinearGradient(0,0,0,canvas.clientHeight);
+    grd.addColorStop(0,'#4b1e17'); grd.addColorStop(.6,'#6b2b22'); grd.addColorStop(1,'#58231c');
+    ctx.fillStyle = grd; ctx.fillRect(0,0,canvas.clientWidth,canvas.clientHeight);
+
+    // small dark pebbles
+    ctx.fillStyle='rgba(0,0,0,.35)';
+    for(let i=0;i<70;i++){
+      const x = (i*97 + (Date.now()/30))%canvas.clientWidth;
+      const y = (i*61)%canvas.clientHeight;
+      ctx.fillRect(x,y,2,2);
+    }
+
+    // gentle dunes (transparent waves)
+    ctx.strokeStyle='rgba(255,180,130,.08)'; ctx.lineWidth=3;
+    const step=140, wave = (Date.now()/900)%step;
+    for(let y=wave; y<canvas.clientHeight+step; y+=step){
+      ctx.beginPath(); ctx.moveTo(0,y);
+      for(let x=0;x<=canvas.clientWidth;x+=40){
+        ctx.lineTo(x, y + Math.sin((x+Date.now()/500)/120)*6);
+      }
+      ctx.stroke();
+    }
+  }
+
+  /* ---------- Spawners ---------- */
+  let eTimer=0, pTimer=0, diff=1;
   function spawnEnemy(){
-    // tür seçimi + zorluk
-    const types = ['green','yellow','white','red'];
-    const weights = [0.55, 0.22, 0.15, 0.08 + Math.min(0.12, diff*0.02)];
-    let rnd=Math.random(), pick=0;
-    for(let i=0;i<types.length;i++){ if((rnd -= weights[i])<=0){ pick=i; break; } }
-    const type = types[pick];
-    const spd = 120 + diff*14 + R(-8,8);
-    const e = {
-      type, img:IMG[type], x:R(24, cvs.clientWidth-24), y:-40,
-      w:  type==='red'? 46: 40,
-      h:  type==='red'? 46: 40,
-      vy: spd/60,
-      hp: type==='yellow'?2 : type==='white'?2 : type==='red'?3 : 1,
-      fire: 0
-    };
-    enemies.push(e);
+    // pick type by difficulty
+    const r=Math.random();
+    let type='green';
+    if(r>0.75) type='yellow';
+    if(r>0.92) type='white';
+    if(r>0.97 && diff>2) type='red';
+
+    const w= type==='red'?46:40;
+    enemies.push({
+      type, x: clamp(rand(30, canvas.clientWidth-30), 30, canvas.clientWidth-30),
+      y: -50, w, h:w, img: IMG[type], hp: (type==='red'?3:(type==='yellow'?2:1)),
+      spd: (type==='white'?0.22:(type==='yellow'?0.26:(type==='red'?0.24:0.2))),
+      shootCd: (type==='red'? rand(900,1400): 0),
+      lastShot: now()
+    });
   }
-  function spawnGem(){
-    gems.push({x:R(30,cvs.clientWidth-30), y:-20, w:18,h:18, vy:1.5});
+  function spawnDiamond(){
+    powerups.push({x: rand(30, canvas.clientWidth-30), y: -30, w:22,h:22, spd:0.22});
   }
 
-  // ---- Mars background (kum + taş)
-  let bgY=0;
-  function drawMars(dt){
-    bgY += dt*30;
-    const W=cvs.clientWidth, H=cvs.clientHeight;
-    ctx.fillStyle='#5a2319';
-    ctx.fillRect(0,0,W,H);
-    // dalgacık katmanları
-    ctx.globalAlpha=0.20;
-    ctx.fillStyle='#743120';
-    for(let i=0;i<5;i++){
-      const y = (bgY*0.6 + i*120) % (H+140) - 140;
-      ctx.fillRect(0,y,W,80);
+  /* ---------- Input (touch & mouse) ---------- */
+  let dragging=false, dx=0, dy=0;
+  function startDrag(e){
+    dragging=true;
+    const p = point(e);
+    dx = p.x - player.x; dy = p.y - player.y;
+  }
+  function moveDrag(e){
+    if(!dragging) return;
+    const p=point(e);
+    player.x = clamp(p.x - dx, 24, canvas.clientWidth-24);
+    player.y = clamp(p.y - dy, 24, canvas.clientHeight-24);
+  }
+  function endDrag(){ dragging=false; }
+  function point(e){
+    if(e.touches && e.touches.length){ return {x:e.touches[0].clientX, y:e.touches[0].clientY - document.querySelector('header').offsetHeight}; }
+    return {x:e.clientX, y:e.clientY - document.querySelector('header').offsetHeight};
+  }
+  canvas.addEventListener('pointerdown', e=>{startDrag(e); e.preventDefault();});
+  canvas.addEventListener('pointermove', e=>{moveDrag(e); e.preventDefault();});
+  canvas.addEventListener('pointerup',   e=>{endDrag(); e.preventDefault();});
+  canvas.addEventListener('pointercancel', endDrag);
+
+  /* ---------- Shooting ---------- */
+  let shootTick=0;
+  function shoot(){
+    const speed = -0.55;
+    const add = (ox) => bullets.push({x:player.x+ox, y:player.y-24, w:6,h:16, vx:0, vy:speed});
+    if(now() < tripleUntil){
+      add(-18); add(0); add(18);
+    }else{
+      add(0);
     }
-    ctx.globalAlpha=1;
-    // taş noktaları
-    ctx.fillStyle='#2b0f0a';
-    for(let i=0;i<160;i++){
-      const x=((i*73)%W), y=( (i*97 + Math.floor(bgY*0.7))%H );
-      ctx.fillRect(x,y,1,1);
-    }
   }
 
-  // ---- Particles (patlama rengi tipe göre)
-  function boom(x,y,clr){
-    for(let i=0;i<10;i++){
-      sparks.push({x,y,vx:R(-2,2),vy:R(-2,2),life:400,col:clr});
-    }
+  /* ---------- UI hearts under player ---------- */
+  function drawHeartsUnderPlayer(){
+    const txt = '❤️'.repeat(lives);
+    ctx.font='20px system-ui,Segoe UI,Roboto';
+    ctx.textAlign='center'; ctx.textBaseline='top';
+    ctx.fillStyle='#ff5a7a';
+    ctx.fillText(txt, player.x, player.y + 28);
   }
 
-  // ---- Loop
-  function loop(ts){
-    if(!running) return;
-    const dt = Math.min(40, (ts||performance.now()) - last); last = (ts||performance.now());
-    const f = dt/16.67;
-    elapsed += dt; diff = Math.floor(elapsed/8000); // her 8sn biraz zor
+  /* ---------- Loop ---------- */
+  function resetGame(){
+    enemies.length=0; bullets.length=0; eBullets.length=0; particles.length=0; powerups.length=0;
+    score=0; lives=3; diff=1; eTimer=0; pTimer=0; tripleUntil=0;
+    scoreTxt.textContent='0'; gemTimeTxt.textContent='0';
+    player.x = canvas.clientWidth/2; player.y = canvas.clientHeight*0.78;
+  }
 
-    // Draw BG
-    drawMars(dt/1000);
+  function step(ts){
+    if(!running){ tPrev=ts; return requestAnimationFrame(step); }
+    const dt = Math.min(32, ts - tPrev); tPrev=ts;
 
-    // Player move
-    const targetX = pointer.down ? pointer.x : cvs.clientWidth/2;
-    player.x += (targetX - player.x)*0.25*f;
-    player.x = clamp(player.x, 24, cvs.clientWidth-24);
-    player.y = clamp(player.y, 60, cvs.clientHeight-70);
-    if(player.inv>0) player.inv -= dt;
+    drawMarsBG(dt);
 
-    // Player fire
-    player.fireCD -= dt;
-    const fireRate = 220;
-    if(player.fireCD<=0){
-      player.fireCD=fireRate;
-      const bx = player.x, by=player.y-20;
-      if(triple>0){
-        bullets.push({x:bx-10,y:by,vx:0,vy:-6,w:4,h:10});
-        bullets.push({x:bx,   y:by,vx:0,vy:-6,w:4,h:10});
-        bullets.push({x:bx+10,y:by,vx:0,vy:-6,w:4,h:10});
-      }else{
-        bullets.push({x:bx,y:by,vx:0,vy:-6,w:4,h:10});
+    // update timers
+    eTimer += dt; pTimer += dt; shootTick += dt;
+    if(eTimer > Math.max(380 - diff*40, 160)){ eTimer=0; spawnEnemy(); if(Math.random()<0.25) spawnEnemy(); }
+    if(pTimer > 4500){ pTimer=0; spawnDiamond(); }
+    if(score>80) diff=2; if(score>200) diff=3; if(score>400) diff=4;
+
+    // auto shooting
+    if(shootTick > (now()<tripleUntil? 160:250)){ shoot(); shootTick=0; }
+
+    // --- update & draw powerups (diamonds) ---
+    ctx.fillStyle='#7ee6ff';
+    powerups.forEach(p=>{
+      p.y += p.spd*dt;
+      // draw rhombus diamond
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(Math.PI/4);
+      ctx.fillStyle='#7fdcff'; ctx.fillRect(-10,-10,20,20);
+      ctx.restore();
+    });
+    // collect
+    for(let i=powerups.length-1;i>=0;i--){
+      const p=powerups[i];
+      if(collRect({...p},{x:player.x,y:player.y,w:player.w,h:player.h})) {
+        powerups.splice(i,1);
+        tripleUntil = now()+12000;
+      } else if(p.y>canvas.clientHeight+30){ powerups.splice(i,1); }
+    }
+    gemTimeTxt.textContent = Math.max(0, Math.ceil((tripleUntil-now())/1000));
+
+    // --- update & draw enemies ---
+    enemies.forEach(e=>{
+      e.y += e.spd*dt;
+      // red shoots short lasers
+      if(e.type==='red' && now()-e.lastShot>e.shootCd){
+        e.lastShot = now();
+        eBullets.push({x:e.x, y:e.y+12, w:4,h:18, vx:0, vy:0.55, col:'#ff4d4d'});
       }
+      // draw with circle-mask; WHITE flipped
+      drawCircleImage(e.img, e.x, e.y, e.w, e.h, e.type==='white');
+    });
+    // cull offscreen
+    for(let i=enemies.length-1;i>=0;i--) if(enemies[i].y>canvas.clientHeight+60) enemies.splice(i,1);
+
+    // --- enemy bullets ---
+    eBullets.forEach(b=>{
+      b.y += b.vy*dt;
+      ctx.fillStyle=b.col; ctx.fillRect(b.x-2,b.y-9,4,18);
+    });
+    for(let i=eBullets.length-1;i>=0;i--){
+      const b=eBullets[i];
+      if(collRect(b,{x:player.x,y:player.y,w:player.w,h:player.h})){
+        eBullets.splice(i,1); hitPlayer();
+      } else if(b.y>canvas.clientHeight+30){ eBullets.splice(i,1); }
     }
 
-    // Bullets
-    ctx.fillStyle='#78d7ff';
+    // --- bullets ---
+    ctx.fillStyle='#7dd3ff';
+    bullets.forEach(b=>{ b.x+=b.vx*dt; b.y+=b.vy*dt; ctx.fillRect(b.x-3,b.y-8,6,16);});
     for(let i=bullets.length-1;i>=0;i--){
-      const b=bullets[i]; b.y+=b.vy*f; b.x+=b.vx*f;
-      ctx.fillRect(b.x-2,b.y-8,4,12);
-      if(b.y<-12) bullets.splice(i,1);
-    }
-
-    // Spawn
-    spawnTick += dt;
-    if(spawnTick> 550 - Math.min(250,diff*25)){ spawnTick=0; spawnEnemy(); if(Math.random()<0.22) spawnGem(); }
-
-    // Enemies
-    for(let i=enemies.length-1;i>=0;i--){
-      const e=enemies[i]; e.y += e.vy*f;
-      // enemy fire
-      e.fire -= dt;
-      if(e.type==='red' && e.fire<=0){ e.fire=800; ebullets.push({x:e.x, y:e.y+12, vx:0, vy:3.2, w:4,h:10}); }
-      // draw
-      const im=e.img;
-      if(im){
-        if(e.type==='white'){ // ters çiz
-          ctx.save();
-          ctx.translate(e.x, e.y);
-          ctx.scale(-1,1);
-          ctx.drawImage(im, -e.w/2, -e.h/2, e.w, e.h);
-          ctx.restore();
-        }else{
-          ctx.drawImage(im, e.x-e.w/2, e.y-e.h/2, e.w, e.h);
-        }
-      }else{
-        ctx.fillStyle='#fff'; ctx.fillRect(e.x-18,e.y-12,36,24);
-      }
-      // kill by bullets
-      for(let k=bullets.length-1;k>=0;k--){
-        const b=bullets[k];
-        if(rectHit({x:e.x,y:e.y,w:e.w,h:e.h}, b)){
-          bullets.splice(k,1);
-          e.hp--;
+      const b=bullets[i];
+      if(b.y<-30){ bullets.splice(i,1); continue; }
+      for(let j=enemies.length-1;j>=0;j--){
+        const e=enemies[j];
+        if(collRect(b,e)){
+          bullets.splice(i,1);
+          e.hp--; addParticles(e.x,e.y, e.type==='white'?'#fff':(e.type==='yellow'?'#ffd34d':'#8cff6a'), 10, .7);
           if(e.hp<=0){
-            const pts = (e.type==='green')?2:(e.type==='yellow')?3:(e.type==='white')?3:4;
-            score += pts;
-            elScore.textContent = 'Score: '+score;
-            boom(e.x,e.y, e.type==='yellow'?'#ffd34d': e.type==='white'?'#fff': '#6cf26c');
-            enemies.splice(i,1);
+            score += POINTS[e.type]; scoreTxt.textContent=score;
+            enemies.splice(j,1);
           }
           break;
         }
       }
-      // cross screen
-      if(e.y>cvs.clientHeight+40) enemies.splice(i,1);
     }
 
-    // Enemy bullets
-    ctx.fillStyle='#ff4b4b';
-    for(let i=ebullets.length-1;i>=0;i--){
-      const b=ebullets[i]; b.y+=b.vy*f; b.x+=b.vx*f;
-      ctx.fillRect(b.x-2,b.y-6,4,10);
-      if(b.y>cvs.clientHeight+12) ebullets.splice(i,1);
-    }
+    // --- player ---
+    drawCircleImage(IMG.player, player.x, player.y, player.w, player.h);
+    drawHeartsUnderPlayer();
 
-    // Gems
-    for(let i=gems.length-1;i>=0;i--){
-      const g=gems[i]; g.y+=g.vy*f;
-      // draw diamond
-      ctx.save();
-      ctx.translate(g.x,g.y);
-      ctx.fillStyle='#9ee9ff';
-      ctx.beginPath();
-      ctx.moveTo(0,-9); ctx.lineTo(11,0); ctx.lineTo(0,9); ctx.lineTo(-11,0); ctx.closePath(); ctx.fill();
-      ctx.restore();
-      if(rectHit({x:player.x,y:player.y,w:player.w,h:player.h}, g)){
-        triple = 12000; // 12s
-        gems.splice(i,1);
-      }
-      if(g.y>cvs.clientHeight+20) gems.splice(i,1);
-    }
-
-    // Particles
-    for(let i=sparks.length-1;i>=0;i--){
-      const s=sparks[i]; s.x+=s.vx*f; s.y+=s.vy*f; s.life-=dt;
-      ctx.globalAlpha=Math.max(0,s.life/400);
-      ctx.fillStyle=s.col; ctx.fillRect(s.x-2,s.y-2,4,4);
-      ctx.globalAlpha=1;
-      if(s.life<=0) sparks.splice(i,1);
-    }
-
-    // Collisions with player
-    if(player.inv<=0){
-      for(let i=enemies.length-1;i>=0;i--){
-        const e=enemies[i];
-        if(rectHit({x:player.x,y:player.y,w:player.w,h:player.h}, e)){
-          enemies.splice(i,1);
-          damage();
-          break;
-        }
-      }
-      for(let i=ebullets.length-1;i>=0;i--){
-        const b=ebullets[i];
-        if(rectHit({x:player.x,y:player.y,w:player.w,h:player.h}, b)){
-          ebullets.splice(i,1);
-          damage();
-          break;
-        }
+    // collisions (player ↔ enemy)
+    for(let i=enemies.length-1;i>=0;i--){
+      const e=enemies[i];
+      if(collRect(e,{x:player.x,y:player.y,w:player.w,h:player.h})){
+        enemies.splice(i,1);
+        addParticles(player.x,player.y,'#5ad1ff',14,.8);
+        hitPlayer();
       }
     }
 
-    // Player draw
-    if(IMG.player){
-      ctx.drawImage(IMG.player, player.x-22, player.y-22, 44, 44);
-    }else{
-      ctx.fillStyle='#00d0ff';
-      ctx.beginPath(); ctx.moveTo(player.x, player.y-18);
-      ctx.lineTo(player.x-12, player.y+18);
-      ctx.lineTo(player.x+12, player.y+18); ctx.closePath(); ctx.fill();
-    }
-    // player blink if inv
-    if(player.inv>0 && Math.floor(elapsed/120)%2===0){
-      ctx.fillStyle='rgba(255,255,255,.35)';
-      ctx.fillRect(player.x-24,player.y-24,48,48);
-    }
+    // particles
+    particles.forEach(p=>{
+      const age = now()-p.born;
+      p.x += p.vx*dt; p.y += p.vy*dt;
+      const a = 1 - age/p.life;
+      if(a<=0) p.dead=true;
+      ctx.fillStyle = p.col + Math.max(0, Math.min(1,a)).toFixed(2).replace('0.','0.'); // simple alpha
+      ctx.fillRect(p.x,p.y,p.size,p.size);
+    });
+    for(let i=particles.length-1;i>=0;i--) if(particles[i].dead) particles.splice(i,1);
 
-    // Timers
-    if(triple>0){ triple-=dt; if(triple<0) triple=0; }
-    elGemTimer.textContent = Math.ceil(triple/1000);
-
-    // Hearts HUD
-    elHearts.textContent = '❤️'.repeat(lives)+''.padEnd(Math.max(0,3-lives),'⠀');
-
-    // Next frame
-    requestAnimationFrame(loop);
+    if(!gameOver) requestAnimationFrame(step);
   }
 
-  function damage(){
-    lives--;
-    player.inv = 1200;
-    boom(player.x, player.y, '#fff');
-    if(lives<=0){ gameOver(); }
+  function hitPlayer(){
+    lives--; if(lives<=0){ endGame(); }
   }
 
-  function gameOver(){
-    running=false;
-    overPanel.style.display='flex';
+  function endGame(){
+    gameOver=true; running=false;
+    document.getElementById('gameOverOL').style.display='flex';
   }
 
-  // ilk yüklemede bekle
+  /* ---------- Boot ---------- */
+  Promise.all(toLoad).then(()=>{
+    resetGame();
+    // start overlay buttons
+    document.getElementById('startBtn').onclick=()=>{
+      document.getElementById('startOL').style.display='none';
+      running=true; gameOver=false; requestAnimationFrame(step);
+    };
+    document.getElementById('retryBtn').onclick=()=>{
+      document.getElementById('gameOverOL').style.display='none';
+      resetGame(); running=true; gameOver=false; requestAnimationFrame(step);
+    };
+    // first frame render
+    requestAnimationFrame(step);
+  });
+
 })();
 </script>
 </body>
