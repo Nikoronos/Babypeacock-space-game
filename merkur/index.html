@@ -1,285 +1,445 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>BPC Space — Mars (Level 2)</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Babypeacock — Mars (Level 2)</title>
 <style>
   :root{
-    --fg:#bfe9ff; --acc:#19e1c8; --bad:#ff4d6d; --ink:#0c1116; --ink2:#0b0f13;
-    --mars1:#2b1210; --mars2:#4b201a; --mars3:#351512;
+    --hud-bg: #09090a;
+    --hud-fg: #5fe7b7;
   }
-  html,body{height:100%;margin:0;background:#000;font-family:system-ui,Segoe UI,Arial,sans-serif}
-  .hud{position:fixed;inset:0 0 auto 0;height:54px;display:flex;align-items:center;gap:12px;
-       padding:8px 12px;color:var(--fg);font-weight:900;font-size:22px;letter-spacing:.4px;
-       background:linear-gradient(180deg,#000 0,#000a 60%,transparent 100%); user-select:none}
-  .hud .sp{margin-left:auto}
-  .hud .gem{display:flex;align-items:center;gap:6px;font-size:18px}
-  .hearts{display:flex;gap:6px}
-  .heart{width:18px;height:18px;border-radius:50%;background:var(--bad);box-shadow:0 0 12px #0008 inset}
-  .wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--ink2)}
-  canvas{background:#000;image-rendering:pixelated;touch-action:none}
-  .ov{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#0008;backdrop-filter:blur(3px)}
-  .panel{background:var(--ink);border:1px solid #14202a;border-radius:14px;color:#e9fbff;
-         padding:18px 22px;text-align:center;max-width:86vw;box-shadow:0 10px 28px #000a}
-  .panel h1{margin:0 0 8px;font-size:24px}
-  .panel p{margin:6px 0 14px;font-size:14px;opacity:.9}
-  .btn{background:var(--acc);color:#002226;border:0;border-radius:12px;padding:10px 18px;
-       font-weight:900;letter-spacing:.4px;font-size:16px;cursor:pointer}
-  @media (min-aspect-ratio:9/16){.wrap{padding:0 10vmin}}
+  html,body{height:100%;margin:0;background:#000;}
+  body{font-family:Arial,Helvetica,sans-serif;color:#fff;display:flex;flex-direction:column;align-items:center;}
+  header{width:100%;background:#061219;color:#cfeef0;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;box-sizing:border-box}
+  header .left{display:flex;align-items:center;gap:12px}
+  header h1{margin:0;font-size:30px;color:#6aa8ff}
+  header .center{font-size:22px;text-align:center}
+  header .right{font-weight:800}
+  .viewport{width:100%;max-width:420px;aspect-ratio:9/16;margin:12px 0;border-radius:14px;overflow:hidden;background:#2b0e0e;box-shadow:0 0 0 12px #000;}
+  canvas{width:100%;height:100%;display:block;background:transparent;}
+  .overlay{position:relative}
+  .startModal{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:auto}
+  .startCard{background:rgba(0,0,0,.65);color:#fff;padding:22px;border-radius:12px;text-align:center;max-width:88%}
+  .startCard h3{margin:0 0 8px 0;font-size:20px}
+  .btn{display:inline-block;margin-top:12px;padding:12px 24px;border-radius:12px;background:#03d9b6;color:#012;cursor:pointer;font-weight:700}
+  .hud{width:100%;max-width:420px;display:flex;justify-content:space-around;align-items:center;margin-bottom:6px}
+  .hearts{position:relative;text-align:center;padding-bottom:6px}
+  .bottomHearts{position:relative; margin:10px 0 6px 0}
+  @media (min-width:700px){ .viewport{max-width:360px;aspect-ratio:9/16;} }
 </style>
 </head>
 <body>
-  <div class="hud">
-    <div>Babypeacock</div>
-    <div class="sp">Score: <span id="score">0</span></div>
-    <div class="gem">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2 3 9l9 13 9-13-9-7Z" stroke="#7de3ff" stroke-width="2" fill="#37c8ff"/></svg>
-      <small id="gemT">0s</small>
-    </div>
-    <div class="hearts" id="hearts"></div>
-  </div>
+<header>
+  <div class="left"><h1>Babypeacock</h1><img src="img/player/bpc_mini.png" alt="" style="width:28px;height:28px;object-fit:contain"></div>
+  <div class="center">Mars<br/>(Level 2)</div>
+  <div class="right">SCORE: <span id="score">0</span></div>
+</header>
 
-  <div class="wrap"><canvas id="cv" width="360" height="640"></canvas></div>
+<div class="hud">
+  <div>🦚</div>
+  <div id="diamondHud">💎 0s</div>
+  <div class="hearts" id="livesHud">💖💖💖</div>
+</div>
 
-  <div class="ov" id="ov">
-    <div class="panel">
-      <h1>Mars Görevi</h1>
-      <p>Parmağı sürükle → hareket • Basılı tut → otomatik ateş • Elmas = <b>3’lü yayılım</b> (12s)</p>
-      <button class="btn" id="go">BAŞLA</button>
+<div class="viewport overlay" id="viewport">
+  <canvas id="cv"></canvas>
+
+  <div class="startModal" id="startModal">
+    <div class="startCard">
+      <h3>Hold & drag to move — auto fire while holding</h3>
+      <button class="btn" id="startBtn">BAŞLA</button>
+      <div style="font-size:12px;margin-top:8px;color:#ddd">Tap / hold anywhere to start. Elmas = 3'lü yayılım</div>
     </div>
   </div>
+</div>
+
+<div class="bottomHearts" style="width:100%;max-width:420px;text-align:center">
+  <div id="bottomLives" style="font-size:32px">💖💖💖</div>
+</div>
 
 <script>
-(()=>{ "use strict";
-  // ---------- CANVAS ----------
-  const W=360,H=640;
-  const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
-  ctx.imageSmoothingEnabled=false;
+/* -------
+ Simple mobile-friendly shooter
+ Assets expected (put in same folder structure):
+  - img/player/bpc_mini.png
+  - merkur/mars_enemy_green.png
+  - merkur/mars_enemy_yellow.png
+  - merkur/mars_enemy_white.png
+ (we draw diamonds as canvas shapes)
+ ------- */
 
-  // ---------- ASSETS ----------
-  const ASSETS={
-    player:"../img/player/bpc_mini.png",
-    g:"../mars_enemy_green.png",
-    y:"../mars_enemy_yellow.png",
-    w:"../mars_enemy_white.png" // ters çevrilecek
-  };
-  const load=src=>new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.src=src;});
-  const flipH=img=>{const c=document.createElement("canvas");c.width=img.width;c.height=img.height;
-    const x=c.getContext("2d");x.translate(img.width,0);x.scale(-1,1);x.drawImage(img,0,0);
-    const out=new Image(); out.src=c.toDataURL(); return out;
-  };
+const canvas = document.getElementById('cv');
+const startModal = document.getElementById('startModal');
+const startBtn = document.getElementById('startBtn');
+const scoreEl = document.getElementById('score');
+const diamondHud = document.getElementById('diamondHud');
+const livesHud = document.getElementById('bottomLives');
 
-  // ---------- STATE ----------
-  const s={
-    time:0, score:0, lives:3,
-    player:{x:W/2,y:H*0.8,w:38,h:38,speed:.24},
-    bullets:[], ebullets:[], enemies:[], particles:[], gems:[],
-    pressed:false, fireCD:0, tripleUntil:0, lastSpawn:0, lastGem:0
-  };
-  const scoreEl=document.getElementById("score"),
-        gemEl=document.getElementById("gemT"),
-        heartsEl=document.getElementById("hearts");
-  const ov=document.getElementById("ov"), go=document.getElementById("go");
+let W, H, cw, ch;
+function resize() {
+  // keep canvas internal resolution higher for sharpness
+  const rect = document.querySelector('.viewport').getBoundingClientRect();
+  W = Math.floor(rect.width);
+  H = Math.floor(rect.height);
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  canvas.width = Math.max(720, W*2);
+  canvas.height = Math.max(1280, H*2);
+  cw = canvas.width; ch = canvas.height;
+}
+window.addEventListener('resize', resize);
+resize();
 
-  function drawHearts(){heartsEl.innerHTML=""; for(let i=0;i<s.lives;i++){const d=document.createElement("div");d.className="heart";heartsEl.appendChild(d);}}
-  drawHearts();
+const ctx = canvas.getContext('2d', {alpha:true});
 
-  // ---------- INPUT ----------
-  let dragging=false;
-  const canvasPos=ev=>{
-    const r=cv.getBoundingClientRect(), p=(ev.touches?ev.touches[0]:ev);
-    return {x:(p.clientX-r.left)*(W/r.width), y:(p.clientY-r.top)*(H/r.height)};
-  };
-  const onDown=e=>{dragging=true; s.pressed=true; e.preventDefault();};
-  const onMove=e=>{
-    if(!dragging) return;
-    const {x,y}=canvasPos(e);
-    // y’yi sabit tutup sadece x’te süzme istersen, alt satırı aç:
-    // s.player.y = H*0.8;
-    s.player.x += (x - s.player.x)*0.35;
-    s.player.y += (y - s.player.y)*0.35;
-  };
-  const onUp=()=>{dragging=false; s.pressed=false;};
-  cv.addEventListener("mousedown",onDown); window.addEventListener("mousemove",onMove); window.addEventListener("mouseup",onUp);
-  cv.addEventListener("touchstart",onDown,{passive:false}); window.addEventListener("touchmove",onMove,{passive:false}); window.addEventListener("touchend",onUp);
+/* background: simple mars gradient + faint lines */
+function drawBackground() {
+  const g = ctx.createLinearGradient(0,0,0,ch);
+  g.addColorStop(0,'#5e2b25');
+  g.addColorStop(1,'#3b0f0f');
+  ctx.fillStyle = g;
+  ctx.fillRect(0,0,cw,ch);
 
-  // ---------- HELPERS ----------
-  const rnd=(a,b)=>a+Math.random()*(b-a);
-  const hit=(a,b)=>Math.abs(a.x-b.x)<(a.w/2+b.w/2)&&Math.abs(a.y-b.y)<(a.h/2+b.h/2);
-  const draw=(img,x,y,w,h)=>ctx.drawImage(img,x-w/2,y-h/2,w,h);
-
-  // Mars arka planı (çizgisiz, parallax benzeri toz)
-  function drawBG(){
-    // degrade zemin
-    const g=ctx.createLinearGradient(0,0,0,H);
-    g.addColorStop(0,"#2b1210"); g.addColorStop(.5,"#3b1714"); g.addColorStop(1,"#4b201a");
-    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-    // toz taneleri
-    ctx.fillStyle="#2a1917";
-    for(let i=0;i<180;i++){
-      const x=(i*47 + (s.time/23+i)%47)%W;
-      const y=(i*29 + (s.time/31+i)%31)%H;
-      ctx.fillRect(x,y,1,1);
-    }
+  // faint horizontal subtle bands (like earlier screenshot)
+  ctx.fillStyle = 'rgba(0,0,0,0.06)';
+  const bandH = Math.floor(ch/12);
+  for(let i=1;i<12;i++){
+    ctx.fillRect(0, i*bandH + Math.sin(perf*0.001+i)*8, cw, 6);
   }
-
-  function shoot(){
-    const p=s.player;
-    if(s.tripleUntil>s.time){
-      const spread=2.2;
-      s.bullets.push({x:p.x,y:p.y-18,vy:-3,w:4,h:12});
-      s.bullets.push({x:p.x-10,y:p.y-14,vy:-3,vx:-spread,w:4,h:12});
-      s.bullets.push({x:p.x+10,y:p.y-14,vy:-3,vx:+spread,w:4,h:12});
-    }else{
-      s.bullets.push({x:p.x,y:p.y-18,vy:-3,w:4,h:12});
-    }
+  // stars
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  for(let i=0;i<150;i++){
+    const x = (i*37)%cw;
+    const y = ((i*73)%ch);
+    ctx.fillRect(x,y,1,1);
   }
+}
 
-  function spawn(img,spd,hp,score,fire=false){
-    const w=36,h=30,x=rnd(28,W-28);
-    s.enemies.push({x,y:-40,w,h,img,speed:spd,hp,score,fire,cd:rnd(900,1600)});
+/* load images */
+const IM = {};
+function loadImg(key, src){
+  const img = new Image();
+  img.src = src;
+  IM[key] = {img, loaded:false};
+  img.onload = ()=> IM[key].loaded = true;
+}
+loadImg('player','img/player/bpc_mini.png');
+loadImg('m_green','merkur/mars_enemy_green.png');
+loadImg('m_yellow','merkur/mars_enemy_yellow.png');
+loadImg('m_white','merkur/mars_enemy_white.png'); // we'll flip when drawing
+// you can put more if needed
+
+/* game state */
+let running = false;
+let last = 0;
+let perf = 0;
+let score = 0, diamondsTimer=0;
+let lives = 3;
+let spreadActiveUntil = 0;
+
+const player = {
+  x: null, y: null, r: 46, w:120, h:120, dragging:false
+};
+
+const bullets = [];
+const enemies = [];
+const diamonds = [];
+const enemySpawnInterval = 900; // ms
+let lastEnemySpawn = 0;
+
+function startGame(){
+  // reset
+  score = 0; diamondsTimer = 0; lives = 3; spreadActiveUntil = 0;
+  enemies.length = 0; bullets.length = 0; diamonds.length = 0;
+  lastEnemySpawn = 0;
+  player.x = cw/2; player.y = ch - 220;
+  updateHUD();
+  running = true;
+  startModal.style.display = 'none';
+  last = performance.now();
+  requestAnimationFrame(loop);
+}
+
+startBtn.addEventListener('click', startGame);
+startModal.addEventListener('pointerdown', (e)=> {
+  startGame();
+});
+
+/* pointer drag controls */
+let activePointer = null;
+canvas.addEventListener('pointerdown', (e)=> {
+  const p = getPointer(e);
+  if(dist(p.x, p.y, player.x, player.y) < 300) {
+    player.dragging = true; activePointer = e.pointerId;
+    player.x = p.x; player.y = p.y;
+  } else {
+    // allow drag anywhere to move horizontally
+    player.dragging = true; activePointer = e.pointerId;
+    player.x = p.x;
   }
-
-  function wave(a){
-    // artan zorluk: süre ve skora göre spawn hızlanır
-    const t=s.time/1000;
-    const base=Math.max(320 - s.score*0.6 - t*10, 120);
-    if(s.time - s.lastSpawn > base){
-      s.lastSpawn=s.time;
-      const r=Math.random();
-      if(r<.5) spawn(a.g, .65,1,2,false);
-      else if(r<.87) spawn(a.y, .8, 1,3,false);
-      else spawn(a.w, .95,1,3,true); // white ateş edebilir
-    }
-    if(s.time - s.lastGem > 6000){
-      s.lastGem=s.time;
-      s.gems.push({x:rnd(28,W-28), y:-20, vy:.55, r:10, t:0});
-    }
+  e.preventDefault();
+});
+canvas.addEventListener('pointermove', (e)=> {
+  if(player.dragging && e.pointerId === activePointer) {
+    const p = getPointer(e);
+    // allow only horizontal sliding mostly, but small Y adjust so feels natural
+    player.x = clamp(p.x, 80, cw-80);
+    // player.y = clamp(p.y, ch-400, ch-160);
   }
-
-  function explode(x,y,c){ // basit partikül
-    for(let i=0;i<12;i++){
-      s.particles.push({x,y, vx:rnd(-1.6,1.6), vy:rnd(-1.6,.6), life:450, col:c, w:2, h:2});
-    }
+});
+canvas.addEventListener('pointerup', (e)=> {
+  if(e.pointerId === activePointer) {
+    player.dragging = false; activePointer = null;
   }
+});
+canvas.addEventListener('pointercancel', ()=> { player.dragging = false; activePointer = null; });
 
-  function damage(){
-    if(--s.lives<=0){ gameOver(); return; }
-    drawHearts();
-  }
+function getPointer(e){
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  return {x: (e.clientX - rect.left)*scaleX, y: (e.clientY - rect.top)*scaleY};
+}
 
-  // ---------- GAME LOOP ----------
-  let ART=null, run=false, last=0;
-  function loop(ts){
-    if(!run){ last=ts; return requestAnimationFrame(loop); }
-    const dt=ts-last; last=ts; s.time+=dt;
+/* helpers */
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+function dist(x1,y1,x2,y2){ return Math.hypot(x2-x1,y2-y1); }
 
-    drawBG();           // zemin
-    wave(ART);          // düşman/öğe üret
-
-    // oyuncu ateşi
-    s.fireCD-=dt;
-    if(s.pressed && s.fireCD<=0){ shoot(); s.fireCD=120; }
-
-    // mermi çiz
-    ctx.fillStyle="#96e1ff";
-    s.bullets=s.bullets.filter(b=>{
-      b.x+=(b.vx||0); b.y+=b.vy;
-      ctx.fillRect(b.x-2,b.y-6,4,12);
-      return b.y>-30 && b.y<H+30 && b.x>-15 && b.x<W+15;
+/* firing */
+let lastFire = 0;
+const fireRate = 160; // ms single
+function tryFire(ts){
+  if(!player.dragging) return;
+  if(ts - lastFire < fireRate) return;
+  lastFire = ts;
+  if(performance.now() < spreadActiveUntil){
+    // spread -> 3 bullets
+    const angs = [-0.22,0,0.22];
+    angs.forEach(a=>{
+      bullets.push({
+        x: player.x,
+        y: player.y - 80,
+        vx: Math.sin(a)*12,
+        vy: -Math.cos(a)*12,
+        r:8, color:'#7ff'
+      });
     });
+  } else {
+    bullets.push({x:player.x,y:player.y-80,vx:0,vy:-18,r:8,color:'#7ff'});
+  }
+}
 
-    // düşmanlar
-    s.enemies=s.enemies.filter(e=>{
-      e.y+=e.speed;
-      // düşman mermisi
-      e.cd-=dt;
-      if(e.fire && e.cd<=0){ e.cd=rnd(1100,1700); s.ebullets.push({x:e.x,y:e.y+10,vy:1.2,w:6,h:12}); }
-      draw(e.img,e.x,e.y,e.w,e.h);
-      return e.y<H+40 && e.hp>0;
-    });
+/* spawn enemies */
+function spawnEnemy(){
+  // only green and yellow and white (white we will draw flipped)
+  const types = ['m_green','m_yellow','m_white'];
+  const t = types[Math.floor(Math.random()*types.length)];
+  const x = Math.random()*(cw-160)+80;
+  const y = -120;
+  const speed = 1.2 + Math.random()*1.8;
+  enemies.push({type:t,x,y,speed,w:120,h:80, hp:1});
+}
 
-    // düşman mermileri
-    ctx.fillStyle="#ffb3b3";
-    s.ebullets=s.ebullets.filter(b=>{
-      b.y+=b.vy; ctx.fillRect(b.x-1,b.y-6,2,10); return b.y<H+30;
-    });
+/* spawn diamond occasionally */
+function spawnDiamond(){
+  const x = Math.random()*(cw-200)+100;
+  const y = -60;
+  const kindRoll = Math.random();
+  let kind = 'green'; if(kindRoll>0.7) kind='yellow'; else if(kindRoll>0.45) kind='white';
+  diamonds.push({x,y,vy:2.2,kind});
+}
 
-    // elmaslar
-    s.gems=s.gems.filter(g=>{
-      g.t+=dt; g.y+=g.vy;
-      const R=g.r, x=g.x, y=g.y;
-      ctx.beginPath(); ctx.moveTo(x,y-R); ctx.lineTo(x+R,y); ctx.lineTo(x,y+R*1.2); ctx.lineTo(x-R,y); ctx.closePath();
-      ctx.fillStyle="#37c8ff"; ctx.fill(); ctx.strokeStyle="#7de3ff"; ctx.lineWidth=2; ctx.stroke();
-      return g.y<H+30;
-    });
+/* collisions */
+function rectColl(a,b){
+  return !(a.x - a.w/2 > b.x + b.w/2 || a.x + a.w/2 < b.x - b.w/2 || a.y - a.h/2 > b.y + b.h/2 || a.y + a.h/2 < b.y - b.h/2);
+}
 
-    // partiküller
-    s.particles=s.particles.filter(p=>{
-      p.life-=dt; p.x+=p.vx; p.y+=p.vy;
-      ctx.globalAlpha=Math.max(p.life/450,0); ctx.fillStyle=p.col; ctx.fillRect(p.x,p.y,p.w,p.h); ctx.globalAlpha=1;
-      return p.life>0;
-    });
+/* update HUD */
+function updateHUD(){
+  scoreEl.textContent = score;
+  diamondHud.textContent = (spreadActiveUntil>performance.now()) ? `💎 ${Math.ceil((spreadActiveUntil-performance.now())/1000)}s` : '💎 0s';
+  livesHud.textContent = '💖'.repeat(lives);
+}
 
-    // oyuncu
-    draw(ART.p, s.player.x, s.player.y, s.player.w, s.player.h);
+/* main loop */
+function loop(ts){
+  perf = ts;
+  const dt = ts - last;
+  last = ts;
+  // update
+  if(running){
+    // spawn enemies
+    if(ts - lastEnemySpawn > enemySpawnInterval){
+      spawnEnemy(); lastEnemySpawn = ts;
+      if(Math.random() < 0.35) spawnDiamond();
+    }
+    // update bullets
+    for(let i=bullets.length-1;i>=0;i--){
+      const b = bullets[i];
+      b.x += b.vx * (dt/16);
+      b.y += b.vy * (dt/16);
+      if(b.y < -200 || b.x < -200 || b.x > cw+200) bullets.splice(i,1);
+    }
+    // update enemies
+    for(let i=enemies.length-1;i>=0;i--){
+      const e = enemies[i];
+      e.y += e.speed * (dt/16) * 1.0;
+      // small sinus horizontal drift
+      e.x += Math.sin((ts + i*100)/700 + i) * 0.5;
+      if(e.y > ch + 200) enemies.splice(i,1);
+    }
+    // diamonds
+    for(let i=diamonds.length-1;i>=0;i--){
+      const d = diamonds[i];
+      d.y += d.vy * (dt/16);
+      if(d.y > ch + 120) diamonds.splice(i,1);
+    }
 
-    // çarpışmalar: oyuncu mermisi -> düşman
-    for(const b of s.bullets){
-      for(const e of s.enemies){
-        if(hit(b,e)){
-          e.hp--; b.y=-9999;
-          if(e.hp<=0){
-            s.score += e.score; scoreEl.textContent = s.score;
-            explode(e.x,e.y,"#ffd27d");
-            e.y=H+9999;
-          }
+    // collisions: bullet -> enemy
+    for(let bi=bullets.length-1;bi>=0;bi--){
+      const b = bullets[bi];
+      for(let ei=enemies.length-1;ei>=0;ei--){
+        const e = enemies[ei];
+        const dx = Math.abs(b.x - e.x), dy = Math.abs(b.y - e.y);
+        if(dx < 60 && dy < 60){
+          // hit
+          bullets.splice(bi,1);
+          enemies.splice(ei,1);
+          score += 1;
+          updateHUD();
           break;
         }
       }
     }
 
-    // düşman / mermi -> oyuncu
-    const P={x:s.player.x,y:s.player.y,w:s.player.w,h:s.player.h};
-    for(const eb of s.ebullets){ if(hit(P,eb)){ eb.y=H+9999; explode(P.x,P.y,"#ff9aa2"); damage(); break; } }
-    for(const e of s.enemies){ if(hit(P,e)){ e.hp=0; explode(e.x,e.y,"#ffb07c"); e.y=H+9999; damage(); break; } }
-
-    // elmas -> oyuncu
-    for(const g of s.gems){
-      if(hit(P,{x:g.x,y:g.y,w:g.r*2,h:g.r*2})){
-        s.gems = s.gems.filter(gg=>gg!==g);
-        s.tripleUntil = Math.max(s.tripleUntil, s.time + 12000);
+    // collisions: enemy -> player
+    for(let ei=enemies.length-1;ei>=0;ei--){
+      const e = enemies[ei];
+      if(Math.abs(e.x - player.x) < 70 && Math.abs(e.y - player.y) < 70){
+        enemies.splice(ei,1);
+        lives -= 1;
+        updateHUD();
+        if(lives <= 0){ gameOver(); return; }
       }
     }
-    gemEl.textContent = (s.tripleUntil>s.time) ? Math.ceil((s.tripleUntil-s.time)/1000)+"s" : "0s";
 
-    requestAnimationFrame(loop);
+    // collisions: diamond -> player
+    for(let di=diamonds.length-1;di>=0;di--){
+      const d = diamonds[di];
+      if(Math.abs(d.x - player.x) < 60 && Math.abs(d.y - player.y) < 60){
+        // pickup
+        let pts = (d.kind==='green')?2:3;
+        score += pts;
+        // activate spread for 6s
+        spreadActiveUntil = performance.now() + 6000;
+        diamonds.splice(di,1);
+        updateHUD();
+      }
+    }
+
+    // firing
+    tryFire(ts);
   }
 
-  function reset(){
-    s.time=0; s.score=0; s.lives=3; s.pressed=false;
-    s.player.x=W/2; s.player.y=H*0.8;
-    s.bullets.length=s.ebullets.length=s.enemies.length=s.particles.length=s.gems.length=0;
-    s.tripleUntil=0; s.lastSpawn=0; s.lastGem=0; s.fireCD=0;
-    scoreEl.textContent="0"; drawHearts();
-  }
-  function start(){ reset(); ov.style.display="none"; run=true; }
-  function gameOver(){ run=false;
-    ov.querySelector("h1").textContent="GAME OVER";
-    ov.querySelector("p").innerHTML="Skor: <b>"+s.score+"</b>";
-    go.textContent="TEKRAR"; ov.style.display="flex";
-  }
-  go.onclick=start;
+  // draw
+  ctx.clearRect(0,0,cw,ch);
+  drawBackground();
 
-  // ---------- BOOT ----------
-  (async()=>{
-    const [p,g,y,w]=await Promise.all([load(ASSETS.player),load(ASSETS.g),load(ASSETS.y),load(ASSETS.w)]);
-    ART={p, g, y, w:flipH(w)};        // white ters çevrildi
-    ov.style.display="flex";
-    requestAnimationFrame(loop);
-  })();
+  // draw diamonds
+  for(const d of diamonds){
+    // simple blue diamond polygon
+    ctx.save();
+    const s = 36;
+    ctx.translate(d.x,d.y);
+    ctx.fillStyle = (d.kind==='green')? '#3eea6a' : (d.kind==='yellow')? '#ffd25b' : '#cfe7ff';
+    ctx.beginPath();
+    ctx.moveTo(0,-s);
+    ctx.lineTo(s,0);
+    ctx.lineTo(0,s);
+    ctx.lineTo(-s,0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
 
-})();</script>
+  // draw enemies (images)
+  for(const e of enemies){
+    const imageObj = IM[e.type].img;
+    if(IM[e.type] && IM[e.type].loaded){
+      const dw = e.w, dh = e.h;
+      ctx.save();
+      if(e.type === 'm_white'){
+        // draw flipped horizontally
+        ctx.translate(e.x, e.y);
+        ctx.scale(-1,1);
+        ctx.drawImage(imageObj, -dw/2, -dh/2, dw, dh);
+      } else {
+        ctx.drawImage(imageObj, e.x - dw/2, e.y - dh/2, dw, dh);
+      }
+      ctx.restore();
+    } else {
+      // fallback rectangle
+      ctx.fillStyle = '#555';
+      ctx.fillRect(e.x-40, e.y-20, 80, 40);
+    }
+  }
+
+  // draw bullets
+  for(const b of bullets){
+    ctx.fillStyle = b.color;
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y, b.r, b.r*1.2, 0, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // draw player
+  if(IM.player && IM.player.loaded){
+    const pimg = IM.player.img;
+    const pw = 140, ph = 140;
+    ctx.drawImage(pimg, player.x - pw/2, player.y - ph/2, pw, ph);
+  } else {
+    ctx.fillStyle = '#0f9';
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, 36, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  updateHUD();
+
+  // next frame
+  if(running) requestAnimationFrame(loop);
+}
+
+/* game over */
+function gameOver(){
+  running = false;
+  startModal.style.display = 'flex';
+  startModal.querySelector('.startCard h3').textContent = 'GAME OVER';
+  startModal.querySelector('.btn').textContent = 'TEKRAR';
+}
+
+/* start positions */
+player.x = cw/2; player.y = ch - 220;
+
+/* initial minimal spawn so screen not empty (but game not started until start) */
+for(let i=0;i<3;i++){
+  enemies.push({type:['m_green','m_yellow'][i%2],x: (i+1)*cw/4,y: (i+1)*-120 - Math.random()*400, speed:1.2 + Math.random()});
+}
+
+/* simple ticker to spawn automatically while running */
+setInterval(()=>{
+  if(running && Math.random()>0.4) spawnEnemy();
+  if(running && Math.random()>0.85) spawnDiamond();
+}, 800);
+
+/* safe fallback: if images are missing still run — user can replace assets later */
+Object.values(IM).forEach(o=>{
+  o.img.onerror = ()=> console.warn('image missing', o.img.src);
+});
+
+/* keep canvas responsive */
+resize();
+</script>
 </body>
 </html>
