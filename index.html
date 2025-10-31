@@ -42,55 +42,7 @@
 
   <audio id="boom" preload="auto" playsinline>
     <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_2b1b0dcd8c.mp3" type="audio/mpeg">
-  </audio><!-- Firebase Skor Kaydı -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-  import { getDatabase, ref, push, set, get, query, orderByChild, limitToLast, update } 
-    from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
-
-  const app = initializeApp({
-    apiKey: "API_KEYİN",
-    authDomain: "PROJEN.firebaseapp.com",
-    databaseURL: "https://PROJEN-default-rtdb.firebaseio.com",
-    projectId: "PROJEN"
-  });
-  const db = getDatabase(app);
-
-  // 🎯 Oyuncuya sabit kod üret
-  function getPlayerCode() {
-    let code = localStorage.getItem("playerCode");
-    if (!code) {
-      const rnd = Math.floor(10000 + Math.random() * 89999);
-      code = "BPC" + rnd;
-      localStorage.setItem("playerCode", code);
-    }
-    return code;
-  }
-
-  // 🕹️ Skoru Firebase'e kaydet
-  async function saveScore(score) {
-    const code = getPlayerCode();
-    const scoresRef = ref(db, "scores");
-    const newScore = push(scoresRef);
-    await set(newScore, {
-      code: code,
-      score: score,
-      time: Date.now()
-    });
-    console.log(`✅ ${code} için skor kaydedildi: ${score}`);
-  }
-
-  // 🏆 En yüksek skoru görmek için (sadece sen)
-  async function getTopPlayer() {
-    const q = query(ref(db, "scores"), orderByChild("score"), limitToLast(1));
-    const snap = await get(q);
-    if (!snap.exists()) return null;
-    let top;
-    snap.forEach(c => top = c.val());
-    console.log("En yüksek skor:", top);
-    return top;
-  }
-</script>
+  </audio>
 
 <script>
 /* ---------- Canvas / HUD ---------- */
@@ -366,12 +318,7 @@ function draw(t){
     ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
   });
 
-  if (gameOver) {
-  renderFinalScore(t);
-  if (!scoreSent) {           // ⬅️ sadece 1 kez kaydet
-    saveScore(score);
-    scoreSent = true;
-  }
+  if(gameOver){ renderFinalScore(t); }
 }
 
 function loop(t){ const dt=Math.min(t-(window._lt||t),32); window._lt=t; update(dt); draw(t); requestAnimationFrame(loop); }
