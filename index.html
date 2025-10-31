@@ -77,6 +77,7 @@ let bullets=[], enemies=[], enemyBullets=[], gems=[], mascots=[], particles=[];
 let score=0,lives=3,started=false,gameOver=false;
 let powerTime=0, fireTimer=0, FIRE_MS=170;
 let elapsed=0,enT=0,gemT=0,mascotT=0;
+let scoreSent=false;                 // ⬅️ sadece 1 kez kayıt için bayrak
 const player={x:cv.width/2-33,y:cv.height-120,w:66,h:66};
 
 /* ---- verification code (light) ---- */
@@ -318,7 +319,13 @@ function draw(t){
     ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
   });
 
-  if(gameOver){ renderFinalScore(t); }
+  if(gameOver){
+    renderFinalScore(t);
+    if(!scoreSent && window.saveScore){  // ⬅️ sadece 1 kez skor kaydı
+      window.saveScore(score);
+      scoreSent = true;
+    }
+  }
 }
 
 function loop(t){ const dt=Math.min(t-(window._lt||t),32); window._lt=t; update(dt); draw(t); requestAnimationFrame(loop); }
@@ -327,7 +334,7 @@ requestAnimationFrame(loop);
 restartBtn.onclick=()=>{
   score=0;lives=3;powerTime=0; scEl.textContent=score; pxEl.textContent=0;
   bullets=[];enemies=[];enemyBullets=[];gems=[];mascots=[];particles=[];
-  updateLives(); gameOver=false; started=false;
+  updateLives(); gameOver=false; started=false; scoreSent=false;     // ⬅️ bayrağı sıfırla
   overEl.style.display="none"; overEl.style.background="rgba(0,0,0,.84)";
   playId=Math.floor(performance.now()+Math.random()*1e9); makeCode();
   startOverlay.style.display="flex";
@@ -346,7 +353,7 @@ let playerImg=null, enemyImg={red:null,green:null,ufo_red:null,ufo_gray:null}, p
 
 <!-- 🔌 Firebase global counter (persistent + cache + correct region URL) -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getDatabase, ref, onValue, runTransaction, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
   // ✅ EXACT instance URL from your console (Belgium / europe-west1)
@@ -363,7 +370,8 @@ let playerImg=null, enemyImg={red:null,green:null,ufo_red:null,ufo_gray:null}, p
     measurementId: "G-9XN8DJSYRH"
   };
 
-  const app = initializeApp(firebaseConfig);
+  // tek app kullan
+  const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
   const db  = getDatabase(app, INSTANCE_URL);
 
   const refCounter = ref(db, "stats/globalPlays");
@@ -392,3 +400,49 @@ let playerImg=null, enemyImg={red:null,green:null,ufo_red:null,ufo_gray:null}, p
       const val = Number(res.snapshot.val() ?? 0);
       localStorage.setItem("bpc_global_plays", String(val));
       if (el) el.textContent = val.toLocaleString("en-US");
+    });
+  };
+</script>
+
+<!-- 🧾 Firebase player scores (reuses the same app) -->
+<script type="module">
+  import { getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, push, set, query, orderByChild, limitToLast, get }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  const INSTANCE_URL = "https://bpc-space-default-rtdb.europe-west1.firebasedatabase.app/";
+  const app = getApps()[0];                          // aynı app'i kullan
+  const db  = getDatabase(app, INSTANCE_URL);
+
+  // Oyuncu kodu (tarayıcıda kalıcı)
+  function getPlayerCode(){
+    let code = localStorage.getItem("playerCode");
+    if (!code) {
+      const rnd = Math.floor(10000 + Math.random()*89999);
+      code = "BPC" + rnd;
+      localStorage.setItem("playerCode", code);
+    }
+    return code;
+  }
+
+  // dışa aç (game script'ten çağırıyoruz)
+  window.saveScore = async function(score){
+    try{
+      const code = getPlayerCode();
+      const newRef = push(ref(db,"scores"));
+      await set(newRef, { code, score, time: Date.now() });
+      console.log(`✅ Skor kaydedildi: ${code} - ${score}`);
+    }catch(e){ console.error("❌ saveScore error:", e); }
+  };
+
+  // isteğe bağlı: birincisi (konsol için)
+  window.getTopPlayer = async function(){
+    const q = query(ref(db,"scores"), orderByChild("score"), limitToLast(1));
+    const snap = await get(q);
+    let top=null; snap.forEach(c=> top=c.val());
+    console.log("🏆 En yüksek skor:", top);
+    return top;
+  };
+</script>
+</body>
+</html>
