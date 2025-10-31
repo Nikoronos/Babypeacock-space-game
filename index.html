@@ -403,46 +403,78 @@ let playerImg=null, enemyImg={red:null,green:null,ufo_red:null,ufo_gray:null}, p
     });
   };
 </script>
-
-<!-- 🧾 Firebase player scores (reuses the same app) -->
+<!-- 🧾 Firebase player scores + weekly system -->
 <script type="module">
   import { getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, push, set, query, orderByChild, limitToLast, get }
+  import { getDatabase, ref, push, set, query, orderByChild, limitToLast, get } 
     from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
+  // 🔹 Aynı app'i kullan
   const INSTANCE_URL = "https://bpc-space-default-rtdb.europe-west1.firebasedatabase.app/";
-  const app = getApps()[0];                          // aynı app'i kullan
-  const db  = getDatabase(app, INSTANCE_URL);
+  const app = getApps()[0];
+  const db = getDatabase(app, INSTANCE_URL);
 
-  // Oyuncu kodu (tarayıcıda kalıcı)
-  function getPlayerCode(){
+  // 🔹 Oyuncu kodu (tarayıcıda kalıcı)
+  function getPlayerCode() {
     let code = localStorage.getItem("playerCode");
     if (!code) {
-      const rnd = Math.floor(10000 + Math.random()*89999);
+      const rnd = Math.floor(10000 + Math.random() * 89999);
       code = "BPC" + rnd;
       localStorage.setItem("playerCode", code);
     }
     return code;
   }
 
-  // dışa aç (game script'ten çağırıyoruz)
-  window.saveScore = async function(score){
-    try{
+  // 🔹 Haftalık anahtar üret
+  function weekKey() {
+    const d = new Date();
+    const day = (d.getDay() + 6) % 7;
+    d.setDate(d.getDate() - day);
+    const y = d.getFullYear();
+    const oneJan = new Date(y, 0, 1);
+    const week = Math.ceil((((d - oneJan) / 86400000) + oneJan.getDay() + 1) / 7);
+    return `${y}-W${String(week).padStart(2, '0')}`;
+  }
+
+  // 🔹 Skoru kaydet (global + haftalık)
+  window.saveScore = async function(score) {
+    try {
       const code = getPlayerCode();
-      const newRef = push(ref(db,"scores"));
-      await set(newRef, { code, score, time: Date.now() });
-      console.log(`✅ Skor kaydedildi: ${code} - ${score}`);
-    }catch(e){ console.error("❌ saveScore error:", e); }
+      const data = { code, score, time: Date.now() };
+
+      // Tüm zamanlar
+      await set(push(ref(db, "scores")), data);
+
+      // Haftalık klasör
+      const wk = weekKey();
+      await set(push(ref(db, `scoresWeekly/${wk}`)), data);
+
+      console.log(`✅ Skor kaydedildi: ${code} – ${score} (hafta: ${wk})`);
+    } catch (e) {
+      console.error("❌ saveScore error:", e);
+    }
   };
 
-  // isteğe bağlı: birincisi (konsol için)
-  window.getTopPlayer = async function(){
-    const q = query(ref(db,"scores"), orderByChild("score"), limitToLast(1));
-    const snap = await get(q);
-    let top=null; snap.forEach(c=> top=c.val());
-    console.log("🏆 En yüksek skor:", top);
+  // 🔹 Haftalık birinciyi çek (ödül kontrol)
+  window.getTopOfWeek = async function(wk = weekKey()) {
+    const q = query(ref(db, `scoresWeekly/${wk}`), orderByChild("score"), limitToLast(1));
+    const s = await get(q);
+    let top = null;
+    s.forEach(c => top = c.val());
+    console.log("🏆 Haftalık birinci:", top);
+    return top;
+  };
+
+  // 🔹 Tüm zamanların birincisi (isteğe bağlı)
+  window.getTopPlayer = async function() {
+    const q = query(ref(db, "scores"), orderByChild("score"), limitToLast(1));
+    const s = await get(q);
+    let top = null;
+    s.forEach(c => top = c.val());
+    console.log("🥇 En yüksek skor:", top);
     return top;
   };
 </script>
+
 </body>
 </html>
