@@ -2,19 +2,41 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
-<title>Babypeacock — BPC Space (Merkür Patch)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>Babypeacock — BPC Space v21 (Merkür Patch, Clear BG)</title>
+<meta name="theme-color" content="#020617">
+<link rel="manifest" href="data:application/manifest+json,{
+  &quot;name&quot;:&quot;BPC Space&quot;,
+  &quot;short_name&quot;:&quot;BPC Space&quot;,
+  &quot;start_url&quot;:&quot;.&quot;,
+  &quot;display&quot;:&quot;standalone&quot;,
+  &quot;background_color&quot;:&quot;#000000&quot;,
+  &quot;theme_color&quot;:&quot;#020617&quot;
+}">
 <style>
+  :root{
+    --fg:#00ffc8; --fg2:#a7f3d0; --bg:#020617; --accent1:#22d3ee; --accent2:#34d399;
+  }
   html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:system-ui,Segoe UI,Roboto,Arial}
-  #brand{position:fixed;top:6px;left:12px;z-index:4;font-weight:900;
-    background:linear-gradient(90deg,#22d3ee,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent}
-  #score{position:fixed;top:8px;left:0;right:0;text-align:center;color:#00ffc8;font-weight:700;z-index:4}
-  #power{position:fixed;top:8px;right:10px;color:#a7f3d0;font-weight:700;z-index:4}
-  #lives{position:fixed;bottom:10px;left:0;right:0;text-align:center;color:#f87171;font-weight:700;z-index:4}
-  #startOverlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;
-    background:rgba(0,0,0,.84);color:#fff;font-size:18px;font-weight:800;z-index:6;text-align:center}
-  .btn{margin-top:12px;padding:12px 22px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900}
-  canvas{display:block;margin:44px auto 0 auto;background:#020617;touch-action:none;user-select:none;width:min(420px,96vw);height:auto;max-height:92vh}
+  #brand{position:fixed;top:6px;left:12px;z-index:5;font-weight:900;
+    background:linear-gradient(90deg,var(--accent1),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  #score{position:fixed;top:8px;left:0;right:0;text-align:center;color:var(--fg);font-weight:800;z-index:5}
+  #power{position:fixed;top:8px;right:10px;color:var(--fg2);font-weight:800;z-index:5}
+  #lives{position:fixed;bottom:10px;left:0;right:0;text-align:center;color:#f87171;font-weight:800;z-index:5}
+
+  #hudR{position:fixed;bottom:8px;right:8px;color:#9ca3af;font-size:11px;z-index:5;text-align:right;opacity:.75}
+  #debug{position:fixed;top:36px;left:8px;color:#94a3b8;font:12px/1.35 ui-monospace,Consolas,monospace;white-space:pre;z-index:5}
+
+  #startOverlay,#gameOver{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
+    background:rgba(0,0,0,.86);color:#fff;font-size:20px;font-weight:800;z-index:6;text-align:center}
+  .btn{margin-top:12px;padding:12px 22px;border:1px solid var(--fg);background:#0b1220;color:var(--fg);border-radius:12px;font-weight:900}
+  canvas{display:block;margin:44px auto 0 auto;background:var(--bg);touch-action:none;user-select:none;width:min(420px,96vw);height:auto;max-height:92vh}
+
+  /* Joystick */
+  #joy {position:fixed;left:12px;bottom:16px;width:104px;height:104px;border-radius:999px;background:rgba(15,23,42,.3);
+    border:1px solid rgba(148,163,184,.25);backdrop-filter:blur(2px);z-index:6;display:none}
+  #joy .knob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:999px;
+    background:rgba(30,41,59,.8);border:1px solid rgba(148,163,184,.3)}
 </style>
 </head>
 <body>
@@ -22,31 +44,44 @@
   <div id="score">🦚 Score: <span id="sc">0</span></div>
   <div id="power">💎 <span id="px">0</span>s</div>
   <div id="lives">❤️❤️❤️</div>
+  <div id="hudR">v21 • 60fps hedefi</div>
+  <pre id="debug"></pre>
 
-  <div id="startOverlay">
-    <div style="margin-bottom:8px">Ekranda basılı tut-sürükle → otomatik ateş</div>
+  <div id="startOverlay" style="display:flex">
+    <div style="margin-bottom:8px">Basılı tut & sürükle: hareket — basılıyken otomatik ateş</div>
     <button id="startBtn" class="btn">BAŞLA</button>
+    <div style="font-size:12px;opacity:.75;margin-top:8px">Her yere dokunarak da başlayabilirsin</div>
   </div>
 
+  <div id="gameOver">
+    <div style="font-weight:900;margin-bottom:8px">GAME OVER</div>
+    <button id="restart" class="btn">Yeniden</button>
+  </div>
+
+  <div id="joy"><div class="knob"></div></div>
   <canvas id="game" width="420" height="700"></canvas>
+
   <audio id="boom" preload="auto" playsinline>
     <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_2b1b0dcd8c.mp3" type="audio/mpeg">
   </audio>
 
 <script>
-const cv=document.getElementById("game"),ctx=cv.getContext("2d");ctx.imageSmoothingEnabled=false;
-const scEl=document.getElementById("sc"),pxEl=document.getElementById("px"),livesEl=document.getElementById("lives");
-const startOverlay=document.getElementById("startOverlay"),startBtn=document.getElementById("startBtn");
-const boom=document.getElementById("boom");
+/* ======================== KURULUM ======================== */
+const cv=document.getElementById("game"), ctx=cv.getContext("2d"); ctx.imageSmoothingEnabled=false;
+const scEl=document.getElementById("sc"), pxEl=document.getElementById("px"), livesEl=document.getElementById("lives");
+const startOverlay=document.getElementById("startOverlay"), startBtn=document.getElementById("startBtn");
+const overEl=document.getElementById("gameOver"), restartBtn=document.getElementById("restart"), boom=document.getElementById("boom");
+const dbg=document.getElementById("debug");
+const joy=document.getElementById("joy"), knob=joy.querySelector(".knob");
 
 function clamp(v,a,b){return v<a?a:v>b?b:v;}
 function rand(a,b){return a+Math.random()*(b-a);}
 function rectHit(a,b){return !(a.x+a.w<b.x||a.x>b.x+b.w||a.y+a.h<b.y||a.y>b.y+b.h);}
-function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(src);i.src=src;});}
+function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error(src));i.src=src;});}
 
-/* 🔹 Arka plan temizleme (siyah/koyu gri) – dosyandaki mantığın güçlendirilmişi */
+/* ---- Sprite arka plan temizleme (koyu gri dahil) ---- */
 function keyOutDark(img,TH=110){
-  const w=img.width,h=img.height,off=document.createElement('canvas');off.width=w;off.height=h;
+  const w=img.width,h=img.height,off=document.createElement('canvas'); off.width=w; off.height=h;
   const g=off.getContext('2d'); g.drawImage(img,0,0);
   const d=g.getImageData(0,0,w,h),a=d.data;
   for(let i=0;i<a.length;i+=4){
@@ -56,176 +91,225 @@ function keyOutDark(img,TH=110){
   g.putImageData(d,0,0); return off;
 }
 
-/* ---------- Kesin dosya yolları (repo ağacın) ---------- */
-const PLAYER_SRC="img/player/peacock_gemisi.png"; // 👈 oyuncu
-const ENEMY_SRC={                                  // 👇 kök dizin
-  red:"bpc_enemy_red.png",
-  green:"bpc_enemy_green.png",
-  ufo_red:"bpc_enemy_ufo_red.png",
-  ufo_gray:"bpc_enemy_ufo_gray.png",
-  merkur_white:"mars_enemy_white.png",
-  merkur_green:"mars_enemy_green.png",
-  merkur_yellow:"mars_enemy_yellow.png"
+/* ======================== ASSET YOLLARI ======================== */
+/* Dosya ağacınla birebir: player img içinde, düşmanlar kök dizinde. */
+const PLAYER_SRC="img/player/peacock_gemisi.png";
+const ENEMY_SRC={
+  red           :"bpc_enemy_red.png",
+  green         :"bpc_enemy_green.png",
+  ufo_red       :"bpc_enemy_ufo_red.png",
+  ufo_gray      :"bpc_enemy_ufo_gray.png",
+  merkur_white  :"mars_enemy_white.png",
+  merkur_green  :"mars_enemy_green.png",
+  merkur_yellow :"mars_enemy_yellow.png"
 };
 
-/* ---------- State ---------- */
+/* ======================== DURUM ======================== */
 let bullets=[], enemies=[], enemyBullets=[], particles=[];
-let score=0,lives=3,started=false,gameOver=false;
-let powerTime=0, fireTimer=0, FIRE_MS=170;
-let elapsed=0,enT=0;
-const player={x:cv.width/2-33,y:cv.height-120,w:66,h:66};
+let score=0, lives=3, started=false, gameOver=false;
+let powerTime=0, fireTimer=0, FIRE_MS=150;
+let elapsed=0, enT=0, fps=0, frameCount=0, ftAccum=0;
+const player={x:cv.width/2-33,y:cv.height-120,w:66,h:66, speed:5.3};
+function updateLives(){livesEl.innerHTML="❤️".repeat(lives);} updateLives();
 
-/* ---------- Stars ---------- */
+/* ======================== GÖKYÜZÜ ======================== */
 const starsA=[],starsB=[];
 for(let i=0;i<60;i++) starsA.push({x:rand(0,cv.width),y:rand(0,cv.height)});
 for(let i=0;i<35;i++) starsB.push({x:rand(0,cv.width),y:rand(0,cv.height)});
 
-/* ---------- Controls ---------- */
-function updateLives(){livesEl.innerHTML="❤️".repeat(lives);} updateLives();
-function startGame(){if(started)return; started=true; startOverlay.style.display="none";}
+/* ======================== KONTROL ======================== */
+function startGame(){ if(started) return; started=true; startOverlay.style.display="none"; }
 startBtn.onclick=startGame; cv.onclick=startGame;
-let holding=false;
-function getX(e){return (e.clientX??(e.touches?e.touches[0].clientX:0))-cv.getBoundingClientRect().left;}
-cv.addEventListener("pointerdown",e=>{if(!started)return;holding=true;player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w);});
-cv.addEventListener("pointermove",e=>{if(!holding)return;player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w);});
-cv.addEventListener("pointerup",()=>holding=false);
+let holding=false, joyActive=false, joyCx=0, joyCy=0;
+function getX(evt){return (evt.clientX??(evt.touches?evt.touches[0].clientX:0))-cv.getBoundingClientRect().left;}
+function getY(evt){return (evt.clientY??(evt.touches?evt.touches[0].clientY:0))-cv.getBoundingClientRect().top;}
 
-/* ---------- Fire ---------- */
-function shoot(){ bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10}); }
+cv.addEventListener("pointerdown",e=>{
+  if(!started) return;
+  holding=true;
+  // joystick alanı
+  joy.style.display="block";
+  const jb=joy.getBoundingClientRect();
+  joyCx=jb.left+jb.width/2, joyCy=jb.top+jb.height/2;
+});
+cv.addEventListener("pointermove",e=>{
+  if(!holding) return;
+  // joystick delta
+  const dx = clamp(e.clientX-joyCx, -40, 40);
+  const dy = clamp(e.clientY-joyCy, -40, 40);
+  knob.style.transform=`translate(${dx}px,${dy}px)`;
+  joyActive=true;
 
-/* ---------- Spawn havuzu + skor kuralları ---------- */
+  const nx=dx/40, ny=dy/40;
+  player.x=clamp(player.x+nx*player.speed, 0, cv.width-player.w);
+  player.y=clamp(player.y+ny*player.speed, 0, cv.height-player.h);
+});
+function resetJoy(){ holding=false; joyActive=false; knob.style.transform='translate(0,0)'; joy.style.display="none"; }
+cv.addEventListener("pointerup",resetJoy); cv.addEventListener("pointercancel", resetJoy);
+
+/* ======================== ATEŞ ======================== */
+function shoot(){ bullets.push({x:player.x+player.w/2-2, y:player.y, w:4, h:12, vy:-10}); }
+
+/* ======================== DÜŞMAN KURALLARI ======================== */
 function allowedKinds(score,t){
   let kinds=(t<10)?["ufo_red","ufo_gray"]:(t<40)?["ufo_red","ufo_gray","green"]:["ufo_red","ufo_gray","green","red"];
-  if(score>=500) kinds=kinds.filter(k=>k!=="red");        // 500+ red yok
-  if(score>=500) kinds.push("merkur_white");               // 500+ Merkür White (ters)
-  if(score>=600) kinds.push("merkur_green");               // 600+ Merkür Green
-  if(score>=800) kinds.push("merkur_yellow");              // 800+ Merkür Yellow
+  if(score>=500) kinds=kinds.filter(k=>k!=="red");
+  if(score>=500) kinds.push("merkur_white");
+  if(score>=600) kinds.push("merkur_green");
+  if(score>=800) kinds.push("merkur_yellow");
   return kinds;
 }
 function spawnEnemy(kinds){
-  if(enemies.length>12) return;
-  const size=rand(48,70);
-  const kind=kinds[Math.floor(Math.random()*kinds.length)];
-  const img=enemyImg[kind]||null;
-  enemies.push({x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3),kind,img,shootT:0,shootInt:680});
+  // RESİM YÜKLENMEMİŞ TÜRÜ SPAWN ETME → kutu asla görünmez
+  const pool = kinds.filter(k => enemyImg[k]);
+  if(pool.length===0) return;
+
+  if(enemies.length>14) return;
+  const size=rand(50,74);
+  const kind=pool[Math.floor(Math.random()*pool.length)];
+  const img=enemyImg[kind];
+  enemies.push({x:rand(0,cv.width-size), y:-size, w:size, h:size, vy:rand(1.4,3), kind, img, shootT:0, shootInt:700});
 }
 function enemyShoot(e){
   const cx=e.x+e.w/2;
   enemyBullets.push({x:cx-2,y:e.y+e.h,w:3,h:14,vy:6.2,color:"#ef4444"});
 }
 
-/* ---------- Effects ---------- */
+/* ======================== EFEKT ======================== */
 function explosion(x,y,n=16){
   for(let i=0;i<n;i++){
-    const a=Math.random()*Math.PI*2,sp=1.2+Math.random()*2.6;
-    particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:420+Math.random()*280,size:1.6+Math.random()*2.2});
+    const a=Math.random()*Math.PI*2, sp=1.2+Math.random()*2.6;
+    particles.push({x,y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, life:420+Math.random()*280, size:1.6+Math.random()*2.2});
   }
-  try{boom.currentTime=0;boom.play().catch(()=>{});}catch{}
+  try{ boom.currentTime=0; boom.play().catch(()=>{}); }catch{}
 }
 
-/* ---------- Update ---------- */
+/* ======================== OYUN DÖNGÜSÜ ======================== */
 function update(dt){
+  // yıldızlar
   starsA.forEach(s=>{ s.y+=0.35; if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} });
   starsB.forEach(s=>{ s.y+=0.9;  if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} });
 
-  if(!started||gameOver) return;
+  if(!started || gameOver) return;
 
-  elapsed+=dt/1000; enT+=dt; fireTimer+=dt;
-  if(holding && fireTimer>FIRE_MS){ shoot(); fireTimer=0; }
+  elapsed += dt/1000; enT += dt; fireTimer += dt;
+  if((holding||joyActive) && fireTimer>FIRE_MS){ shoot(); fireTimer=0; }
 
-  if(enT>650){ spawnEnemy(allowedKinds(score,elapsed)); enT=0; }
+  // spawn
+  if(enT>640){ spawnEnemy(allowedKinds(score,elapsed)); enT=0; }
 
+  // mermiler
   bullets.forEach(b=> b.y+=b.vy);
   bullets=bullets.filter(b=> b.y>-20);
 
+  // düşman hareket/ateş
   enemies.forEach(e=>{
-    e.y+=e.vy; e.shootT+=dt;
+    e.y += e.vy;
+    e.shootT += dt;
     if(e.shootT>=e.shootInt){ e.shootT=0; enemyShoot(e); }
   });
-  enemies=enemies.filter(e=> e.y<=cv.height+40);
+  enemies = enemies.filter(e=> e.y<=cv.height+40);
 
+  // düşman mermileri
   enemyBullets.forEach(m=> m.y+=m.vy);
-  enemyBullets=enemyBullets.filter(m=> m.y<cv.height+40);
+  enemyBullets = enemyBullets.filter(m=> m.y<cv.height+40);
 
+  // çarpışmalar
   for(const b of bullets){
     for(const e of enemies){
-      if(rectHit(b,e)){ explosion(e.x+e.w/2,e.y+e.h/2,14); b.dead=1; e.dead=1; score++; scEl.textContent=score; }
+      if(rectHit(b,e)){ explosion(e.x+e.w/2, e.y+e.h/2, 14); b.dead=1; e.dead=1; score++; scEl.textContent=score; }
     }
   }
-  for(const e of enemies){ if(rectHit(player,e)){ explosion(player.x+player.w/2,player.y+player.h/2,18); e.dead=1; lives--; updateLives(); if(lives<=0){ gameOver=true; } } }
-  for(const m of enemyBullets){ if(rectHit(player,m)){ lives--; updateLives(); m.dead=1; if(lives<=0){ gameOver=true; } } }
+  for(const e of enemies){
+    if(rectHit(player,e)){ explosion(player.x+player.w/2,player.y+player.h/2,18); e.dead=1; lives--; updateLives(); if(lives<=0){ gameOver=true; overEl.style.display='flex'; } }
+  }
+  for(const m of enemyBullets){
+    if(rectHit(player,m)){ lives--; updateLives(); m.dead=1; if(lives<=0){ gameOver=true; overEl.style.display='flex'; } }
+  }
 
   enemies=enemies.filter(o=>!o.dead);
   bullets=bullets.filter(o=>!o.dead);
   enemyBullets=enemyBullets.filter(o=>!o.dead);
 
+  // parçacıklar
   for(let i=particles.length-1;i>=0;i--){
     const p=particles[i]; p.life-=dt; if(p.life<=0){ particles.splice(i,1); continue; }
     p.x+=p.vx; p.y+=p.vy; p.vy+=0.02;
   }
 }
 
-/* ---------- Draw ---------- */
 function draw(){
   ctx.clearRect(0,0,cv.width,cv.height);
+  // yıldız alanı
   ctx.fillStyle="rgba(190,220,255,.85)"; starsA.forEach(s=>ctx.fillRect(s.x,s.y,1,1));
   ctx.fillStyle="rgba(255,255,255,.95)";  starsB.forEach(s=>ctx.fillRect(s.x,s.y,1.2,1.2));
 
-  if(playerImg) ctx.drawImage(playerImg,player.x,player.y,player.w,player.h);
+  // player
+  if(playerImg){ ctx.drawImage(playerImg,player.x,player.y,player.w,player.h); }
 
+  // mermiler
   ctx.fillStyle="#00ffc8"; bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
 
+  // düşmanlar
   enemies.forEach(e=>{
     if(e.img){
-      if(e.kind==="merkur_white"){ // white ters
+      if(e.kind==="merkur_white"){ // white ters (ayna)
         ctx.save(); ctx.translate(e.x+e.w,e.y); ctx.scale(-1,1); ctx.drawImage(e.img,0,0,e.w,e.h); ctx.restore();
       }else{
         ctx.drawImage(e.img,e.x,e.y,e.w,e.h);
       }
-    }else{
-      // fallback: artık normalde görünmemeli; yine de dursun
-      ctx.fillStyle=e.kind==="green"?"#22c55e":"#ef4444";
-      ctx.fillRect(e.x,e.y,e.w,e.h);
     }
   });
 
+  // düşman mermileri
   enemyBullets.forEach(m=>{ ctx.fillStyle=m.color; ctx.fillRect(m.x,m.y,m.w,m.h); });
 
+  // parçacıklar
   particles.forEach(p=>{
     const a=Math.max(0,p.life/500);
     ctx.globalAlpha=a; ctx.fillStyle="rgba(255,200,80,1)";
     ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
   });
 
-  if(gameOver){
-    ctx.font="900 32px system-ui,Arial"; ctx.fillStyle="#00ffc8"; ctx.textAlign="center";
-    ctx.fillText("GAME OVER", cv.width/2, cv.height/2);
-  }
+  // debug
+  dbg.textContent = `fps: ${fps.toFixed(0)}\nscore:${score}\nenemies:${enemies.length}\nbullets:${bullets.length}`;
 }
 
-/* ---------- Loop ---------- */
-function loop(t){ const dt=Math.min(t-(window._lt||t),32); window._lt=t; update(dt); draw(); requestAnimationFrame(loop); }
+function loop(t){
+  const dt=Math.min(t-(window._lt||t),32); window._lt=t;
+  // fps ölç
+  ftAccum+=dt; frameCount++; if(ftAccum>=1000){ fps=frameCount*1000/ftAccum; frameCount=0; ftAccum=0; }
+  update(dt); draw(); requestAnimationFrame(loop);
+}
 requestAnimationFrame(loop);
 
-/* ---------- Reset ---------- */
-document.addEventListener("keydown",e=>{ if(e.key===" "&&started&&!gameOver){ shoot(); } });
-/* ---------- Preload ---------- */
+/* ======================== RESET ======================== */
+restartBtn.onclick=()=>{
+  score=0;lives=3;updateLives(); gameOver=false; started=false; scEl.textContent=0;
+  overEl.style.display="none"; startOverlay.style.display="flex";
+  bullets=[];enemies=[];enemyBullets=[];particles=[];
+};
+
+/* ======================== YÜKLEME ======================== */
 let playerImg=null, enemyImg={};
 (async function(){
+  // Player kesin yol
   try{
     const p=await loadImage(PLAYER_SRC);
     playerImg=keyOutDark(p,110);
-    console.log("✅ Player OK:", PLAYER_SRC);
+    console.log("✅ Player:",PLAYER_SRC);
   }catch(e){
-    console.error("❌ Player bulunamadı:", PLAYER_SRC);
+    console.error("❌ Player bulunamadı:",PLAYER_SRC,"— dosya yolunu kontrol et.");
   }
+
+  // Düşmanlar — yoksa spawn etmeyeceğiz (kutu yok)
   for(const k of Object.keys(ENEMY_SRC)){
     try{
       const im=await loadImage(ENEMY_SRC[k]);
       enemyImg[k]=keyOutDark(im,110);
-      console.log("✅ Enemy OK:", k, ENEMY_SRC[k]);
+      console.log("✅ Enemy",k,":",ENEMY_SRC[k]);
     }catch(e){
-      console.error("❌ Enemy bulunamadı:", k, ENEMY_SRC[k]);
+      console.warn("⚠️ Enemy bulunamadı:",k,"→",ENEMY_SRC[k]," (bu tür spawn edilmeyecek)");
     }
   }
 })();
