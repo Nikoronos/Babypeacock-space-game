@@ -477,68 +477,177 @@ let contest={active:false,week:weekKey(),prize:""};
 onValue(ref(db,"contests/current"),async s=>{const v=s.val()||{};const now=weekKey();contest.active=!!v.active;contest.week=v.week||now;contest.prize=v.prize||"";try{if(v.active&&v.week&&v.week!==now)await set(ref(db,"contests/current/active"),false);}catch{} });
 
 /* Weekly panel (English, mobile-safe) */
+<script type="module">
+/* ===================== PATCH: weekly contest + claimCode ===================== */
+
+/* — güvenli rastgele claim kodu üret — */
+function genClaimCode(week, code) {
+  // 5 hex char’lık ek parça
+  const b = new Uint8Array(3);
+  (self.crypto || window.crypto).getRandomValues(b);
+  const rnd = [...b].map(x => x.toString(16).padStart(2,'0')).join('').slice(0,5).toUpperCase();
+  return `CLAIM-${week}-${code}-${rnd}`;
+}
+
+/* — paneli tek sefer kur — */
 function ensurePanel(){
-  let el=document.getElementById("bpc-leaderboard"); if(el) return el;
-  el=document.createElement("div"); el.id="bpc-leaderboard";
-  el.style.cssText="position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)";
-  el.innerHTML=`
-  <div style="width:min(92vw,560px);max-height:86vh;overflow:auto;background:#0b0f14;color:#e8f8f4;border:1px solid rgba(255,255,255,.1);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.5);">
-    <div style="position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:linear-gradient(180deg,#0e1420,#0b0f1400);border-bottom:1px solid rgba(255,255,255,.07);font-weight:800;letter-spacing:.3px;">
-      <span>🏆 Weekly Leaders</span>
-      <button id="bpc-close" aria-label="Close" style="background:transparent;border:none;color:#b9c9ff;font-size:18px;padding:6px 8px;">✕</button>
+  let el = document.getElementById('bpc-leaderboard');
+  if (el) return el;
+
+  el = document.createElement('div');
+  el.id = 'bpc-leaderboard';
+  el.style.cssText = `
+    position:fixed;inset:0;z-index:9999;display:none;
+    align-items:center;justify-content:center;
+    background:rgba(0,0,0,.64);backdrop-filter:blur(2px)
+  `;
+  el.innerHTML = `
+    <div style="width:min(92vw,560px);max-height:80vh;overflow:auto;border-radius:18px;background:#0b0f14;color:#e6fff1;box-shadow:0 12px 60px rgba(0,0,0,.5)">
+      <div style="position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#0b0f14;border-bottom:1px solid #123">
+        <span style="font-weight:800;letter-spacing:.3px">🏆 Weekly Leaders</span>
+        <button id="bpc-close" aria-label="close" style="background:transparent;border:none;color:#b9fcff;font-size:18px">✕</button>
+      </div>
+
+      <div style="padding:10px 14px;font-size:14px;opacity:.9">
+        <div>Week: <b id="bpc-week"></b> <span id="bpc-active-badge" style="margin-left:6px;padding:2px 6px;border-radius:9999px;font-size:11px;background:#173;border:1px solid #2b5">ACTIVE</span></div>
+        <div id="bpc-prize" style="margin-top:4px">Prize: –</div>
+        <div>Your code: <b id="bpc-mycode"></b></div>
+      </div>
+
+      <ol id="bpc-list" style="margin:8px 12px 18px;padding-right:12px;"></ol>
+
+      <div id="bpc-claim" style="display:none;padding:14px">
+        <button id="bpc-claim-btn" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid #27e0b3;background:#0bf2b2;color:#023;font-weight:800">
+          🎁 Claim Prize
+        </button>
+        <div id="bpc-claim-info" style="display:none;margin-top:8px;font-size:12px;opacity:.8"></div>
+      </div>
     </div>
-    <div style="padding:8px 14px 0 14px;font-size:14px;opacity:.9">
-      Week: <b id="bpc-week"></b>
-      <span id="bpc-active-badge" style="margin-left:6px;padding:2px 6px;border-radius:999px;font-size:11px;background:#16a34a;">ACTIVE</span>
-      <span id="bpc-prize" style="margin-left:6px;"></span>
-      <span style="margin-left:6px;">• 👤 Your code: <b id="bpc-mycode"></b></span>
-    </div>
-    <ol id="bpc-list" style="margin:8px 0 12px 26px;padding-right:12px;"></ol>
-    <div id="bpc-claim" style="display:none;padding:10px 14px 16px;text-align:center;">
-      <button id="bpc-claim-btn" style="padding:10px 14px;border-radius:12px;border:1px solid #27e0b3;background:#0f2b25;color:#27e0b3;font-weight:800;">🎁 Claim Prize</button>
-    </div>
-  </div>`;
+  `;
   document.body.appendChild(el);
-  document.getElementById("bpc-close").onclick=async()=>{
-    const wk=contest.week,code=getPlayerCode();let has=false;try{const s=await get(ref(db,`claims/${wk}/${code}`));has=s.exists()}catch{}
-    if(!has){if(!confirm("You haven't claimed the prize yet. Hide this week's panel anyway?"))return; el.style.display="none";document.body.style.overflow="";return;}
-    localStorage.setItem("bpc_claim_dismiss",wk); el.style.display="none";document.body.style.overflow="";
+
+  // kapat
+  document.getElementById('bpc-close').onclick = () => {
+    el.style.display = "none";
+    document.body.style.overflow = "";
   };
-  el.addEventListener("click",e=>{if(e.target===el){el.style.display="none";document.body.style.overflow=""}});
+
   return el;
 }
 
+/* — haftalık top10’u oku — */
+async function getWeeklyTop10(weekKey) {
+  const q = query(ref(db, `scoresWeekly/${weekKey}`), orderByChild("score"), limitToLast(10));
+  const snap = await get(q);
+  const arr = [];
+  snap.forEach(ch => arr.push(ch.val()));
+  // büyükten küçüğe
+  arr.sort((a,b) => (b.score||0) - (a.score||0));
+  return arr;
+}
+
+/* — paneli göster ve claim akışını yönet — */
 async function showWeeklyPanel(){
-  if(!contest.active)return; const wk=contest.week||weekKey(); const me=getPlayerCode();
-  let dismissed=(localStorage.getItem("bpc_claim_dismiss")===wk);
-  if(dismissed){try{const s=await get(ref(db,`claims/${wk}/${me}`)); if(!s.exists()) dismissed=false;}catch{dismissed=false}}
-  if(dismissed)return;
+  // yarışma durumunu oku
+  const wk = weekKey();
+  const contestSnap = await get(ref(db, 'contests/current'));
+  const contest = contestSnap.exists() ? contestSnap.val() : {active:false, week:wk, prize:"-"};
 
-  const list=await getWeeklyTop10(wk);
-  const wrap=ensurePanel();
-  document.getElementById("bpc-week").textContent=wk;
-  document.getElementById("bpc-mycode").textContent=me;
-  const badge=document.getElementById("bpc-active-badge");
-  badge.textContent=contest.active?"ACTIVE":"INACTIVE";
-  badge.style.background=contest.active?"#16a34a":"#64748b";
-  document.getElementById("bpc-prize").textContent=contest.prize?`• Prize: ${contest.prize}`:"";
+  const myCode = getPlayerCode();
+  const list = await getWeeklyTop10(wk);
 
-  const ol=document.getElementById("bpc-list");
-  ol.innerHTML=list.length?list.map((it,i)=>{
-    const mine=it.code===me, cup=i===0?' 🥇':i===1?' 🥈':i===2?' 🥉':'';
-    return `<li style="padding:8px 6px;border-bottom:1px dashed rgba(255,255,255,.08);display:flex;justify-content:space-between;gap:8px;font-size:15px;">
-      <span style="${mine?'color:#ff6b6b;font-weight:800;text-shadow:0 0 8px rgba(255,70,70,.35);':''}">
-        #${String(i+1).padStart(2,'0')} — ${it.code}${mine?' (you)':''}
-      </span>
-      <span style="${mine?'color:#ff6b6b;font-weight:800;text-shadow:0 0 8px rgba(255,70,70,.35);':''}">
-        ${it.score} pts${cup}
-      </span>
-    </li>`;
-  }).join(''):`<div style="opacity:.7;margin:8px 14px;">No scores yet.</div>`;
+  // UI doldur
+  const wrap = ensurePanel();
+  document.getElementById('bpc-week').textContent  = wk;
+  document.getElementById('bpc-mycode').textContent = myCode;
+  const badge = document.getElementById('bpc-active-badge');
+  badge.textContent = contest.active && contest.week === wk ? "ACTIVE" : "INACTIVE";
+  badge.style.background = (contest.active && contest.week === wk) ? "#173" : "#522";
+  badge.style.borderColor = (contest.active && contest.week === wk) ? "#2b5" : "#844";
+  document.getElementById('bpc-prize').textContent = `Prize: ${contest.prize || "-"}`;
 
-  const first=list[0]; const claimBox=document.getElementById("bpc-claim"); const claimBtn=document.getElementById("bpc-claim-btn");
-  if(first&&first.code===me){claimBox.style.display="block"; claimBtn.onclick=async()=>{const p={code:me,score:first.score,week:wk,ts:Date.now(),method:"email"};try{await set(ref(db,`claims/${wk}/${me}`),p)}catch{} try{await set(ref(db,`contests/current/claims/${me}`),p)}catch{} const subj=encodeURIComponent(`BPC Weekly Prize Claim – ${wk} – ${me}`); const body=encodeURIComponent(`Hello Babypeacock Team,\n\nI am claiming my weekly prize.\n\nWeek: ${wk}\nCode: ${me}\nScore: ${first.score}\nWallet (TRX): \nContact (X/Telegram): \n\nThanks!`); window.location.href=`mailto:${ADMIN_EMAIL}?subject=${subj}&body=${body}`;};}
-  else{claimBox.style.display="none"; claimBtn.onclick=null;}
+  // liste
+  const ol = document.getElementById('bpc-list');
+  if (list.length === 0) {
+    ol.innerHTML = `<li style="opacity:.7;margin:8px 14px">No scores yet.</li>`;
+  } else {
+    ol.innerHTML = list.map((it,i)=>{
+      const rank = i+1;
+      const you  = it.code === myCode;
+      const cup  = rank===1?"🥇":rank===2?"🥈":rank===3?"🥉":"";
+      return `
+        <li style="padding:8px 9px;border-bottom:1px dashed rgba(255,255,255,.08);display:flex;justify-content:space-between;gap:12px">
+          <span style="${you?'color:#ff6b6b;font-weight:800;text-shadow:0 0 8px rgba(255,90,70,.35);':''}">
+            #${String(rank).padStart(2,"0")} — ${it.code}${you?' (you)':''} ${cup}
+          </span>
+          <span style="opacity:.9">${it.score||0} pts</span>
+        </li>`;
+    }).join('');
+  }
+
+  // CLAIM görünürlüğü: yalnızca 1. olan, hafta eşleşiyorsa ve yarışma aktifse
+  const isActiveWeek = contest.active && contest.week === wk;
+  const first = list[0];
+  const claimBox = document.getElementById('bpc-claim');
+  const claimBtn = document.getElementById('bpc-claim-btn');
+  const claimInfo= document.getElementById('bpc-claim-info');
+
+  let canClaim = Boolean(isActiveWeek && first && first.code === myCode);
+  // daha önce claim var mı?
+  try {
+    const prev = await get(ref(db, `claims/${wk}/${myCode}`));
+    if (prev.exists()) { canClaim = false; claimInfo.style.display='block'; claimInfo.textContent = 'You already claimed this week.'; }
+  } catch {}
+
+  claimBox.style.display = canClaim ? 'block' : 'none';
+
+  claimBtn.onclick = async () => {
+    if (!canClaim) return;
+
+    // benzersiz claim code
+    const claimCode = genClaimCode(wk, myCode);
+
+    // kaydet
+    const payload = {
+      code: myCode,
+      score: first.score || 0,
+      week: wk,
+      ts: Date.now(),
+      method: "email",
+      claimCode
+    };
+    await set(ref(db, `claims/${wk}/${myCode}`), payload);
+
+    // e-posta hazırla
+    const subj = encodeURIComponent(`BPC Weekly Prize Claim – ${wk} – ${myCode}`);
+    const body = encodeURIComponent(
+`Hello Babypeacock Team,
+
+I am claiming my weekly prize.
+
+Week: ${wk}
+Code: ${myCode}
+Score: ${first.score||0}
+Claim Code: ${claimCode}
+Wallet (TRX):
+Contact (X/Telegram):
+
+Thanks!`
+    );
+    location.href = `mailto:babypeacock2025@gmail.com?subject=${subj}&body=${body}`;
+  };
+
+  wrap.style.display = "flex";
+  document.body.style.overflow = "hidden";
+}
+
+/* — oyun sonunda çağır: top10 sadece Game Over’da — */
+// örnek: await window.saveScoreFinal(score);  // senin mevcut kaydetme çağrın
+// sonra:
+window.showWeeklyPanel = showWeeklyPanel;
+
+/* =================== END PATCH =================== */
+</script>
 
   wrap.style.display="flex"; document.body.style.overflow="hidden";
 }
