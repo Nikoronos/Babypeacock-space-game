@@ -357,9 +357,31 @@ let playerImg=null, enemyImg={red:null,green:null,ufo_red:null,ufo_gray:null}, p
 </script>
 
 <!-- 🔌 Firebase global counter (persistent + cache + correct region URL) -->
-<script type="module">
-  import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, onValue, runTransaction, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+<script type="module">/* ===== Firebase import & init (tek app) ===== */
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getDatabase, ref, get, set, push, onValue,
+  query, orderByChild, limitToLast
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = { 
+  databaseURL: "https://bpc-space-default-rtdb.europe-west1.firebasedatabase.app/"
+};
+
+// Tek bir app örneği kullan
+const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const ADMIN_EMAIL = "babypeacock2025@gmail.com";
+
+// === Yarışma (haftalık) durumu dinle ===
+const contestRef = ref(db, "contests/current");
+onValue(contestRef, (snap) => {
+  const c = snap.val();
+  console.log("🔥 Contest data:", c);
+  if (c && c.active) {
+    window.currentContest = c;
+  }
+});
 
   // ✅ EXACT instance URL from your console (Belgium / europe-west1)
   const INSTANCE_URL = "https://bpc-space-default-rtdb.europe-west1.firebasedatabase.app/";
