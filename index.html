@@ -477,7 +477,6 @@ let contest={active:false,week:weekKey(),prize:""};
 onValue(ref(db,"contests/current"),async s=>{const v=s.val()||{};const now=weekKey();contest.active=!!v.active;contest.week=v.week||now;contest.prize=v.prize||"";try{if(v.active&&v.week&&v.week!==now)await set(ref(db,"contests/current/active"),false);}catch{} });
 
 /* Weekly panel (English, mobile-safe) */
-<script type="module">
 /* ===================== PATCH: weekly contest + claimCode ===================== */
 
 /* — güvenli rastgele claim kodu üret — */
@@ -647,9 +646,6 @@ Thanks!`
 window.showWeeklyPanel = showWeeklyPanel;
 /* END PATCH weekly contest + claimCode */
 
-/* =================== END PATCH =================== */
-</script>
-
-
+/* ================== END PATCH =================== */
 </body>
 </html>
