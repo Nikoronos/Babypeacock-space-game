@@ -26,6 +26,7 @@
   <div id="startOverlay" style="display:flex">
     <div style="margin-bottom:8px">Hold & drag to move — auto fire while holding</div>
     <button id="startBtn" class="btn">START</button>
+    <div id="playerCode" style="margin-top:10px;font-size:14px;color:#00ffc8;"></div>
     <div style="font-size:12px;opacity:.75;margin-top:8px">Tap anywhere to start</div>
   </div>
 
@@ -80,7 +81,22 @@ let elapsed=0,enT=0,gemT=0,mascotT=0;
 let scoreSent=false;                 // ⬅️ sadece 1 kez kayıt için bayrak
 const player={x:cv.width/2-33,y:cv.height-120,w:66,h:66};
 
-/* ---- verification code (light) ---- */
+/* ---- Oyuncu kodu (başlangıçta gösterilecek) ---- */
+function getPlayerCode(){
+  let code = localStorage.getItem("playerCode");
+  if (!code){
+    const rnd = Math.floor(10000 + Math.random()*89999);
+    code = "BPC" + rnd;
+    localStorage.setItem("playerCode", code);
+  }
+  return code;
+}
+(function showPlayerCodeOnStart(){
+  const box = document.getElementById("playerCode");
+  if (box) box.innerHTML = `👤 Oyuncu: <b>${getPlayerCode()}</b>`;
+})();
+
+/* ---- verification code (canvas içine gömülen) ---- */
 let playId = Math.floor(performance.now()+Math.random()*1e9);
 let verifyCode = "--------";
 async function makeCode(){
@@ -230,11 +246,11 @@ async function endGame(){
   overEl.style.background = "transparent";
 
   // Skoru kaydet ve haftalık paneli göster
-  await saveScore(score);
-  showWeeklyPanel();
+  if (window.saveScore) await window.saveScore(score);
+  if (window.showWeeklyPanel) window.showWeeklyPanel();
 
   // 🌍 Global counter: +1 on each finished game
-  if (window.incrementGlobalPlays) incrementGlobalPlays();
+  if (window.incrementGlobalPlays) window.incrementGlobalPlays();
 }
 function update(dt){
   starsA.forEach(s=>{ s.y+=0.35; if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} });
@@ -326,10 +342,7 @@ function draw(t){
 
   if(gameOver){
     renderFinalScore(t);
-    if(!scoreSent && window.saveScore){  // ⬅️ sadece 1 kez skor kaydı
-      window.saveScore(score);
-      scoreSent = true;
-    }
+    if(!scoreSent){ scoreSent=true; } // skor kaydı endGame içinden yapılıyor
   }
 }
 
@@ -339,7 +352,7 @@ requestAnimationFrame(loop);
 restartBtn.onclick=()=>{
   score=0;lives=3;powerTime=0; scEl.textContent=score; pxEl.textContent=0;
   bullets=[];enemies=[];enemyBullets=[];gems=[];mascots=[];particles=[];
-  updateLives(); gameOver=false; started=false; scoreSent=false;     // ⬅️ bayrağı sıfırla
+  updateLives(); gameOver=false; started=false; scoreSent=false;
   overEl.style.display="none"; overEl.style.background="rgba(0,0,0,.84)";
   playId=Math.floor(performance.now()+Math.random()*1e9); makeCode();
   startOverlay.style.display="flex";
@@ -356,269 +369,182 @@ let playerImg=null, enemyImg={red:null,green:null,ufo_red:null,ufo_gray:null}, p
 })();
 </script>
 
-<!-- 🔌 Firebase global counter (persistent + cache + correct region URL) -->
-<script type="module">/* ===== Firebase import & init (tek app) ===== */
-import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getDatabase, ref, get, set, push, onValue,
-  query, orderByChild, limitToLast
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+<!-- 🔌 Firebase (tek app) + Global Sayaç + Haftalık Skor/Panel -->
+<script type="module">
+  import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getDatabase, ref, get, set, push, onValue, runTransaction,
+    query, orderByChild, limitToLast
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-const firebaseConfig = { 
-  databaseURL: "https://bpc-space-default-rtdb.europe-west1.firebasedatabase.app/"
-};
-
-// Tek bir app örneği kullan
-const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const ADMIN_EMAIL = "babypeacock2025@gmail.com";
-
-// === Yarışma (haftalık) durumu dinle ===
-const contestRef = ref(db, "contests/current");
-onValue(contestRef, (snap) => {
-  const c = snap.val();
-  console.log("🔥 Contest data:", c);
-  if (c && c.active) {
-    window.currentContest = c;
-  }
-});
-
-  // ✅ EXACT instance URL from your console (Belgium / europe-west1)
   const INSTANCE_URL = "https://bpc-space-default-rtdb.europe-west1.firebasedatabase.app/";
+  const app = getApps().length ? getApps()[0] : initializeApp({ databaseURL: INSTANCE_URL });
+  const db  = getDatabase(app);
+  const ADMIN_EMAIL = "babypeacock2025@gmail.com";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAm65sARsGDTVkqe6MXcb8OObug17SEFpY",
-    authDomain: "bpc-space.firebaseapp.com",
-    databaseURL: INSTANCE_URL,
-    projectId: "bpc-space",
-    storageBucket: "bpc-space.firebasestorage.app",
-    messagingSenderId: "954298087029",
-    appId: "1:954298087029:web:3583f27fdd97d932de6a3c",
-    measurementId: "G-9XN8DJSYRH"
-  };
-
-  // tek app kullan
-  const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
-  const db  = getDatabase(app, INSTANCE_URL);
-
+  /* === Global sayaç === */
   const refCounter = ref(db, "stats/globalPlays");
   const el = document.getElementById("globalCounter");
-
-  // show last known value immediately (no flash/0)
   const cached = Number(localStorage.getItem("bpc_global_plays") || 0);
   if (el) el.textContent = cached ? cached.toLocaleString("en-US") : "…";
-
-  // live value from Firebase
   onValue(refCounter, snap => {
     const val = Number(snap.val() ?? 0);
     if (el) el.textContent = val.toLocaleString("en-US");
     localStorage.setItem("bpc_global_plays", String(val));
-    console.log("✅ [BPC-FB] onValue:", val);
-  }, err => console.error("❌ [BPC-FB] onValue error (Rules/URL?)", err));
+  });
+  window.incrementGlobalPlays = () => runTransaction(refCounter, v => (v || 0) + 1);
 
-  // initial get (debug)
-  get(refCounter).then(s => console.log("✅ [BPC-FB] initial get:", s.val()))
-                 .catch(e => console.error("❌ [BPC-FB] initial get error:", e));
-
-  // +1 on each finished game (transaction = safe)
-  window.incrementGlobalPlays = () => {
-    runTransaction(refCounter, v => (v || 0) + 1).then(res => {
-      if (!res.committed) return console.error("❌ [BPC-FB] not committed (Rules?)");
-      const val = Number(res.snapshot.val() ?? 0);
-      localStorage.setItem("bpc_global_plays", String(val));
-      if (el) el.textContent = val.toLocaleString("en-US");
-    });
-  };
-</script>
-<!-- 🧾 Firebase player scores + weekly system -->
-<script type="module">
-/* ===== Firebase import & init (var olan app'i kullan) ===== */
-import { getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getDatabase, ref, push, set, get, onValue,
-  query, orderByChild, limitToLast
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-const INSTANCE_URL = "https://bpc-space-default-rtdb.europe-west1.firebasedatabase.app/";
-const app = getApps()[0];
-const db  = getDatabase(app, INSTANCE_URL);
-
-const ADMIN_EMAIL = "babypeacock2025@gmail.com";
-
-/* ===== Yardımcılar ===== */
-function getPlayerCode(){
-  let code = localStorage.getItem("playerCode");
-  if (!code){
-    const rnd = Math.floor(10000 + Math.random()*89999);
-    code = "BPC" + rnd;
-    localStorage.setItem("playerCode", code);
-  }
-  return code;
-}
-function weekKey(){
-  const d=new Date();
-  const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day);
-  const y=d.getFullYear(), oneJan=new Date(y,0,1);
-  const w=Math.ceil(((d-oneJan)/86400000 + oneJan.getDay()+1)/7);
-  return `${y}-W${String(w).padStart(2,"0")}`;
-}
-
-/* ===== Skor kaydet (tüm zamanlar + haftalık) ===== */
-export async function saveScore(score){
-  const data = { code:getPlayerCode(), score, time:Date.now() };
-  await set(push(ref(db, "scores")), data);
-  await set(push(ref(db, `scoresWeekly/${weekKey()}`)), data);
-  console.log("✅ Skor kaydedildi:", data);
-}
-
-/* ===== Haftalık Top-10 çek ===== */
-async function getWeeklyTop10(wk=weekKey()){
-  const snap = await get(query(ref(db,`scoresWeekly/${wk}`), orderByChild("score"), limitToLast(10)));
-  const arr=[]; snap.forEach(c=>arr.push(c.val()));
-  arr.sort((a,b)=> b.score - a.score); // yüksek → düşük
-  return arr;
-}
-
-/* ===== Yarış durumu (aktif/hafta/ödül) ===== */
-let contest = { active:false, week:weekKey(), prize:"" };
-onValue(ref(db,"contests/current"), s=>{
-  const v=s.val()||{};
-  contest.active = !!v.active;
-  contest.week   = v.week || weekKey();
-  contest.prize  = v.prize || "";
-});
-
-/* ===== Panel: tek yerden yarat + yönet ===== */
-function ensurePanel(){
-  let el = document.getElementById("bpc-leaderboard");
-  if (el) return el;
-
-  el = document.createElement("div");
-  el.id = "bpc-leaderboard";
-  el.style.cssText = `
-    position:fixed; left:50%; top:12px; transform:translateX(-50%);
-    width:min(92vw,560px); color:#fff; background:#0b1320cc; backdrop-filter:blur(6px);
-    border:1px solid #1f2a44; border-radius:14px; padding:12px 14px; z-index:9999;
-    font:13px/1.4 system-ui,Roboto,Arial,sans-serif; display:none; box-shadow:0 10px 30px #0006;`;
-  el.innerHTML = `
-    <div style="display:flex;align-items:center;gap:8px;">
-      <span style="font-weight:700;">🏆 Haftalık Liderler</span>
-      <span id="bpc-active" style="margin-left:auto;font-size:11px;background:#16a34a;padding:2px 6px;border-radius:999px;">AKTİF</span>
-      <button id="bpc-close" aria-label="Kapat" style="background:#0000;border:0;color:#9aa4b2;font-size:18px;cursor:pointer;">✕</button>
-    </div>
-    <div style="opacity:.75;margin-top:6px;">Hafta: <b id="bpc-week"></b> • 👤 Kodun: <b id="bpc-mycode"></b></div>
-    <ol id="bpc-list" style="margin:8px 0 6px 18px;padding-left:6px;"></ol>
-    <div id="bpc-prize" style="opacity:.9;margin-top:4px;"></div>
-    <div id="bpc-claim" style="margin-top:8px;display:none;"></div>
-  `;
-  document.body.appendChild(el);
-
-  // X'e basınca: claim yoksa emin misin? sor; claim varsa o hafta için gizle
-  document.getElementById("bpc-close").onclick = async ()=>{
-    const wk   = contest.week;
-    const code = getPlayerCode();
-
-    // Claim var mı?
-    let hasClaim=false;
-    try { const snap = await get(ref(db,`claims/${wk}/${code}`)); hasClaim = snap.exists(); } catch(_){}
-
-    if (!hasClaim){
-      const ok = confirm("Ödülü talep etmedin. Bu haftalık paneli gizlemek istediğine emin misin?");
-      if (!ok) return; // yanlış tıklamayı engelle
-      // claim yoksa gizleme kalıcı sayılmayacak, sadece o an kapanır:
-      el.style.display="none";
-      return;
+  /* === Yardımcılar === */
+  function getPlayerCode(){
+    let code = localStorage.getItem("playerCode");
+    if (!code){
+      const rnd = Math.floor(10000 + Math.random()*89999);
+      code = "BPC" + rnd;
+      localStorage.setItem("playerCode", code);
     }
-    // claim varsa kalıcı gizle (o hafta boyunca)
-    localStorage.setItem("bpc_claim_dismiss", wk);
-    el.style.display="none";
-  };
-
-  return el;
-}
-
-/* ===== Yalnızca GAME OVER’da paneli göster ===== */
-export async function showWeeklyPanel(){
-  if (!contest.active) return;                 // yarış pasif → gösterme
-
-  const wk   = contest.week || weekKey();
-  const code = getPlayerCode();
-
-  // Kullanıcı bu haftayı daha önce kapattıysa ama claim YOKSA, yine göster.
-  let dismissed = (localStorage.getItem("bpc_claim_dismiss") === wk);
-  if (dismissed){
-    try {
-      const snap = await get(ref(db,`claims/${wk}/${code}`));
-      if (!snap.exists()) dismissed = false;   // claim yok → tekrar göster
-    } catch(_){ dismissed = false; }
+    return code;
   }
-  if (dismissed) return;
+  function weekKey(){
+    const d=new Date();
+    const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day);
+    const y=d.getFullYear(), oneJan=new Date(y,0,1);
+    const w=Math.ceil(((d-oneJan)/86400000 + oneJan.getDay()+1)/7);
+    return `${y}-W${String(w).padStart(2,"0")}`;
+  }
 
-  // Listeyi çek
-  const list = await getWeeklyTop10(wk);
-  const me   = code;
+  /* === Skor kaydet (tüm zamanlar + haftalık) === */
+  async function saveScore(score){
+    const data = { code:getPlayerCode(), score, time:Date.now() };
+    await set(push(ref(db, "scores")), data);
+    await set(push(ref(db, `scoresWeekly/${weekKey()}`)), data);
+  }
 
-  // Paneli doldur
-  const el = ensurePanel();
-  document.getElementById("bpc-week").textContent  = wk;
-  document.getElementById("bpc-mycode").textContent= me;
-  document.getElementById("bpc-active").textContent= contest.active ? "AKTİF" : "PASİF";
-  document.getElementById("bpc-active").style.background = contest.active ? "#16a34a" : "#64748b";
-  document.getElementById("bpc-prize").textContent = contest.prize ? `🎁 Ödül: ${contest.prize}` : "";
+  /* === Haftalık Top-10 === */
+  async function getWeeklyTop10(wk=weekKey()){
+    const snap = await get(query(ref(db,`scoresWeekly/${wk}`), orderByChild("score"), limitToLast(10)));
+    const arr=[]; snap.forEach(c=>arr.push(c.val()));
+    arr.sort((a,b)=> b.score - a.score);
+    return arr;
+  }
 
-  const ol = document.getElementById("bpc-list");
-  ol.innerHTML = list.length
-    ? list.map((it,i)=>{
-        const mine = it.code===me;
-        const cup  = i===0?' 🥇':i===1?' 🥈':i===2?' 🥉':'';
-        return `<li style="margin:2px 0;">
-          <b style="${mine?'color:#ff5c5c;':''}">${i+1}. ${it.code}</b> — ${it.score} puan${cup}
-        </li>`;
-      }).join('')
-    : `<div style="opacity:.7;">Henüz skor yok.</div>`;
+  /* === Yarışma durumu === */
+  let contest = { active:false, week:weekKey(), prize:"" };
+  onValue(ref(db,"contests/current"), s=>{
+    const v=s.val()||{};
+    contest.active = !!v.active;
+    contest.week   = v.week || weekKey();
+    contest.prize  = v.prize || "";
+  });
 
-  // Birinci ben miyim? → claim butonu
-  const claimBox = document.getElementById("bpc-claim");
-  const first = list[0];
-  if (first && first.code === me){
-    claimBox.innerHTML = `
-      <button id="bpc-claim-btn"
-        style="display:inline-block;background:#2563eb;color:#fff;padding:8px 12px;border-radius:10px;border:0;cursor:pointer;">
-        🎁 Ödül Talep Et
-      </button>`;
-    claimBox.style.display="block";
+  /* === Panel oluşturucu === */
+  function ensurePanel(){
+    let el = document.getElementById("bpc-leaderboard");
+    if (el) return el;
+    el = document.createElement("div");
+    el.id = "bpc-leaderboard";
+    el.style.cssText = `
+      position:fixed; left:50%; top:12px; transform:translateX(-50%);
+      width:min(92vw,560px); color:#fff; background:#0b1320cc; backdrop-filter:blur(6px);
+      border:1px solid #1f2a44; border-radius:14px; padding:12px 14px; z-index:9999;
+      font:13px/1.4 system-ui,Roboto,Arial,sans-serif; display:none; box-shadow:0 10px 30px #0006;`;
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-weight:700;">🏆 Haftalık Liderler</span>
+        <span id="bpc-active" style="margin-left:auto;font-size:11px;background:#16a34a;padding:2px 6px;border-radius:999px;">AKTİF</span>
+        <button id="bpc-close" aria-label="Kapat" style="background:#0000;border:0;color:#9aa4b2;font-size:18px;cursor:pointer;">✕</button>
+      </div>
+      <div style="opacity:.75;margin-top:6px;">Hafta: <b id="bpc-week"></b> • 👤 Kodun: <b id="bpc-mycode"></b></div>
+      <ol id="bpc-list" style="margin:8px 0 6px 18px;padding-left:6px;"></ol>
+      <div id="bpc-prize" style="opacity:.9;margin-top:4px;"></div>
+      <div id="bpc-claim" style="margin-top:8px;display:none;"></div>
+    `;
+    document.body.appendChild(el);
 
-    document.getElementById("bpc-claim-btn").onclick = async ()=>{
-      const payload = { code:me, score:first.score, week:wk, ts:Date.now(), method:"email" };
-      await set(ref(db, `claims/${wk}/${me}`), payload);
-      await set(ref(db, `contests/current/claims/${me}`), payload);
-
-      const subj = encodeURIComponent(`BPC Weekly Prize Claim – ${wk} – ${me}`);
-      const body = encodeURIComponent(
-        `Hello Babypeacock Team,\n\nI am claiming my weekly prize.\n\n`+
-        `Code: ${me}\nWeek: ${wk}\nScore: ${first.score}\nWallet (TRX): \nContact (X/Telegram): \n\n`+
-        `Timestamp: ${new Date().toISOString()}\n\nThanks!`
-      );
-      window.location.href = `mailto:${ADMIN_EMAIL}?subject=${subj}&body=${body}`;
+    document.getElementById("bpc-close").onclick = async ()=>{
+      const wk   = contest.week;
+      const code = getPlayerCode();
+      let hasClaim=false;
+      try { const snap = await get(ref(db,`claims/${wk}/${code}`)); hasClaim = snap.exists(); } catch(_){}
+      if (!hasClaim){
+        const ok = confirm("Ödülü talep etmedin. Bu haftalık paneli gizlemek istediğine emin misin?");
+        if (!ok) return;
+        el.style.display="none";
+        return;
+      }
+      localStorage.setItem("bpc_claim_dismiss", wk);
+      el.style.display="none";
     };
-  } else {
-    claimBox.style.display="none";
-    claimBox.innerHTML = "";
+    return el;
   }
 
-  // Sadece GAME OVER’da göster
-  el.style.display = "block";
-}
+  /* === Sadece Game Over’da göster === */
+  async function showWeeklyPanel(){
+    if (!contest.active) return;
+    const wk   = contest.week || weekKey();
+    const me   = getPlayerCode();
 
-/* ===== Oyun tarafına kancalar =====
-   Game Over olduğunda şunları çağır:
-   await saveScore(score);
-   showWeeklyPanel();
-*/
-window.saveScore = saveScore;         // istersen oyun içinden de eriş
-window.showWeeklyPanel = showWeeklyPanel;
+    let dismissed = (localStorage.getItem("bpc_claim_dismiss") === wk);
+    if (dismissed){
+      try {
+        const snap = await get(ref(db,`claims/${wk}/${me}`));
+        if (!snap.exists()) dismissed = false;
+      } catch(_){ dismissed = false; }
+    }
+    if (dismissed) return;
+
+    const list = await getWeeklyTop10(wk);
+    const el   = ensurePanel();
+    document.getElementById("bpc-week").textContent   = wk;
+    document.getElementById("bpc-mycode").textContent = me;
+    document.getElementById("bpc-active").textContent = contest.active ? "AKTİF" : "PASİF";
+    document.getElementById("bpc-active").style.background = contest.active ? "#16a34a" : "#64748b";
+    document.getElementById("bpc-prize").textContent  = contest.prize ? `🎁 Ödül: ${contest.prize}` : "";
+
+    const ol = document.getElementById("bpc-list");
+    ol.innerHTML = list.length
+      ? list.map((it,i)=>{
+          const mine = it.code===me;
+          const cup  = i===0?' 🥇':i===1?' 🥈':i===2?' 🥉':'';
+          return `<li style="margin:2px 0;">
+            <b style="${mine?'color:#ff5c5c;':''}">${i+1}. ${it.code}</b> — ${it.score} puan${cup}
+          </li>`;
+        }).join('')
+      : `<div style="opacity:.7;">Henüz skor yok.</div>`;
+
+    const claimBox = document.getElementById("bpc-claim");
+    const first = list[0];
+    if (first && first.code === me){
+      claimBox.innerHTML = `
+        <button id="bpc-claim-btn"
+          style="display:inline-block;background:#2563eb;color:#fff;padding:8px 12px;border-radius:10px;border:0;cursor:pointer;">
+          🎁 Ödül Talep Et
+        </button>`;
+      claimBox.style.display="block";
+
+      document.getElementById("bpc-claim-btn").onclick = async ()=>{
+        const payload = { code:me, score:first.score, week:wk, ts:Date.now(), method:"email" };
+        await set(ref(db, `claims/${wk}/${me}`), payload);
+        await set(ref(db, `contests/current/claims/${me}`), payload);
+
+        const subj = encodeURIComponent(`BPC Weekly Prize Claim – ${wk} – ${me}`);
+        const body = encodeURIComponent(
+          `Hello Babypeacock Team,\n\nI am claiming my weekly prize.\n\n`+
+          `Code: ${me}\nWeek: ${wk}\nScore: ${first.score}\nWallet (TRX): \nContact (X/Telegram): \n\n`+
+          `Timestamp: ${new Date().toISOString()}\n\nThanks!`
+        );
+        window.location.href = `mailto:${ADMIN_EMAIL}?subject=${subj}&body=${body}`;
+      };
+    } else {
+      claimBox.style.display="none";
+      claimBox.innerHTML = "";
+    }
+    el.style.display = "block";
+  }
+
+  // Oyun tarafına dışarı aç
+  window.saveScore       = saveScore;
+  window.showWeeklyPanel = showWeeklyPanel;
 </script>
-
 
 </body>
 </html>
