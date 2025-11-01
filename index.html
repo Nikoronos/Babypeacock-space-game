@@ -371,7 +371,10 @@ let playerImg=null, enemyImg={red:null,green:null,ufo_red:null,ufo_gray:null}, p
 
 <!-- 🔌 Firebase (tek app) + Global Sayaç + Haftalık Skor/Panel -->
 <script type="module">import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";const INSTANCE_URL = "https://bpc-space-default-rtdb.europe-west1.firebasedatabase.app/";
+const app = getApps().length ? getApps()[0] : initializeApp({ databaseURL: INSTANCE_URL });
+const db = getDatabase(app);
+window.db = db; // 🔥 kritik satır: artık globalde erişilebilir
 
 const INSTANCE_URL = "https://bpc-space-default-rtdb.europe-west1.firebasedatabase.app/";
 const app = getApps().length ? getApps()[0] : initializeApp({ databaseURL: INSTANCE_URL });
