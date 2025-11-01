@@ -233,9 +233,6 @@ async function endGame(){
   await saveScore(score);
   showWeeklyPanel();
 
-  // Global counter: +1 on each finished game
-  if (window.incrementGlobalPlays) incrementGlobalPlays();
-}
   // 🌍 Global counter: +1 on each finished game
   if (window.incrementGlobalPlays) incrementGlobalPlays();
 }
