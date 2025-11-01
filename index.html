@@ -371,112 +371,7 @@ let playerImg=null, enemyImg={red:null,green:null,ufo_red:null,ufo_gray:null}, p
 
 <!-- 🔌 Firebase (tek app) + Global Sayaç + Haftalık Skor/Panel -->
 <script type="module">
-  import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import {
-    getDatabase, ref, get, set, push, onValue, runTransaction,
-    query, orderByChild, limitToLast
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-  const INSTANCE_URL = "https://bpc-space-default-rtdb.europe-west1.firebasedatabase.app/";
-  const app = getApps().length ? getApps()[0] : initializeApp({ databaseURL: INSTANCE_URL });
-  const db  = getDatabase(app);
-  const ADMIN_EMAIL = "babypeacock2025@gmail.com";
-
-  /* === Global sayaç === */
-  const refCounter = ref(db, "stats/globalPlays");
-  const el = document.getElementById("globalCounter");
-  const cached = Number(localStorage.getItem("bpc_global_plays") || 0);
-  if (el) el.textContent = cached ? cached.toLocaleString("en-US") : "…";
-  onValue(refCounter, snap => {
-    const val = Number(snap.val() ?? 0);
-    if (el) el.textContent = val.toLocaleString("en-US");
-    localStorage.setItem("bpc_global_plays", String(val));
-  });
-  window.incrementGlobalPlays = () => runTransaction(refCounter, v => (v || 0) + 1);
-
-  /* === Yardımcılar === */
-  function getPlayerCode(){
-    let code = localStorage.getItem("playerCode");
-    if (!code){
-      const rnd = Math.floor(10000 + Math.random()*89999);
-      code = "BPC" + rnd;
-      localStorage.setItem("playerCode", code);
-    }
-    return code;
-  }
-  function weekKey(){
-    const d=new Date();
-    const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day);
-    const y=d.getFullYear(), oneJan=new Date(y,0,1);
-    const w=Math.ceil(((d-oneJan)/86400000 + oneJan.getDay()+1)/7);
-    return `${y}-W${String(w).padStart(2,"0")}`;
-  }
-
-  /* === Skor kaydet (tüm zamanlar + haftalık) === */
-  async function saveScore(score){
-    const data = { code:getPlayerCode(), score, time:Date.now() };
-    await set(push(ref(db, "scores")), data);
-    await set(push(ref(db, `scoresWeekly/${weekKey()}`)), data);
-  }
-
-  /* === Haftalık Top-10 === */
-  async function getWeeklyTop10(wk=weekKey()){
-    const snap = await get(query(ref(db,`scoresWeekly/${wk}`), orderByChild("score"), limitToLast(10)));
-    const arr=[]; snap.forEach(c=>arr.push(c.val()));
-    arr.sort((a,b)=> b.score - a.score);
-    return arr;
-  }
-
-  /* === Yarışma durumu === */
-  let contest = { active:false, week:weekKey(), prize:"" };
-  onValue(ref(db,"contests/current"), s=>{
-    const v=s.val()||{};
-    contest.active = !!v.active;
-    contest.week   = v.week || weekKey();
-    contest.prize  = v.prize || "";
-  });
-
-  /* === Panel oluşturucu === */
-  function ensurePanel(){
-    let el = document.getElementById("bpc-leaderboard");
-    if (el) return el;
-    el = document.createElement("div");
-    el.id = "bpc-leaderboard";
-    el.style.cssText = `
-      position:fixed; left:50%; top:12px; transform:translateX(-50%);
-      width:min(92vw,560px); color:#fff; background:#0b1320cc; backdrop-filter:blur(6px);
-      border:1px solid #1f2a44; border-radius:14px; padding:12px 14px; z-index:9999;
-      font:13px/1.4 system-ui,Roboto,Arial,sans-serif; display:none; box-shadow:0 10px 30px #0006;`;
-    el.innerHTML = `
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-weight:700;">🏆 Haftalık Liderler</span>
-        <span id="bpc-active" style="margin-left:auto;font-size:11px;background:#16a34a;padding:2px 6px;border-radius:999px;">AKTİF</span>
-        <button id="bpc-close" aria-label="Kapat" style="background:#0000;border:0;color:#9aa4b2;font-size:18px;cursor:pointer;">✕</button>
-      </div>
-      <div style="opacity:.75;margin-top:6px;">Hafta: <b id="bpc-week"></b> • 👤 Kodun: <b id="bpc-mycode"></b></div>
-      <ol id="bpc-list" style="margin:8px 0 6px 18px;padding-left:6px;"></ol>
-      <div id="bpc-prize" style="opacity:.9;margin-top:4px;"></div>
-      <div id="bpc-claim" style="margin-top:8px;display:none;"></div>
-    `;
-    document.body.appendChild(el);
-
-    document.getElementById("bpc-close").onclick = async ()=>{
-      const wk   = contest.week;
-      const code = getPlayerCode();
-      let hasClaim=false;
-      try { const snap = await get(ref(db,`claims/${wk}/${code}`)); hasClaim = snap.exists(); } catch(_){}
-      if (!hasClaim){
-        const ok = confirm("Ödülü talep etmedin. Bu haftalık paneli gizlemek istediğine emin misin?");
-        if (!ok) return;
-        el.style.display="none";
-        return;
-      }
-      localStorage.setItem("bpc_claim_dismiss", wk);
-      el.style.display="none";
-    };
-    return el;
-  }
-
+  
   /* === Sadece Game Over’da göster === */
   async function showWeeklyPanel(){
     if (!contest.active) return;
@@ -544,6 +439,111 @@ let playerImg=null, enemyImg={red:null,green:null,ufo_red:null,ufo_gray:null}, p
   // Oyun tarafına dışarı aç
   window.saveScore       = saveScore;
   window.showWeeklyPanel = showWeeklyPanel;
+</script><script type="module">
+const INSTANCE_URL="https://bpc-space-default-rtdb.europe-west1.firebasedatabase.app/";
+const ADMIN_EMAIL="babypeacock2025@gmail.com";
+
+import{getApps,initializeApp}from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import{getDatabase,ref,get,set,push,onValue,runTransaction,query,orderByChild,limitToLast}from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+/* Firebase (single app) */
+const app=getApps().length?getApps()[0]:initializeApp({databaseURL:INSTANCE_URL});
+const db=getDatabase(app);
+
+/* Helpers */
+function weekKey(d=new Date()){const y=d.getFullYear(),oneJan=new Date(y,0,1);const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);const w=Math.ceil(((d-oneJan)/86400000+oneJan.getDay()+1)/7);return `${y}-W${String(w).padStart(2,"0")}`;}
+function getPlayerCode(){let c=localStorage.getItem("playerCode");if(!c){c="BPC"+Math.floor(10000+Math.random()*89999);localStorage.setItem("playerCode",c);}return c}
+
+/* Start overlay label (English) */
+(()=>{const el=document.getElementById("playerCode");if(el)el.innerHTML=`👤 Player: <b>${getPlayerCode()}</b>`;})();
+
+/* Global plays (live + increment hook) */
+const refCounter=ref(db,"stats/globalPlays");
+const elGC=document.getElementById("globalCounter");
+const cached=Number(localStorage.getItem("bpc_global_plays")||0);
+if(elGC)elGC.textContent=cached?cached.toLocaleString("en-US"):"…";
+onValue(refCounter,s=>{const v=Number(s.val()??0);if(elGC)elGC.textContent=v.toLocaleString("en-US");localStorage.setItem("bpc_global_plays",String(v));});
+window.incrementGlobalPlays=()=>runTransaction(refCounter,v=>(v||0)+1);
+
+/* Save score (all-time + weekly) */
+async function saveScore(score){const data={code:getPlayerCode(),score,time:Date.now()};await set(push(ref(db,"scores")),data);await set(push(ref(db,`scoresWeekly/${weekKey()}`)),data);}
+window.saveScoreFinal=saveScore;
+
+/* Weekly Top-10 */
+async function getWeeklyTop10(wk=weekKey()){const s=await get(query(ref(db,`scoresWeekly/${wk}`),orderByChild("score"),limitToLast(10)));const a=[];s.forEach(c=>a.push(c.val()));a.sort((x,y)=>y.score-x.score);return a}
+
+/* Contest (auto-close previous week) */
+let contest={active:false,week:weekKey(),prize:""};
+onValue(ref(db,"contests/current"),async s=>{const v=s.val()||{};const now=weekKey();contest.active=!!v.active;contest.week=v.week||now;contest.prize=v.prize||"";try{if(v.active&&v.week&&v.week!==now)await set(ref(db,"contests/current/active"),false);}catch{} });
+
+/* Weekly panel (English, mobile-safe) */
+function ensurePanel(){
+  let el=document.getElementById("bpc-leaderboard"); if(el) return el;
+  el=document.createElement("div"); el.id="bpc-leaderboard";
+  el.style.cssText="position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)";
+  el.innerHTML=`
+  <div style="width:min(92vw,560px);max-height:86vh;overflow:auto;background:#0b0f14;color:#e8f8f4;border:1px solid rgba(255,255,255,.1);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.5);">
+    <div style="position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:linear-gradient(180deg,#0e1420,#0b0f1400);border-bottom:1px solid rgba(255,255,255,.07);font-weight:800;letter-spacing:.3px;">
+      <span>🏆 Weekly Leaders</span>
+      <button id="bpc-close" aria-label="Close" style="background:transparent;border:none;color:#b9c9ff;font-size:18px;padding:6px 8px;">✕</button>
+    </div>
+    <div style="padding:8px 14px 0 14px;font-size:14px;opacity:.9">
+      Week: <b id="bpc-week"></b>
+      <span id="bpc-active-badge" style="margin-left:6px;padding:2px 6px;border-radius:999px;font-size:11px;background:#16a34a;">ACTIVE</span>
+      <span id="bpc-prize" style="margin-left:6px;"></span>
+      <span style="margin-left:6px;">• 👤 Your code: <b id="bpc-mycode"></b></span>
+    </div>
+    <ol id="bpc-list" style="margin:8px 0 12px 26px;padding-right:12px;"></ol>
+    <div id="bpc-claim" style="display:none;padding:10px 14px 16px;text-align:center;">
+      <button id="bpc-claim-btn" style="padding:10px 14px;border-radius:12px;border:1px solid #27e0b3;background:#0f2b25;color:#27e0b3;font-weight:800;">🎁 Claim Prize</button>
+    </div>
+  </div>`;
+  document.body.appendChild(el);
+  document.getElementById("bpc-close").onclick=async()=>{
+    const wk=contest.week,code=getPlayerCode();let has=false;try{const s=await get(ref(db,`claims/${wk}/${code}`));has=s.exists()}catch{}
+    if(!has){if(!confirm("You haven't claimed the prize yet. Hide this week's panel anyway?"))return; el.style.display="none";document.body.style.overflow="";return;}
+    localStorage.setItem("bpc_claim_dismiss",wk); el.style.display="none";document.body.style.overflow="";
+  };
+  el.addEventListener("click",e=>{if(e.target===el){el.style.display="none";document.body.style.overflow=""}});
+  return el;
+}
+
+async function showWeeklyPanel(){
+  if(!contest.active)return; const wk=contest.week||weekKey(); const me=getPlayerCode();
+  let dismissed=(localStorage.getItem("bpc_claim_dismiss")===wk);
+  if(dismissed){try{const s=await get(ref(db,`claims/${wk}/${me}`)); if(!s.exists()) dismissed=false;}catch{dismissed=false}}
+  if(dismissed)return;
+
+  const list=await getWeeklyTop10(wk);
+  const wrap=ensurePanel();
+  document.getElementById("bpc-week").textContent=wk;
+  document.getElementById("bpc-mycode").textContent=me;
+  const badge=document.getElementById("bpc-active-badge");
+  badge.textContent=contest.active?"ACTIVE":"INACTIVE";
+  badge.style.background=contest.active?"#16a34a":"#64748b";
+  document.getElementById("bpc-prize").textContent=contest.prize?`• Prize: ${contest.prize}`:"";
+
+  const ol=document.getElementById("bpc-list");
+  ol.innerHTML=list.length?list.map((it,i)=>{
+    const mine=it.code===me, cup=i===0?' 🥇':i===1?' 🥈':i===2?' 🥉':'';
+    return `<li style="padding:8px 6px;border-bottom:1px dashed rgba(255,255,255,.08);display:flex;justify-content:space-between;gap:8px;font-size:15px;">
+      <span style="${mine?'color:#ff6b6b;font-weight:800;text-shadow:0 0 8px rgba(255,70,70,.35);':''}">
+        #${String(i+1).padStart(2,'0')} — ${it.code}${mine?' (you)':''}
+      </span>
+      <span style="${mine?'color:#ff6b6b;font-weight:800;text-shadow:0 0 8px rgba(255,70,70,.35);':''}">
+        ${it.score} pts${cup}
+      </span>
+    </li>`;
+  }).join(''):`<div style="opacity:.7;margin:8px 14px;">No scores yet.</div>`;
+
+  const first=list[0]; const claimBox=document.getElementById("bpc-claim"); const claimBtn=document.getElementById("bpc-claim-btn");
+  if(first&&first.code===me){claimBox.style.display="block"; claimBtn.onclick=async()=>{const p={code:me,score:first.score,week:wk,ts:Date.now(),method:"email"};try{await set(ref(db,`claims/${wk}/${me}`),p)}catch{} try{await set(ref(db,`contests/current/claims/${me}`),p)}catch{} const subj=encodeURIComponent(`BPC Weekly Prize Claim – ${wk} – ${me}`); const body=encodeURIComponent(`Hello Babypeacock Team,\n\nI am claiming my weekly prize.\n\nWeek: ${wk}\nCode: ${me}\nScore: ${first.score}\nWallet (TRX): \nContact (X/Telegram): \n\nThanks!`); window.location.href=`mailto:${ADMIN_EMAIL}?subject=${subj}&body=${body}`;};}
+  else{claimBox.style.display="none"; claimBtn.onclick=null;}
+
+  wrap.style.display="flex"; document.body.style.overflow="hidden";
+}
+window.showWeeklyPanel=showWeeklyPanel;
+/* =================== END =================== */
 </script>
 
 </body>
