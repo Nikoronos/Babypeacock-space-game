@@ -340,10 +340,11 @@ function draw(t){
     ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
   });
 
-  if(gameOver){
+  
+if(gameOver){
+    try { window.incrementGlobalPlays && window.incrementGlobalPlays(); } catch(e){}
     renderFinalScore(t);
-    if(!scoreSent){ scoreSent=true; } // skor kaydı endGame içinden yapılıyor
-  }
+    if(!scoreSent) scoreSent = true; // skor kaydı endGame içinden yapılıyor
 }
 
 function loop(t){ const dt=Math.min(t-(window._lt||t),32); window._lt=t; update(dt); draw(t); requestAnimationFrame(loop); }
