@@ -246,8 +246,8 @@ async function endGame(){
   overEl.style.background = "transparent";
 
   // Skoru kaydet ve haftalık paneli göster
-  if (window.saveScore) await window.saveScore(score);
-  if (window.showWeeklyPanel) window.showWeeklyPanel();
+- window.saveScoreFinal = saveScore;
++ window.saveScore = saveScore;
 
   // 🌍 Global counter: +1 on each finished game
   if (window.incrementGlobalPlays) window.incrementGlobalPlays();
