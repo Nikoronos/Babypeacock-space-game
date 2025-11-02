@@ -373,27 +373,28 @@ let playerImg=null, enemyImg={red:null,green:null,ufo_red:null,ufo_gray:null}, p
 })();
 </script>
 
-<!-- 🔌 Firebase (tek app) + Global Sayaç + Haftalık Skor/Panel -->
+
 <script type="module">
-/* ===== Firebase + Sayaç + Skor + Weekly (TEK BLOK) ===== */
+/* ===== Firebase: Sayaç + Skor + (opsiyonel) Weekly Panel ===== */
+
+/* --- imports --- */
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getDatabase, ref, get, set, push, onValue, runTransaction,
   query, orderByChild, limitToLast
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-/* --- Config --- */
+/* --- config --- */
 const INSTANCE_URL = "https://bpc-space-default-rtdb.europe-west1.firebasedatabase.app/";
-const ADMIN_EMAIL = "babypeacock2025@gmail.com";
+const ADMIN_EMAIL  = "babypeacock2025@gmail.com";
 
-/* --- Init (tek app) --- */
+/* --- init (single app) --- */
 const app = getApps().length ? getApps()[0] : initializeApp({ databaseURL: INSTANCE_URL });
 const db  = getDatabase(app);
-/* global erişim (oyun kodu çağırabilsin) */
-window.db = db;
+window.db = db; // istersen konsoldan bakarsın
 
-/* --- Helpers --- */
-function weekKey(d=new Date()){
+/* --- helpers --- */
+function weekKey(d = new Date()){
   const y = d.getFullYear(), oneJan = new Date(y,0,1);
   const wk = Math.floor((d - oneJan)/604800000) + 1;
   return `${y}-W${String(wk).padStart(2,"0")}`;
@@ -403,45 +404,42 @@ function getPlayerCode(){
   if(!c){ c = `BPC-${Math.floor(10000 + Math.random()*89999)}`; localStorage.setItem("playerCode", c); }
   return c;
 }
-/* Overlay üst yazısı (opsiyonel) */
-(()=>{ const el = document.getElementById("playerCode"); if(el) el.innerHTML = ` Player: <b>${getPlayerCode()}</b>`; })();
 
-/* --- Global Plays: canlı göster + artırma --- */
+/* --- Global Plays: live read + write --- */
 const refCounter = ref(db, "stats/globalPlays");
-const elGC = document.getElementById("globalCounter");
-const cached = Number(localStorage.getItem("bpc_global_plays")) || 0;
+const elGC       = document.getElementById("globalCounter"); // varsa canlı gösterir
+const cached     = Number(localStorage.getItem("bpc_global_plays")) || 0;
 if (elGC) elGC.textContent = cached ? cached.toLocaleString("en-US") : "…";
 onValue(refCounter, s => {
   const v = Number(s.val() ?? 0);
   if (elGC) elGC.textContent = v.toLocaleString("en-US");
   localStorage.setItem("bpc_global_plays", String(v));
 });
-/* Oyun sonu çağırmak için: */
-window.incrementGlobalPlays = () => runTransaction(refCounter, v => (v||0) + 1);
+function incrementGlobalPlays(){
+  return runTransaction(refCounter, v => (v || 0) + 1);
+}
 
-/* --- Skor kaydı (all-time + weekly) --- */
+/* --- Score save (all-time + weekly) --- */
 async function saveScore(score){
   const code = getPlayerCode();
-  const t = Date.now();
-  await push(ref(db, "scores"), { code, score, time: t });
+  const ts   = Date.now();
+  await push(ref(db, "scores"), { code, score, ts });
   const wk = weekKey();
-  await push(ref(db, `scoresWeekly/${wk}`), { code, score, time: t, week: wk });
+  await push(ref(db, `scoresWeekly/${wk}`), { code, score, ts, week: wk });
 }
-/* oyun kodundan çağrılacak isim */
-window.saveScore = saveScore;
 
-/* --- Weekly Top10 --- */
+/* --- Weekly Top10 (opsiyonel panel için) --- */
 async function getWeeklyTop10(wk = weekKey()){
   const snap = await get(query(ref(db, `scoresWeekly/${wk}`), orderByChild("score"), limitToLast(10)));
   const list = []; snap.forEach(ch => list.push(ch.val()));
   return list.sort((a,b)=>b.score-a.score).slice(0,10);
 }
 
-/* --- Contest (current) --- */
+/* --- Contest (opsiyonel) --- */
 let contest = { active:false, week:weekKey(), prize:"" };
 onValue(ref(db, "contests/current"), s => { contest = s.val() || contest; });
 
-/* --- Claim code üretici --- */
+/* --- Claim code (opsiyonel) --- */
 function genClaimCode(week, code){
   const b = new Uint8Array(3);
   (self.crypto || window.crypto).getRandomValues(b);
@@ -449,36 +447,34 @@ function genClaimCode(week, code){
   return `CLAIM-${week}-${code}-${rnd}`;
 }
 
-/* --- Weekly panel (UI senin HTML’inde) --- */
+/* --- Weekly panel (UI'in zaten varsa) --- */
 async function showWeeklyPanel(){
   if (!contest.active) return;
 
   const wk = contest.week || weekKey();
   const me = getPlayerCode();
-  // Listeyi doldur
+
+  // liste
   const list = await getWeeklyTop10(wk);
-  const ol = document.getElementById("bpc-list");
+  const ol   = document.getElementById("bpc-list");
   if (ol){
     ol.innerHTML = list.length
       ? list.map((it,i)=>{
           const mine = it.code === me;
-          const cup = i===0 ? "🥇" : i===1 ? "🥈" : i===2 ? "🥉" : "";
-          return `<li style="margin:2px 0;">
-            <b style="${mine?'color:#ff5c5c;':''}">${i+1}. ${it.code}</b> → ${it.score} pts ${cup}
-          </li>`;
+          const cup  = i===0 ? "🥇" : i===1 ? "🥈" : i===2 ? "🥉" : "";
+          return `<li style="margin:2px 0;"><b style="${mine?'color:#ff5c5c;':''}">${i+1}. ${it.code}</b> → ${it.score} pts ${cup}</li>`;
         }).join("")
       : `<div style="opacity:.7;">Henüz skor yok.</div>`;
   }
 
-  // Claim butonu hazırlığı
+  // claim
   const claimBox = document.getElementById("bpc-claim");
-  const first = list[0] || null;
+  const first    = list[0] || null;
   if (claimBox){
     if (first && first.code === me){
       claimBox.style.display = "block";
       const btn  = document.getElementById("bpc-claim-btn");
       const info = document.getElementById("bpc-claim-info");
-      // daha önce claim yapılmış mı?
       let canClaim = true;
       try{
         const prev = await get(ref(db, `claims/${wk}/${me}`));
@@ -490,20 +486,17 @@ async function showWeeklyPanel(){
           if (!canClaim) return;
           const claimCode = genClaimCode(wk, me);
           await set(ref(db, `claims/${wk}/${me}`), { code: me, week: wk, score: first.score||0, ts: Date.now(), method: "email" });
-
+          const body =
+            "Hello Babypeacock Team,\n\n" +
+            "Week: " + wk + "\n" +
+            "Code: " + me + "\n" +
+            "Score: " + (first.score||0) + "\n" +
+            "Claim Code: " + claimCode + "\n" +
+            "Wallet (TRX):\n" +
+            "Contact (X/Telegram):\n\n" +
+            "Thanks!";
           const subj = encodeURIComponent(`BPC Weekly Prize Claim – ${wk} – ${me}`);
-          const body = encodeURIComponent(
-`Hello Babypeacock Team,
-
-Week: ${wk}
-Code: ${me}
-Score: ${first.score||0}
-Claim Code: ${claimCode}
-Wallet (TRX):
-Contact (X/Telegram):
-
-Thanks!`);
-          window.location.href = `mailto:${ADMIN_EMAIL}?subject=${subj}&body=${body}`;
+          window.location.href = `mailto:${ADMIN_EMAIL}?subject=${subj}&body=${encodeURIComponent(body)}`;
         };
       }
     } else {
@@ -513,37 +506,17 @@ Thanks!`);
     }
   }
 
-  // Paneli göster (Game Over sonrası overlay)
-const wrap = document.getElementById("bpc-overlay");
-if (wrap) {
-  wrap.style.display = "flex";
-  document.body.style.overflow = "hidden";
+  // overlay’i aç
+  const wrap = document.getElementById("bpc-overlay");
+  if (wrap){ wrap.style.display = "flex"; document.body.style.overflow = "hidden"; }
 }
 
-// dışarı export
-window.showWeeklyPanel = showWeeklyPanel;
-// --- exportlar ---
-window.incrementGlobalPlays = () => runTransaction(refCounter, v => (v || 0) + 1);
+/* --- exports (endGame ile uyumlu) --- */
+window.incrementGlobalPlays = incrementGlobalPlays;
 window.saveScore            = saveScore;
 window.showWeeklyPanel      = showWeeklyPanel;
 
-// 🔧 debug: modül bittiğinde bir kez yazmayı dene
-(async () => {
-  try {
-    if (window.incrementGlobalPlays) { await window.incrementGlobalPlays(); }
-  } catch (err) {
-    console.error("🔥 Firebase write error:", err);
-    alert("Firebase write error: " + err.message);
-  }
-})();
-  
-
-/* ===== Firebase blok sonu ===== */
-  // dışarı export
-  window.incrementGlobalPlays = () => runTransaction(refCounter, v => (v||0) + 1);
-  window.saveScore            = saveScore;
-  window.showWeeklyPanel      = showWeeklyPanel;
-
+console.log("MODULE_OK");
 </script>
 </body>
 </html>
