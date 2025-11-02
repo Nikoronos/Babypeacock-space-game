@@ -524,16 +524,11 @@ if (wrap) {
 window.showWeeklyPanel = showWeeklyPanel;
 
 /* ===== Firebase blok sonu ===== */
-</script>
+  // dışarı export
+  window.incrementGlobalPlays = () => runTransaction(refCounter, v => (v||0) + 1);
+  window.saveScore            = saveScore;
+  window.showWeeklyPanel      = showWeeklyPanel;
 
-
-/* — oyun sonunda çağır: top10 sadece Game Over’da — */
-// örnek: await window.saveScoreFinal(score);  // senin mevcut kaydetme çağrın
-// sonra:
-window.showWeeklyPanel = showWeeklyPanel;
-/* END PATCH weekly contest + claimCode */
-
-/* ================== END PATCH =================== */
 </script>
 </body>
 </html>
