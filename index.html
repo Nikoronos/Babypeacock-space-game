@@ -246,16 +246,22 @@ async function endGame() {
   overEl.style.background = "transparent";
 
   try {
-    // Skoru kaydet ve haftalık paneli göster
+    // 🎯 Skoru kaydet ve haftalık paneli göster
     if (window.saveScore) await window.saveScore(score);
     if (window.showWeeklyPanel) window.showWeeklyPanel();
 
     // 🌍 Global sayaç
-    if (window.incrementGlobalPlays) window.incrementGlobalPlays();
-  } catch (err) {
-    console.error("endGame() error:", err);}
+    if (window.incrementGlobalPlays) await window.incrementGlobalPlays();
 
+    // 🗺️ Ülke sayacı (hangi ülkeden kaç defa oynandı)
+    if (window.bumpLocation) await window.bumpLocation();
+
+  } catch (err) {
+    console.error("endGame() error:", err);
+  }
 }
+
+
 function update(dt){
   starsA.forEach(s=>{ s.y+=0.35; if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} });
   starsB.forEach(s=>{ s.y+=0.9;  if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} });
@@ -419,24 +425,29 @@ function incrementGlobalPlays(){
   return runTransaction(refCounter, v => (v || 0) + 1);
 }
 // --- Location helper + sayaç ---
+// Daha sağlam ülke adı bulucu
 function guessCountryName() {
   try {
-    const lang = navigator.language || 'en-US';
-    const code = (lang.split('-')[1] || 'UN').toUpperCase();
-    const dn = new Intl.DisplayNames(['tr-TR'], { type: 'region' });
-    return dn.of(code) || code;
+    // language'ı olası bölgeyle genişlet (tr -> tr-Latn-TR)
+    const loc = new Intl.Locale(navigator.language || 'tr-TR').maximize();
+    const region = loc.region || 'TR'; // son çare TR
+    // Görüntü dilini de tarayıcı diline göre ayarla
+    const dn = new Intl.DisplayNames([loc.baseName || 'tr-TR'], { type: 'region' });
+    const name = dn.of(region);
+    return name || region;
   } catch {
-    return 'Unknown';
+    return 'Türkiye'; // son fallback
   }
 }
 
 async function bumpLocationOncePerDay() {
   const todayKey = 'bpc_loc_day';
   const today = new Date().toISOString().slice(0,10);
-  if (localStorage.getItem(todayKey) === today) return; // aynı gün tekrar etme
+  if (localStorage.getItem(todayKey) === today) return; // günde 1
 
-  const country = guessCountryName(); // Türkiye, Germany vb.
-  const locRef = ref(db, `stats/locations/${country}`);
+  const country = guessCountryName(); // örn. "Türkiye", "Germany" vb.
+
+  const locRef   = ref(db, `stats/locations/${country}`);
   await runTransaction(locRef, v => (v || 0) + 1);
 
   const totalRef = ref(db, 'stats/totalStarts');
@@ -444,9 +455,22 @@ async function bumpLocationOncePerDay() {
 
   localStorage.setItem(todayKey, today);
 }
+  // --- Country counter (her Game Over'da 1 artır) ---
+function bumpLocation(){
+  try{
+    const lang = navigator.language || 'en-US';
+    const code = (lang.split('-')[1] || 'UN').toUpperCase();
+    const dn   = new Intl.DisplayNames(['tr-TR'], { type: 'region' });
+    const country = dn.of(code) || code;      // örn: "Türkiye"
 
-// sayfa açılınca bir kez tetikle
-bumpLocationOncePerDay();
+    const locRef   = ref(db, `stats/locations/${country}`);
+    return runTransaction(locRef, v => (v || 0) + 1);
+  }catch{
+    return Promise.resolve(); // sessiz geç
+  }
+}
+// oyun kodu çağırabilsin:
+window.bumpLocation = bumpLocation;
 /* --- Score save (all-time + weekly) --- */
 async function saveScore(score){
   const code = getPlayerCode();
