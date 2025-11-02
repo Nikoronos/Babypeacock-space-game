@@ -418,7 +418,35 @@ onValue(refCounter, s => {
 function incrementGlobalPlays(){
   return runTransaction(refCounter, v => (v || 0) + 1);
 }
+// --- Location helper + sayaç ---
+function guessCountryName() {
+  try {
+    const lang = navigator.language || 'en-US';
+    const code = (lang.split('-')[1] || 'UN').toUpperCase();
+    const dn = new Intl.DisplayNames(['tr-TR'], { type: 'region' });
+    return dn.of(code) || code;
+  } catch {
+    return 'Unknown';
+  }
+}
 
+async function bumpLocationOncePerDay() {
+  const todayKey = 'bpc_loc_day';
+  const today = new Date().toISOString().slice(0,10);
+  if (localStorage.getItem(todayKey) === today) return; // aynı gün tekrar etme
+
+  const country = guessCountryName(); // Türkiye, Germany vb.
+  const locRef = ref(db, `stats/locations/${country}`);
+  await runTransaction(locRef, v => (v || 0) + 1);
+
+  const totalRef = ref(db, 'stats/totalStarts');
+  await runTransaction(totalRef, v => (v || 0) + 1);
+
+  localStorage.setItem(todayKey, today);
+}
+
+// sayfa açılınca bir kez tetikle
+bumpLocationOncePerDay();
 /* --- Score save (all-time + weekly) --- */
 async function saveScore(score){
   const code = getPlayerCode();
