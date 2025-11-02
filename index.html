@@ -522,18 +522,28 @@ if (wrap) {
 
 // dışarı export
 window.showWeeklyPanel = showWeeklyPanel;
+// --- exportlar ---
+window.incrementGlobalPlays = () => runTransaction(refCounter, v => (v || 0) + 1);
+window.saveScore            = saveScore;
+window.showWeeklyPanel      = showWeeklyPanel;
+
+// 🔧 debug: modül bittiğinde bir kez yazmayı dene
+(async () => {
+  try {
+    if (window.incrementGlobalPlays) { await window.incrementGlobalPlays(); }
+  } catch (err) {
+    console.error("🔥 Firebase write error:", err);
+    alert("Firebase write error: " + err.message);
+  }
+})();
+  
 
 /* ===== Firebase blok sonu ===== */
   // dışarı export
   window.incrementGlobalPlays = () => runTransaction(refCounter, v => (v||0) + 1);
   window.saveScore            = saveScore;
   window.showWeeklyPanel      = showWeeklyPanel;
-try {
-  if (window.incrementGlobalPlays) await window.incrementGlobalPlays();
-} catch (err) {
-  console.error("🔥 Firebase write error:", err);
-  alert("Firebase write error: " + err.message);
-}
+
 </script>
 </body>
 </html>
