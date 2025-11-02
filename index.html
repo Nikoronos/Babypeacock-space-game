@@ -570,5 +570,16 @@ window.showWeeklyPanel      = showWeeklyPanel;
 
 console.log("MODULE_OK");
 </script>
+  <!-- 🏆 Weekly Panel -->
+<div id="bpc-overlay" style="display:none;position:fixed;inset:0;z-index:7;align-items:center;justify-content:center;background:rgba(0,0,0,.82);color:#fff">
+  <div style="width:min(420px,94vw);background:#0b1220;border:1px solid #00ffc8;border-radius:14px;padding:14px;">
+    <div style="font-weight:900;margin-bottom:8px">🏆 Weekly Top 10</div>
+    <ol id="bpc-list" style="margin:0;padding-left:18px;line-height:1.6"></ol>
+    <div id="bpc-claim" style="display:none;margin-top:12px;padding-top:10px;border-top:1px dashed #114">
+      <div id="bpc-claim-info" style="font-size:13px;opacity:.9;margin-bottom:8px"></div>
+      <button id="bpc-claim-btn" class="btn">Claim</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
