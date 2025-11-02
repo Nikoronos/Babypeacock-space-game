@@ -428,7 +428,7 @@ async function saveScore(score){
   await push(ref(db, `scoresWeekly/${wk}`), { code, score, time: t, week: wk });
 }
 /* oyun kodundan çağrılacak isim */
-window.saveScoreFinal = saveScore;
+window.saveScore = saveScore;
 
 /* --- Weekly Top10 --- */
 async function getWeeklyTop10(wk = weekKey()){
@@ -455,7 +455,6 @@ async function showWeeklyPanel(){
 
   const wk = contest.week || weekKey();
   const me = getPlayerCode();
-
   // Listeyi doldur
   const list = await getWeeklyTop10(wk);
   const ol = document.getElementById("bpc-list");
