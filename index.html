@@ -240,16 +240,21 @@ function renderFinalScore(t){
 }
 
 /* ---------- Main loop ---------- */
-async function endGame(){
+async function endGame() {
   gameOver = true;
   overEl.style.display = "flex";
   overEl.style.background = "transparent";
 
-  // Skoru kaydet ve haftalık paneli göster
- window.saveScore = saveScore;
+  try {
+    // Skoru kaydet ve haftalık paneli göster
+    if (window.saveScore) await window.saveScore(score);
+    if (window.showWeeklyPanel) window.showWeeklyPanel();
 
-  // 🌍 Global counter: +1 on each finished game
-  if (window.incrementGlobalPlays) window.incrementGlobalPlays();
+    // 🌍 Global sayaç
+    if (window.incrementGlobalPlays) window.incrementGlobalPlays();
+  } catch (err) {
+    console.error("endGame() error:", err);}
+
 }
 function update(dt){
   starsA.forEach(s=>{ s.y+=0.35; if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} });
