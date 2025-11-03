@@ -1,513 +1,96 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
-<title>Babypeacock — BPC Space Game</title>
-<style>
-  html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
-  #brand{position:fixed;top:6px;left:12px;z-index:4;font-weight:900;
-    background:linear-gradient(90deg,#22d3ee,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent}
-  #score{position:fixed;top:8px;left:0;right:0;text-align:center;color:#00ffc8;font-weight:700;z-index:4}
-  #power{position:fixed;top:8px;right:10px;color:#a7f3d0;font-weight:700;z-index:4}
-  #lives{position:fixed;bottom:10px;left:0;right:0;text-align:center;color:#f87171;font-weight:700;z-index:4}
-
-  #startOverlay,#gameOver{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:6}
-  #startOverlay{background:rgba(0,0,0,.84);color:#fff}
-  #gameOver{background:transparent;color:#fff}
-
-  .btn{margin-top:12px;padding:12px 22px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:6}
-
-  /* Top10 kutusu: GAME OVER başlığının altında, Restart'ın ÜSTÜNDE ve butonu kapatmayan, sade görünüm */
-  #bpc-top10{position:fixed;left:50%;transform:translateX(-50%);top:calc(50% + 40px);
-    width:min(420px,92vw);background:#000;border:1px solid #222;border-radius:10px;padding:10px 12px;
-    color:#fff;font-size:14px;line-height:1.5;z-index:5} /* z-index 5 -> Restart (6) tıklanabilir */
-  #bpc-top10 h4{margin:0 0 6px 0;font-size:15px;font-weight:800}
-  #bpc-top10 ol{margin:0;padding-left:18px}
-  #bpc-top10 .me{color:#ff5c5c} /* oyuncunun kendi satırı kırmızı */
-
-  /* Global plays etiketi (Game Over kartının altında) */
-  #globalCounterBox{margin-top:10px;font-size:14px}
-
-  canvas{display:block;margin:44px auto 0 auto;background:#020617;touch-action:none;user-select:none;
-    width:min(420px,96vw);height:auto;max-height:92vh}
-</style>
-</head>
-<body>
-  <div id="brand">Babypeacock 🦚</div>
-  <div id="score">🦚 Score: <span id="sc">0</span></div>
-  <div id="power">💎 <span id="px">0</span>s</div>
-  <div id="lives">❤️❤️❤️</div>
-
-  <!-- Start -->
-  <div id="startOverlay" style="display:flex">
-    <div style="margin-bottom:8px">Hold & drag to move — auto fire while holding</div>
-    <button id="startBtn" class="btn">START</button>
-    <div id="playerCode" style="margin-top:10px;font-size:14px;color:#00ffc8;"></div>
-    <div style="font-size:12px;opacity:.75;margin-top:8px">Tap anywhere to start</div>
-  </div>
-
-  <!-- Game Over -->
-  <div id="gameOver">
-    <div style="font-weight:900;margin-bottom:8px">GAME OVER</div>
-    <button id="restart" class="btn">Restart</button>
-    <div id="globalCounterBox">🌍 Global plays: <span id="globalCounter">…</span></div>
-  </div>
-
-  <!-- Top10 sade panel (veriyi Firebase tarafı dolduracak) -->
-  <div id="bpc-top10" style="display:none">
-    <h4>🏆 Weekly Top 10</h4>
-    <ol id="bpc-list"></ol>
-    <div id="bpc-claim" style="display:none;margin-top:8px;border-top:1px dashed #333;padding-top:8px">
-      <div id="bpc-claim-info" style="font-size:12px;opacity:.9;margin-bottom:6px"></div>
-      <button id="bpc-claim-btn" class="btn" style="padding:8px 14px">Claim</button>
-    </div>
-  </div>
-
-  <canvas id="game" width="420" height="700"></canvas>
-
-  <audio id="boom" preload="auto" playsinline>
-    <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_2b1b0dcd8c.mp3" type="audio/mpeg">
-  </audio>
-
-<script>
-/* ====== OYUN KODU (Firebase hooks’suz) ====== */
-const cv=document.getElementById("game"),ctx=cv.getContext("2d"); ctx.imageSmoothingEnabled=false;
-const scEl=document.getElementById("sc"),pxEl=document.getElementById("px"),livesEl=document.getElementById("lives");
-const startOverlay=document.getElementById("startOverlay"),startBtn=document.getElementById("startBtn");
-const overEl=document.getElementById("gameOver"),restartBtn=document.getElementById("restart"),boom=document.getElementById("boom");
-const top10Box=document.getElementById("bpc-top10");
-
-/* Utils */
-function clamp(v,a,b){return v<a?a:v>b?b:v;}
-function rand(a,b){return a+Math.random()*(b-a);}
-function rectHit(a,b){return !(a.x+a.w<b.x||a.x>b.x+b.w||a.y+a.h<b.y||a.y>b.y+b.h);}
-function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.crossOrigin="anonymous";i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
-function keyOutDark(img,TH=80){const w=img.width,h=img.height,off=document.createElement('canvas');off.width=w;off.height=h;
-  const g=off.getContext('2d'); g.drawImage(img,0,0); const d=g.getImageData(0,0,w,h),a=d.data;
-  for(let i=0;i<a.length;i+=4){const r=a[i],g1=a[i+1],b=a[i+2],lum=0.2126*r+0.7152*g1+0.0722*b;if((r<TH&&g1<TH&&b<TH)||lum<TH*0.8) a[i+3]=0;}
-  g.putImageData(d,0,0); return off;}
-
-/* Assets */
-const PLAYER_SRC="img/player/bpc_mini.png";
-const ENEMY_SRC={red:"bpc_enemy_red.png", green:"bpc_enemy_green.png", ufo_red:"bpc_enemy_ufo_red.png", ufo_gray:"bpc_enemy_ufo_gray.png"};
-const PEACOCK_SRC="yc3ku6.jpg";
-
-/* State */
-let bullets=[], enemies=[], enemyBullets=[], gems=[], mascots=[], particles=[];
-let score=0,lives=3,started=false,gameOver=false;
-let powerTime=0, fireTimer=0, FIRE_MS=170;
-let elapsed=0,enT=0,gemT=0,mascotT=0;
-let scoreSent=false;
-const player={x:cv.width/2-33,y:cv.height-120,w:66,h:66};
-
-/* Oyuncu kodu */
-function getPlayerCode(){
-  let code = localStorage.getItem("playerCode");
-  if (!code){ code = "BPC" + Math.floor(10000 + Math.random()*89999); localStorage.setItem("playerCode", code); }
-  return code;
-}
-(function(){ const box=document.getElementById("playerCode"); if(box) box.innerHTML=`👤 Oyuncu: <b>${getPlayerCode()}</b>`; })();
-
-/* Anti-montaj code */
-let playId=Math.floor(performance.now()+Math.random()*1e9);
-let verifyCode="--------";
-async function makeCode(){
-  const t=Math.floor(Date.now()/1000);
-  const msg=new TextEncoder().encode(playId+"|"+t+"|babypeacock");
-  const buf=await crypto.subtle.digest("SHA-256",msg);
-  verifyCode=[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("").slice(0,8).toUpperCase();
-}
-makeCode();
-
-/* Stars */
-const starsA=[],starsB=[]; for(let i=0;i<60;i++) starsA.push({x:rand(0,cv.width),y:rand(0,cv.height)});
-for(let i=0;i<35;i++) starsB.push({x:rand(0,cv.width),y:rand(0,cv.height)});
-
-/* Controls */
-function updateLives(){livesEl.innerHTML="❤️".repeat(lives);} updateLives();
-function startGame(){if(started)return; started=true; startOverlay.style.display="none";}
-startBtn.onclick=startGame; cv.onclick=startGame;
-let holding=false;
-function getX(e){return (e.clientX??(e.touches?e.touches[0].clientX:0))-cv.getBoundingClientRect().left;}
-cv.addEventListener("pointerdown",e=>{if(!started)return;holding=true;player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w);});
-cv.addEventListener("pointermove",e=>{if(!holding)return;player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w);});
-cv.addEventListener("pointerup",()=>holding=false); cv.addEventListener("pointercancel",()=>holding=false);
-
-/* Fire */
-function shoot(){
-  if(powerTime>0){
-    bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10});
-    bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10,ang:3});
-    bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10,ang:-3});
-  } else {
-    bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10});
-  }
-}
-
-/* Gem + Mascot + Explode */
-function drawDiamondGem(ctx,x,y,w,h,t){ctx.save();ctx.translate(x+w/2,y+h/2);ctx.rotate(Math.sin(t*2)*0.20);
-  const W=w*0.9,H=h*0.9;ctx.shadowColor="rgba(56,189,248,.7)";ctx.shadowBlur=14;
-  const grad=ctx.createLinearGradient(-W/2,0,W/2,0);grad.addColorStop(0,"#baf2ff");grad.addColorStop(0.5,"#60e8ff");grad.addColorStop(1,"#99f6e4");
-  ctx.fillStyle=grad;ctx.beginPath();ctx.moveTo(0,-H*0.5);ctx.lineTo(W*0.48,0);ctx.lineTo(0,H*0.56);ctx.lineTo(-W*0.48,0);ctx.closePath();ctx.fill();
-  ctx.shadowBlur=0;ctx.lineWidth=1.8;ctx.strokeStyle="#0e7490";ctx.stroke();ctx.restore();}
-function spawnGem(){ if(powerTime>0) return; const s=22; gems.push({x:rand(0,cv.width-s), y:-s, w:s, h:s, vy:1.5}); }
-function spawnMascot(){ if(score>=200 && Math.random()<0.8) return; const s=22; mascots.push({x:rand(0,cv.width-s), y:-s, w:s, h:s, vy:1.4}); }
-function explosion(x,y,count=18){const left=Math.max(0,120-particles.length);const n=Math.min(count,left);
-  for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=1.2+Math.random()*2.8;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:420+Math.random()*280,size:1.6+Math.random()*2.4});}
-  try{boom.currentTime=0;boom.play().catch(()=>{});}catch{}}
-
-/* Enemy */
-function allowedKindsByTime(t){if(t<10) return ["ufo_red","ufo_gray"]; if(t<40) return ["ufo_red","ufo_gray","green"]; return ["ufo_red","ufo_gray","green","red"];}
-function spawnEnemy(k){ if(enemies.length>12) return; const size=rand(48,70); const kind=k[Math.floor(Math.random()*k.length)];
-  const img=enemyImg[kind]||null; enemies.push({x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3),kind,img,canShoot:(kind==="red"||kind==="green"),shootT:0,shootInt:500}); }
-function enemyShoot(e){ if(!e.canShoot) return; const cx=e.x+e.w/2; const mul=(score>=500)?1.25:(score>=300)?1.15:1;
-  if(e.kind==="red") enemyBullets.push({x:cx-2,y:e.y+e.h,w:4,h:12,vy:6*mul,color:"#ef4444"});
-  else enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6.5*mul,color:"#22c55e"}); }
-
-/* Final panel (arka plan + skor) */
-function renderFinalScore(t){
-  const cx=cv.width/2, cy=cv.height/2;
-  ctx.save();
-  const grd=ctx.createRadialGradient(cx,cy,20,cx,cy,Math.max(cv.width,cv.height)/1.2);
-  grd.addColorStop(0,"rgba(0,0,0,0.55)"); grd.addColorStop(1,"rgba(0,0,0,0.85)");
-  ctx.fillStyle=grd; ctx.fillRect(0,0,cv.width,cv.height);
-
-  const pw=Math.min(360,cv.width-40), ph=160, rx=cx-pw/2, ry=cy-ph/2-6;
-  ctx.beginPath(); const r=14;
-  ctx.moveTo(rx+r,ry); ctx.arcTo(rx+pw,ry,rx+pw,ry+ph,r); ctx.arcTo(rx+pw,ry+ph,rx,ry+ph,r);
-  ctx.arcTo(rx,ry+ph,rx,ry,r); ctx.arcTo(rx,ry,rx+pw,ry,r); ctx.closePath();
-  ctx.fillStyle="rgba(2,6,23,.92)"; ctx.fill();
-
-  ctx.save(); ctx.beginPath(); ctx.rect(rx+10,ry+10,pw-20,ph-20); ctx.clip();
-  ctx.translate(cx,cy); ctx.rotate((t/1000)%6.283*0.15);
-  ctx.fillStyle="rgba(0,255,200,0.08)"; const line=`Babypeacock • SCORE ${score} • CODE ${verifyCode} • `;
-  ctx.font="700 12px system-ui,Arial"; for(let y=-90;y<=90;y+=22){let x=-300; while(x<300){ctx.fillText(line,x,y); x+=ctx.measureText(line).width+40;}}
-  ctx.restore();
-
-  ctx.fillStyle=ctx.createLinearGradient(cx-120,0,cx+120,0); ctx.fillStyle.addColorStop?.(0,"#22d3ee");
-  ctx.font="900 22px system-ui,Arial"; ctx.textAlign="center"; ctx.shadowColor="rgba(34,211,238,0.8)"; ctx.shadowBlur=12;
-  ctx.fillText("Babypeacock",cx,cy-18); ctx.shadowBlur=0;
-
-  ctx.fillStyle="rgba(0,255,200,0.18)"; ctx.font="900 66px system-ui,Arial"; ctx.fillText(String(score),cx,cy+36);
-  ctx.fillStyle="#00ffc8"; ctx.font="900 40px system-ui,Arial"; ctx.fillText("Score: "+score,cx,cy+14);
-  ctx.font="700 14px system-ui,Arial"; ctx.fillStyle="#a7f3d0"; ctx.fillText("CODE: "+verifyCode,cx,ry+ph-14);
-  ctx.restore();
-}
-
-/* END GAME — Firebase hook’ları opsiyonel */
-async function endGame(){
-  gameOver=true;
-  overEl.style.display="flex";
-  overEl.style.background="transparent";
-
-  try{
-    if (window.saveScore) await window.saveScore(score);        // eğer ekli ise
-    if (window.showWeeklyPanel) window.showWeeklyPanel();       // eğer ekli ise
-    if (window.incrementGlobalPlays) await window.incrementGlobalPlays(); // eğer ekli ise
-    if (window.bumpLocation) await window.bumpLocation();       // eğer ekli ise
-  }catch(err){ console.error("endGame() error:",err); }
-
-  // Top10 kutusunu görünür yap (listeyi Firebase tarafı dolduracak)
-  top10Box.style.display = "block";
-}
-
-/* Update loop */
-function update(dt){
-  starsA.forEach(s=>{ s.y+=0.35; if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} });
-  starsB.forEach(s=>{ s.y+=0.9;  if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} });
-
-  if(!started||gameOver) return;
-
-  elapsed += dt/1000; enT += dt; gemT += dt; mascotT += dt;
-  if(powerTime>0){ powerTime-=dt; if(powerTime<0) powerTime=0; }
-  pxEl.textContent = powerTime>0 ? Math.ceil(powerTime/1000) : 0;
-  fireTimer += dt; if(holding && fireTimer>FIRE_MS){ shoot(); fireTimer=0; }
-
-  let speedMultiplier=1, spawnMultiplier=1;
-  if(score>=300) speedMultiplier=1.30;
-  if(score>=500){ speedMultiplier=1.30; spawnMultiplier=1.40; }
-
-  if(enT>600/spawnMultiplier){ spawnEnemy(allowedKindsByTime(elapsed)); enT=0; }
-  if(gemT>(score>=200?13000:9000)){ if(Math.random()<0.55) spawnGem(); gemT=0; }
-  if(mascotT>12000){ spawnMascot(); mascotT=0; }
-
-  bullets.forEach(b=>{ b.y+=b.vy; b.x+=(b.ang||0)*0.5; });
-  bullets=bullets.filter(b=> b.y>-20);
-
-  enemies.forEach(e=>{ e.y+=e.vy; e.shootT+=dt; if(e.canShoot && e.shootT>=e.shootInt){ e.shootT=0; enemyShoot(e);} });
-  enemies=enemies.filter(e=> e.y<=cv.height+40);
-
-  enemyBullets.forEach(m=>{ m.y+=m.vy; });
-  enemyBullets=enemyBullets.filter(m=> m.y<cv.height+40);
-
-  gems.forEach(g=> g.y+=g.vy);       gems=gems.filter(g=> g.y<cv.height+40);
-  mascots.forEach(m=> m.y+=m.vy);    mascots=mascots.filter(m=> m.y<cv.height+40);
-
-  for(const e of enemies){ if(rectHit(player,e)){ explosion(player.x+player.w/2,player.y+player.h/2,22); lives--; updateLives(); if(lives<=0) endGame(); e.dead=1; } }
-  for(const m of enemyBullets){ if(rectHit(player,m)){ explosion(player.x+player.w/2,player.y+player.h/2,22); lives--; updateLives(); if(lives<=0) endGame(); m.dead=1; } }
-  for(const b of bullets){ for(const e of enemies){ if(rectHit(b,e)){ explosion(e.x+e.w/2,e.y+e.h/2,16); b.dead=1; e.dead=1; score++; scEl.textContent=score; } } }
-  for(const g of gems){ if(rectHit(player,g)){ powerTime=15000; g.dead=1; } }
-  for(const m of mascots){ if(rectHit(player,m)){ lives=Math.min(5,lives+1); updateLives(); m.dead=1; } }
-
-  enemies=enemies.filter(o=>!o.dead); bullets=bullets.filter(o=>!o.dead);
-  enemyBullets=enemyBullets.filter(o=>!o.dead); gems=gems.filter(o=>!o.dead); mascots=mascots.filter(o=>!o.dead);
-
-  for(let i=particles.length-1;i>=0;i--){ const p=particles[i]; p.life-=dt; if(p.life<=0){particles.splice(i,1);continue;}
-    p.x+=p.vx; p.y+=p.vy; p.vy+=0.02; }
-}
-
-/* Draw & Loop */
-function draw(t){
-  ctx.clearRect(0,0,cv.width,cv.height);
-  ctx.fillStyle="rgba(190,220,255,.85)"; starsA.forEach(s=>ctx.fillRect(s.x,s.y,1,1));
-  ctx.fillStyle="rgba(255,255,255,.95)";  starsB.forEach(s=>ctx.fillRect(s.x,s.y,1.2,1.2));
-
-  if(playerImg) ctx.drawImage(playerImg,player.x,player.y,player.w,player.h);
-  else { ctx.fillStyle="#38bdf8"; ctx.fillRect(player.x,player.y,player.w,player.h); }
-
-  ctx.fillStyle="#00ffc8"; bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
-  enemies.forEach(e=>{ if(e.img) ctx.drawImage(e.img,e.x,e.y,e.w,e.h); else { ctx.fillStyle=e.kind==="green"?"#22c55e":"#ef4444"; ctx.fillRect(e.x,e.y,e.w,e.h);} });
-  enemyBullets.forEach(m=>{ ctx.fillStyle=m.color; ctx.fillRect(m.x,m.y,m.w,m.h); });
-
-  gems.forEach(g=> drawDiamondGem(ctx,g.x,g.y,g.w,g.h, performance.now()/1000));
-  if(peacockImg) mascots.forEach(m=>ctx.drawImage(peacockImg,m.x,m.y,m.w,m.h));
-
-  particles.forEach(p=>{ const a=Math.max(0,p.life/500); ctx.globalAlpha=a; ctx.fillStyle="rgba(255,200,80,1)";
-    ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1; });
-
-  if(gameOver){ renderFinalScore(t); if(!scoreSent){ scoreSent=true; } }
-}
-function loop(t){ const dt=Math.min(t-(window._lt||t),32); window._lt=t; update(dt); draw(t); requestAnimationFrame(loop); }
-requestAnimationFrame(loop);
-
-/* Restart */
-restartBtn.onclick=()=>{
-  score=0;lives=3;powerTime=0; scEl.textContent=score; pxEl.textContent=0;
-  bullets=[];enemies=[];enemyBullets=[];gems=[];mascots=[];particles=[];
-  updateLives(); gameOver=false; started=false; scoreSent=false;
-  overEl.style.display="none"; overEl.style.background="rgba(0,0,0,.84)";
-  top10Box.style.display="none";
-  playId=Math.floor(performance.now()+Math.random()*1e9); makeCode();
-  startOverlay.style.display="flex";
-};
-
-/* Preload */
-let playerImg=null, enemyImg={red:null,green:null,ufo_red:null,ufo_gray:null}, peacockImg=null;
-(async function(){
-  try{ const p=await loadImage(PLAYER_SRC); playerImg=keyOutDark(p,80);}catch{}
-  for(const k of Object.keys(ENEMY_SRC)){ try{ const im=await loadImage(ENEMY_SRC[k]); enemyImg[k]=keyOutDark(im,80);}catch{} }
-  try{ const bird=await loadImage(PEACOCK_SRC); peacockImg=keyOutDark(bird,70);}catch{}
-})();
-</script>
-
-<!-- PART 2/2: Buraya Firebase modülünü ekleyeceğiz -->
-  <!-- === PART 2/2 — Firebase Modülü (tek app) === -->
-<script type="module">
-/* ===== Imports ===== */
-import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getDatabase, ref, get, set, push, onValue, runTransaction,
-  query, orderByChild, limitToLast
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-/* ===== Config ===== */
-const INSTANCE_URL = "https://bpc-space-default-rtdb.europe-west1.firebasedatabase.app/";
-const ADMIN_EMAIL  = "babypeacock2025@gmail.com";
-
-/* ===== Init (single app) ===== */
-const app = getApps().length ? getApps()[0] : initializeApp({ databaseURL: INSTANCE_URL });
-const db  = getDatabase(app);
-window.db = db; // istersen konsoldan bak
-
-/* ===== Helpers ===== */
-function weekKey(d=new Date()){
-  const y  = d.getFullYear();
-  const w  = Math.floor((d - new Date(y,0,1)) / 604800000) + 1;
-  return `${y}-W${String(w).padStart(2,"0")}`;
-}
-function getPlayerCode(){
-  let c = localStorage.getItem("playerCode");
-  if(!c){ c = "BPC" + Math.floor(10000 + Math.random()*89999); localStorage.setItem("playerCode", c); }
-  return c;
-}
-
-/* ===== Global Plays: canlı oku + artır ===== */
-const refCounter = ref(db, "stats/globalPlays");
-const elGC       = document.getElementById("globalCounter");
-const cached     = Number(localStorage.getItem("bpc_global_plays")) || 0;
-if (elGC) elGC.textContent = cached ? cached.toLocaleString("en-US") : "…";
-onValue(refCounter, s => {
-  const v = Number(s.val() ?? 0);
-  if (elGC) elGC.textContent = v.toLocaleString("en-US");
-  localStorage.setItem("bpc_global_plays", String(v));
-});
-function incrementGlobalPlays(){
-  return runTransaction(refCounter, v => (v||0) + 1);
-}
-
-/* ===== Ülke sayacı =====
-   - Günlük 1 kez (sayfa açılışında) bump
-   - Game Over’da ekstra +1 (window.bumpLocation)  */
-function detectCountryName(){
-  try{
-    // 1) Bölge kodunu dil yerelinden çıkar (en-GB, tr-TR, etc.)
-    const lang = (navigator.languages && navigator.languages[0]) || navigator.language || "en-US";
-    const code = (lang.split('-')[1] || "").toUpperCase();
-
-    // 2) Bazı anomali düzeltmeleri
-    const FIX = { "UK":"GB", "UN":"TR", "001":"TR" }; // UN/001 -> TR fallback; UK -> GB
-    const region = FIX[code] || code || "TR";
-
-    // 3) Ülke adını üret
-    const dn = new Intl.DisplayNames([lang, "tr-TR"], { type: "region" });
-    const name = dn.of(region) || region;
-
-    return name;
-  }catch{
-    return "Türkiye"; // son fallback
-  }
-}
-// Açılışta bir kez (gün başına 1) toplam başlatma sayacı + ülke bump
-(async function bumpLocationOncePerDay(){
-  try{
-    const todayKey = "bpc_loc_day";
-    const today    = new Date().toISOString().slice(0,10);
-    if (localStorage.getItem(todayKey) === today) return;
-
-    const country = detectCountryName();                      // örn: “Türkiye”
-    const locRef  = ref(db, `stats/locations/${country}`);
-    await runTransaction(locRef,   v => (v||0) + 1);
-
-    const totalRef = ref(db, "stats/totalStarts");
-    await runTransaction(totalRef, v => (v||0) + 1);
-
-    localStorage.setItem(todayKey, today);
-  }catch(e){ /* sessiz geç */ }
-})();
-// Game Over’da da 1 kez artırmak için
-async function bumpLocation(){
-  try{
-    const country = detectCountryName();
-    const locRef  = ref(db, `stats/locations/${country}`);
-    await runTransaction(locRef, v => (v||0) + 1);
-  }catch(e){ /* sessiz geç */ }
-}
-
-/* ===== Skor kaydı =====
-   - all-time: /scores
-   - weekly:   /scoresWeekly/{week}
-*/
-async function saveScore(score){
-  const code = getPlayerCode();
-  const ts   = Date.now();
-  await push(ref(db, "scores"), { code, score, ts });
-  const wk = weekKey();
-  await push(ref(db, `scoresWeekly/${wk}`), { code, score, ts, week: wk });
-}
-
-/* ===== Weekly Top10 (best-per-player) ===== */
-async function getWeeklyTop10(wk = weekKey()){
-  // Son 10 yerine: tüm hafta içinden çekip client-side “best per code” alıyoruz
-  const snap = await get(ref(db, `scoresWeekly/${wk}`));
-  const bestByCode = {};
-  snap.forEach(ch => {
-    const v = ch.val();
-    if (!v || typeof v.score!=="number") return;
-    if (!bestByCode[v.code] || v.score > bestByCode[v.code].score) bestByCode[v.code] = v;
-  });
-  const list = Object.values(bestByCode).sort((a,b)=>b.score-a.score).slice(0,10);
-  return list;
-}
-
-/* ===== Contest (haftalık) dinleyici ===== */
-let contest = { active:false, week:weekKey(), prize:"" };
-onValue(ref(db, "contests/current"), s => { contest = s.val() || contest; });
-
-/* ===== Claim Code ===== */
-function genClaimCode(week, code){
-  const b = new Uint8Array(3);
-  (self.crypto || window.crypto).getRandomValues(b);
-  const rnd = [...b].map(x=>x.toString(16).padStart(2,"0")).join("").slice(0,5).toUpperCase();
-  return `CLAIM-${week}-${code}-${rnd}`;
-}
-
-/* ===== Weekly panel: sade, Restart’ı kapatmayan ===== */
-async function showWeeklyPanel(){
-  // Yalnız “yarış aktif”ken tabloyu göster; claim düğmesi 7 gün penceresi bittiğinde açılır
-  if (!contest.active) { 
-    // aktif değilse yine de basit tabloyu gösterebiliriz; ama claim yok
-  }
-
-  const wk  = contest.week || weekKey();
-  const me  = getPlayerCode();
-  const ol  = document.getElementById("bpc-list");
-  const box = document.getElementById("bpc-top10");
-
-  const list = await getWeeklyTop10(wk);
-
-  if (ol){
-    ol.innerHTML = list.length
-      ? list.map((it,i)=>{
-          const mine = it.code === me;
-          return `<li class="${mine?'me':''}">${i+1}. ${it.code} → ${it.score} pts${i===0?' 🥇':''}</li>`;
-        }).join("")
-      : `<div style="opacity:.7;">Henüz skor yok.</div>`;
-  }
-  if (box) box.style.display = "block";
-
-  // Claim: Sadece 1.’nin cihazında ve “contest window kapandı”ysa göster
-  const claimBox = document.getElementById("bpc-claim");
-  const btn      = document.getElementById("bpc-claim-btn");
-  const info     = document.getElementById("bpc-claim-info");
-  const first    = list[0] || null;
-
-  // 7 gün penceresi kontrol (örnek): current.week == weekKey() ise pencere daha açık say
-  const windowClosed = (contest.week && contest.week !== weekKey());
-
-  if (claimBox){
-    if (first && first.code === me && windowClosed){
-      claimBox.style.display = "block";
-      let canClaim = true;
-      try{
-        const prev = await get(ref(db, `claims/${wk}/${me}`));
-        if (prev.exists()){ canClaim = false; if (info){ info.style.display='block'; info.textContent='You already claimed.'; } }
-      }catch{}
-
-      if (btn){
-        btn.onclick = async () => {
-          if (!canClaim) return;
-          const claimCode = genClaimCode(wk, me);
-          await set(ref(db, `claims/${wk}/${me}`), { code: me, week: wk, score: first.score||0, ts: Date.now(), method: "email" });
-
-          const subj = encodeURIComponent(`BPC Weekly Prize Claim – ${wk} – ${me}`);
-          const body = encodeURIComponent(
-`Hello Babypeacock Team,
-
-Week: ${wk}
-Code: ${me}
-Score: ${first.score||0}
-Claim Code: ${claimCode}
-Wallet (TRX):
-Contact (X/Telegram):
-
-Thanks!`);
-          window.location.href = `mailto:${ADMIN_EMAIL}?subject=${subj}&body=${body}`;
-        };
-      }
-    } else {
-      claimBox.style.display = "none";
-      if (info) info.textContent = "";
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Babypeacock 🦚</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: radial-gradient(circle at top, #0a0020, #000010);
+      color: white;
+      text-align: center;
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
     }
-  }
-}
 
-/* ===== Exports (endGame ile uyumlu) ===== */
-window.incrementGlobalPlays = incrementGlobalPlays;
-window.saveScore           = saveScore;
-window.showWeeklyPanel     = showWeeklyPanel;
-window.bumpLocation        = bumpLocation;
-</script>
-<!-- === /Firebase Modülü === -->
+    /* Kuş maskotu */
+    .bird {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      box-shadow: 0 0 25px #00eaff;
+      margin-top: 50px;
+      animation: fly 4s ease-in-out infinite;
+      transition: 0.5s;
+    }
+
+    .bird:hover {
+      transform: scale(1.08);
+      box-shadow: 0 0 40px #6f00ff;
+    }
+
+    @keyframes fly {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-10px) rotate(-2deg); }
+    }
+
+    h2 {
+      color: #b4f1ff;
+      text-shadow: 0 0 10px #00eaff;
+    }
+
+    .social-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 25px;
+      padding-bottom: 40px;
+    }
+
+    .btn {
+      background: linear-gradient(90deg, #00eaff, #6f00ff);
+      color: white;
+      text-decoration: none;
+      padding: 10px 18px;
+      border-radius: 25px;
+      font-weight: 600;
+      transition: 0.3s;
+      box-shadow: 0 0 10px #6f00ff33;
+    }
+
+    .btn:hover {
+      transform: scale(1.08);
+      box-shadow: 0 0 15px #00eaff;
+    }
+  </style>
+</head>
+
+<body>
+  <img src="./bpc.png" alt="Babypeacock maskotu" class="bird">
+  <h2>🦚 Babypeacock Community</h2>
+
+  <div class="social-links">
+    <a href="https://t.me/Baby1peacock" target="_blank" class="btn">📢 Telegram</a>
+    <a href="https://x.com/Babypeakcoin?t=hcfWyb0IdF80eZBxCynCTg&s=09" target="_blank" class="btn">🐦 X (Twitter)</a>
+    <a href="https://join.pump.fun/HSag/nuuzun1m" target="_blank" class="btn">🚀 Pump.fun</a>
+    <a href="https://geckoterminal.com/solana/pools/AZRKvpc91mpJmnKiMRfYRBMqZpoYB3Bk8Dz3dEEKcZ2i" target="_blank" class="btn">🦎 GeckoTerminal</a>
+    <a href="https://dexscreener.com/solana/AZRKvpc91mpJmnKiMRfYRBMqZpoYB3Bk8Dz3dEEKcZ2i" target="_blank" class="btn">📊 DexScreener</a>
+  </div>
+  <!-- Privacy Policy Section -->
+  <section style="max-width: 650px; margin: 60px auto; text-align: left; color: #cceaff; line-height: 1.6;">
+    <h2 style="text-align:center; color:#00eaff; text-shadow:0 0 10px #6f00ff;">Privacy Policy – Babypeacock Space</h2>
+    <p><b>Babypeacock Space</b> is a free arcade game developed for entertainment purposes only.</p>
+    <p>We do not collect, store, or share any personal data such as names, emails, or device information.
+       The game may use <b>Firebase Analytics</b> to measure anonymous play statistics (e.g., number of plays or country counts) 
+       for improving gameplay experience.</p>
+    <p>No personal accounts or login data are required. The app is fully playable offline.</p>
+    <p>For questions, contact us at <a href="mailto:babypeacock@gmail.com" style="color:#00eaff;">babypeacock@gmail.com</a>.</p>
+    <p style="text-align:right; font-size:13px; color:#8ecfff;">Last updated: November 2025</p>
+  </section>
+</body>
+</html>
 </body>
 </html>
