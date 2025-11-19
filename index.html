@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,14 +18,18 @@
 
   .btn{margin-top:12px;padding:12px 22px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:6}
 
-  /* Top10 kutusu: GAME OVER başlığının altında, Restart'ın ÜSTÜNDE */
+  /* Top10 kutusu */
   #bpc-top10{position:fixed;left:50%;transform:translateX(-50%);top:calc(50% + 40px);
     width:min(420px,92vw);background:#000;border:1px solid #222;border-radius:10px;padding:10px 12px;
     color:#fff;font-size:14px;line-height:1.5;z-index:5} 
   #bpc-top10 h4{margin:0 0 6px 0;font-size:15px;font-weight:800; text-align:center; color:#e2e8f0;}
+  
+  /* Hafta sayacı stili */
+  #week-timer{text-align:center;font-size:12px;color:#94a3b8;margin-bottom:8px;font-weight:600;border-bottom:1px dashed #333;padding-bottom:6px;}
+
   #bpc-top10 ol{margin:0;padding-left:24px}
   #bpc-top10 li{margin-bottom:4px;}
-  #bpc-top10 .me{color:#ff5c5c; font-weight:bold;} /* oyuncunun kendi satırı kırmızı */
+  #bpc-top10 .me{color:#ff5c5c; font-weight:bold;} 
 
   /* Global plays etiketi */
   #globalCounterBox{margin-top:10px;font-size:14px}
@@ -56,6 +59,9 @@
 
   <div id="bpc-top10" style="display:none">
     <h4>🏆 Weekly Top 10</h4>
+    <div id="week-timer">
+      Week <span id="wk-num">--</span> • Resets in <span id="wk-rem" style="color:#facc15">--</span> (London Time)
+    </div>
     <ol id="bpc-list"></ol>
   </div>
 
@@ -66,7 +72,7 @@
   </audio>
 
 <script>
-/* ====== OYUN KODU (Aynı kalıyor, sadece JS hook'ları değişecek) ====== */
+/* ====== OYUN KODU (Motor kısmı - Değişmedi) ====== */
 const cv=document.getElementById("game"),ctx=cv.getContext("2d"); ctx.imageSmoothingEnabled=false;
 const scEl=document.getElementById("sc"),pxEl=document.getElementById("px"),livesEl=document.getElementById("lives");
 const startOverlay=document.getElementById("startOverlay"),startBtn=document.getElementById("startBtn");
@@ -304,7 +310,6 @@ import {
 
 /* ===== Config ===== */
 const INSTANCE_URL = "https://bpc-space-default-rtdb.europe-west1.firebasedatabase.app/";
-// Admin email kaldırıldı çünkü claim yok.
 
 /* ===== Init ===== */
 const app = getApps().length ? getApps()[0] : initializeApp({ databaseURL: INSTANCE_URL });
@@ -323,29 +328,28 @@ function getPlayerCode(){
   return c;
 }
 
-/* --- YENİ: Bayrak Emojisi Yardımcısı --- */
+/* --- Bayrak ve Ülke Yardımcıları --- */
 function getFlagEmoji(countryCode) {
-  if (!countryCode) return "🏳️"; // Bilinmiyorsa beyaz bayrak
-  const codePoints = countryCode
-    .toUpperCase()
-    .split('')
-    .map(char =>  127397 + char.charCodeAt());
+  if (!countryCode) return "🏳️"; 
+  const codePoints = countryCode.toUpperCase().split('').map(char =>  127397 + char.charCodeAt());
   return String.fromCodePoint(...codePoints);
 }
-
-/* --- YENİ: Ülke Kodunu Bul (Örn: TR, US, DE) --- */
 function getCountryCode() {
   try {
     const lang = (navigator.languages && navigator.languages[0]) || navigator.language || "en-US";
     let code = (lang.split('-')[1] || "").toUpperCase();
-    
-    // Düzeltmeler
     if (code === "UK") code = "GB";
-    if (!code) code = "TR"; // Fallback
+    if (!code) code = "TR";
     return code;
-  } catch {
-    return "TR";
-  }
+  } catch { return "TR"; }
+}
+function getCountryName() {
+  try {
+    const lang = (navigator.languages && navigator.languages[0]) || navigator.language || "en-US";
+    const code = getCountryCode(); 
+    const dn = new Intl.DisplayNames([lang, "tr-TR"], { type: "region" });
+    return dn.of(code) || code;
+  } catch { return "Türkiye"; }
 }
 
 /* ===== Global Plays ===== */
@@ -362,11 +366,11 @@ function incrementGlobalPlays(){
   return runTransaction(refCounter, v => (v||0) + 1);
 }
 
-/* ===== İstatistikler (Lokasyon) ===== */
+/* ===== İstatistikler (Lokasyon - TAM İSİM ile) ===== */
 async function bumpLocation(){
   try{
-    const code = getCountryCode(); // TR, US vs.
-    const locRef  = ref(db, `stats/locations/${code}`);
+    const name = getCountryName(); // "Türkiye"
+    const locRef  = ref(db, `stats/locations/${name}`);
     await runTransaction(locRef, v => (v||0) + 1);
   }catch(e){}
 }
@@ -385,40 +389,60 @@ async function bumpLocation(){
   }catch(e){}
 })();
 
-/* ===== Skor Kaydı (Artık country kodunu da kaydediyor) ===== */
+/* ===== Skor Kaydı (HİBRİT: KOD + İSİM) ===== */
 async function saveScore(score){
   const code = getPlayerCode();
-  const country = getCountryCode(); // ÖRN: "TR"
+  const country = getCountryCode(); // "TR"
+  const countryName = getCountryName(); // "Türkiye"
   const ts   = Date.now();
   
-  // Genel listeye ekle
-  await push(ref(db, "scores"), { code, score, ts, country });
-  
-  // Haftalık listeye ekle
+  const payload = { code, score, ts, country, countryName };
+  await push(ref(db, "scores"), payload);
   const wk = weekKey();
-  await push(ref(db, `scoresWeekly/${wk}`), { code, score, ts, week: wk, country });
+  await push(ref(db, `scoresWeekly/${wk}`), { ...payload, week: wk });
 }
 
-/* ===== Weekly Top10 (Artık bayrak gösteriyor) ===== */
+/* ===== Weekly Top10 (LONDRA SAATİNE GÖRE GERİ SAYIM) ===== */
 async function getWeeklyTop10(wk = weekKey()){
   const snap = await get(ref(db, `scoresWeekly/${wk}`));
   const bestByCode = {};
   snap.forEach(ch => {
     const v = ch.val();
     if (!v || typeof v.score!=="number") return;
-    // En yüksek skoru al
     if (!bestByCode[v.code] || v.score > bestByCode[v.code].score) bestByCode[v.code] = v;
   });
   const list = Object.values(bestByCode).sort((a,b)=>b.score-a.score).slice(0,10);
   return list;
 }
 
-/* ===== Panel Göster (Sadeleştirildi) ===== */
 async function showWeeklyPanel(){
   const wk  = weekKey();
   const me  = getPlayerCode();
   const ol  = document.getElementById("bpc-list");
   const box = document.getElementById("bpc-top10");
+  
+  // --- Geri Sayım (LONDRA / UTC BAZLI) ---
+  const weekNumEl = document.getElementById("wk-num");
+  const weekRemEl = document.getElementById("wk-rem");
+  
+  if(weekNumEl) weekNumEl.textContent = wk.split("-W")[1]; 
+
+  const now = new Date();
+  const day = now.getUTCDay();     // 0=Sunday (UTC)
+  const hours = now.getUTCHours(); // 0-23 (UTC)
+  
+  const daysLeft = day === 0 ? 0 : 7 - day;
+  const hoursLeft = 24 - hours;
+  
+  if(weekRemEl) {
+    if(day === 0 && hoursLeft < 24) {
+       weekRemEl.textContent = `${hoursLeft}h (Ending soon)`;
+       weekRemEl.style.color = "#ef4444"; 
+    } else {
+       weekRemEl.textContent = `${daysLeft} days`;
+       weekRemEl.style.color = "#facc15"; 
+    }
+  }
 
   const list = await getWeeklyTop10(wk);
 
@@ -426,13 +450,10 @@ async function showWeeklyPanel(){
     ol.innerHTML = list.length
       ? list.map((it,i)=>{
           const mine = it.code === me;
-          // Bayrağı oluştur
-          const flag = getFlagEmoji(it.country);
-          
-          // Listeyi bas: Bayrak + İsim + Puan
+          const flag = it.country ? getFlagEmoji(it.country) : "🏳️";
           return `<li class="${mine?'me':''}">${i+1}. ${flag} ${it.code} → ${it.score} pts</li>`;
         }).join("")
-      : `<div style="opacity:.7;">Henüz skor yok.</div>`;
+      : `<div style="opacity:.7;text-align:center">No scores this week yet.</div>`;
   }
   if (box) box.style.display = "block";
 }
