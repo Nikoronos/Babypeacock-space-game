@@ -7,13 +7,12 @@
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   
-  /* UI ELEMENTLERİ */
+  /* UI */
   #brand{position:fixed;top:max(6px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));z-index:10;font-weight:900;
     background:linear-gradient(90deg,#22d3ee,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent}
   #score{position:fixed;top:max(8px,env(safe-area-inset-top));left:0;right:0;text-align:center;color:#00ffc8;font-weight:700;z-index:10}
   #power{position:fixed;top:max(8px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));color:#a7f3d0;font-weight:700;z-index:10}
   #lives{position:fixed;bottom:max(60px,env(safe-area-inset-bottom));left:0;right:0;text-align:center;color:#f87171;font-weight:700;z-index:10}
-
   #pauseBtn{position:fixed;left:50%;transform:translateX(-50%);bottom:max(15px,env(safe-area-inset-bottom));z-index:50;width:44px;height:44px;background:#0f172a;border:2px solid #38bdf8;color:#38bdf8;border-radius:50%;font-size:14px;font-weight:900;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 10px rgba(56,189,248,0.4)}
 
   /* OVERLAYLER */
@@ -21,12 +20,7 @@
   #startOverlay{background:rgba(0,0,0,.95);color:#fff;display:flex}
   #pauseOverlay{background:rgba(0,0,0,0.8);color:#fff;backdrop-filter:blur(3px)}
   
-  /* GAME OVER: Üstten boşluk bırakıldı */
-  #gameOver {
-    background: transparent; 
-    justify-content: center; 
-    padding-top: 100px; 
-  }
+  #gameOver { background: transparent; justify-content: center; padding-top: 100px; }
   
   #countdownOverlay{background:transparent;pointer-events:none;z-index:70}
   #cntText{font-size:90px;font-weight:900;color:#fff;text-shadow:0 0 25px #22d3ee;font-family:monospace}
@@ -34,34 +28,51 @@
 
   .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer; margin-bottom: 10px;}
 
-  /* TOP 10 KUTUSU - AYARLANDI */
+  /* KÜÇÜLTÜLMÜŞ VE AŞAĞI ALINMIŞ TOP 10 */
   #bpc-top10 {
-    width: min(420px, 92vw);
+    width: min(360px, 85vw); /* Genişlik daraltıldı */
     background: rgba(5, 5, 5, 0.85);
     border: 1px solid #333;
     border-radius: 10px;
-    padding: 15px;
+    padding: 10px; /* Padding azaldı */
     color: #fff;
-    font-size: 14px;
-    line-height: 1.5;
-    /* İSTEĞİN ÜZERİNE DAHA DA AŞAĞI İTİLDİ */
-    margin-top: 50px; 
+    font-size: 13px; /* Font küçüldü */
+    line-height: 1.4;
+    margin-top: 60px; /* İyice aşağı itildi */
     backdrop-filter: blur(4px);
   }
   
-  /* BAŞLIK KÜÇÜLTÜLDÜ */
-  #bpc-top10 h4{margin:0 0 6px 0; font-size:13px; font-weight:800; text-align:center; color:#e2e8f0; letter-spacing: 0.5px; text-transform: uppercase;}
+  #bpc-top10 h4{margin:0 0 5px 0; font-size:12px; font-weight:800; text-align:center; color:#e2e8f0; letter-spacing: 0.5px; text-transform: uppercase;}
+  #week-timer{text-align:center;font-size:11px;color:#94a3b8;margin-bottom:6px;font-weight:600;border-bottom:1px dashed #333;padding-bottom:4px}
   
-  #week-timer{text-align:center;font-size:12px;color:#94a3b8;margin-bottom:8px;font-weight:600;border-bottom:1px dashed #333;padding-bottom:6px}
-  
-  /* HİZALAMA */
   #bpc-top10 ol { margin:0; padding:0; list-style:none; } 
-  #bpc-top10 li { margin-bottom: 5px; display: flex; align-items: center; border-bottom: 1px solid #222; padding-bottom: 3px; }
-  .rank-num { display: inline-block; width: 30px; text-align: right; margin-right: 10px; color: #94a3b8; font-weight: bold; font-family: monospace; }
+  #bpc-top10 li { margin-bottom: 4px; display: flex; align-items: center; border-bottom: 1px solid #222; padding-bottom: 2px; }
+  .rank-num { display: inline-block; width: 25px; text-align: right; margin-right: 8px; color: #94a3b8; font-weight: bold; font-family: monospace; }
   #bpc-top10 .me{color:#ff5c5c;font-weight:bold} 
   #bpc-top10 .me .rank-num{color:#ff5c5c}
 
-  #globalCounterBox { margin-top: 5px; font-size: 13px; opacity: 0.9; text-align: center; color: #cbd5e1; text-shadow: 0 2px 4px #000; }
+  #globalCounterBox { margin-top: 5px; font-size: 12px; opacity: 0.9; text-align: center; color: #cbd5e1; text-shadow: 0 2px 4px #000; }
+
+  /* ŞAMPİYON EKRANI (Start Ekranında) */
+  #winnerBox {
+    display: none; /* Sadece Pazartesi açılır */
+    flex-direction: column; align-items: center;
+    margin-bottom: 30px;
+    padding: 15px 25px;
+    background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(0,0,0,0.8));
+    border: 1px solid #facc15;
+    border-radius: 12px;
+    box-shadow: 0 0 25px rgba(250, 204, 21, 0.2);
+  }
+  .win-title { color: #facc15; font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
+  .win-player { color: #fff; font-size: 18px; font-weight: 900; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+  
+  /* Kazananın kendisi ise göreceği özel kod alanı */
+  #secretCodeBox {
+    display: none;
+    margin-top: 8px; padding: 6px 12px; background: #000; border: 1px dashed #facc15; border-radius: 6px;
+    color: #facc15; font-family: monospace; font-weight: bold; font-size: 14px;
+  }
 
   canvas{display:block;margin:0 auto;background:#020617;touch-action:none;user-select:none;width:100%;height:100%}
 </style>
@@ -74,6 +85,12 @@
   <div id="pauseBtn">II</div>
 
   <div id="startOverlay">
+    <div id="winnerBox">
+      <div class="win-title">👑 Week <span id="win-wk">--</span> Champion</div>
+      <div class="win-player" id="win-pl">Loading...</div>
+      <div id="secretCodeBox">CODE: <span id="win-code">---</span></div>
+    </div>
+
     <div style="margin-bottom:12px;font-size:14px;color:#ccc;">Hold & drag to move</div>
     <button id="startBtn" class="btn">START GAME</button>
     <div id="playerCode" style="margin-top:15px;font-size:14px;color:#00ffc8;"></div>
@@ -204,7 +221,6 @@ function enemyShoot(e){ if(!e.canShoot) return; const cx=e.x+e.w/2; const mul=(s
   if(e.kind==="red") enemyBullets.push({x:cx-2,y:e.y+e.h,w:4,h:12,vy:6*mul,color:"#ef4444"});
   else enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6.5*mul,color:"#22c55e"}); }
 
-/* ÇİZİM FONKSİYONU: ARKA PLAN EFEKTİ (Code Daha Görünür Yapıldı) */
 function renderFinalScore(t){
   const cx=cv.width/2, cy=cv.height/2;
   ctx.save();
@@ -215,11 +231,9 @@ function renderFinalScore(t){
   const pw=Math.min(360,cv.width-40), ph=160, rx=cx-pw/2, ry=cy-ph/2-6;
   ctx.save(); ctx.beginPath(); ctx.rect(rx-50,ry-50,pw+100,ph+100); ctx.clip();
   ctx.translate(cx,cy); 
-  
-  // Yavaş salınım
   ctx.rotate(Math.sin(t / 4000) * 0.15); 
   
-  // --- GÜNCELLENDİ: Opaklık 0.06 -> 0.15 yapıldı (Daha Görünür) ---
+  // Code görünürlüğü %15'e çıkarıldı
   ctx.fillStyle="rgba(0,255,200,0.15)"; 
   const line=`Babypeacock • SCORE ${score} • CODE ${verifyCode} • `;
   ctx.font="700 13px system-ui,Arial"; 
@@ -280,14 +294,20 @@ function draw(t){
 }
 function loop(t){const dt=Math.min(t-(window._lt||t),32);window._lt=t;update(dt);draw(t);requestAnimationFrame(loop);} requestAnimationFrame(loop);
 
+/* RESTART BUTONU - DİREKT BAŞLAR (Geri sayım yok) */
 restartBtn.onclick=()=>{
   if(window.bpcTimer)clearInterval(window.bpcTimer);
   score=0;lives=3;powerTime=0;scEl.textContent=0;pxEl.textContent=0;
   bullets=[];enemies=[];enemyBullets=[];gems=[];mascots=[];particles=[];
-  updateLives();gameOver=false;started=false;scoreSent=false;paused=false;inCountdown=false;
+  updateLives();gameOver=false;scoreSent=false;paused=false;inCountdown=false;
+  
   overEl.style.display="none";top10Box.style.display="none";pauseBtn.style.display="none";
   playId=Math.floor(performance.now()+Math.random()*1e9); makeCode();
-  startOverlay.style.display="flex";
+  
+  // Direkt Başlat
+  started=true; 
+  pauseBtn.style.display="flex";
+  player.y=cv.height-140; player.x=cv.width/2-player.w/2;
 };
 
 let playerImg=null,enemyImg={red:null,green:null,ufo_red:null,ufo_gray:null},peacockImg=null;
@@ -358,6 +378,50 @@ async function showWeeklyPanel(){
   }
   if(box)box.style.display="block";
 }
+
+/* PAZARTESİ ŞAMPİYONU KONTROLÜ */
+(async function checkMondayWinner(){
+  const today = new Date();
+  // getDay(): 0=Pazar, 1=Pazartesi... 
+  // Sadece Pazartesi (1) ise çalışır. Test etmek için 1 yerine bugünün gününü yazabilirsin.
+  if(today.getDay() !== 1) return; 
+
+  // Geçen haftayı bulmak için bugünden 2 gün çıkaralım (Pazartesi -> Cumartesi) ve o tarihin haftasını alalım
+  const d = new Date(today);
+  d.setDate(d.getDate() - 2);
+  const prevWk = weekKey(d); 
+
+  const list = await getWeeklyTop10(prevWk);
+  if(!list || list.length === 0) return;
+
+  const winner = list[0]; // Zaten sort edilmiş geliyor
+  const myCode = localStorage.getItem("playerCode");
+
+  const winBox = document.getElementById("winnerBox");
+  const winWk = document.getElementById("win-wk");
+  const winPl = document.getElementById("win-pl");
+  const codeBox = document.getElementById("secretCodeBox");
+  const winCode = document.getElementById("win-code");
+
+  if(winBox){
+    winBox.style.display = "flex";
+    winWk.textContent = prevWk.split("-W")[1];
+    winPl.textContent = getFlagEmoji(winner.country) + " " + winner.code;
+    
+    // Eğer Kazanan BİZSEK
+    if(myCode === winner.code){
+       // Basit bir hash kodu üretelim
+       const secret = "WIN-" + Math.floor(100000 + Math.random() * 900000);
+       codeBox.style.display = "block";
+       winCode.textContent = secret;
+       
+       // Firebase'e kaydet ki sen de gör
+       // 'winners/2025-W46/BPC12345' -> 'WIN-999999'
+       const winRef = ref(db, `winners/${prevWk}/${winner.code}`);
+       set(winRef, { secret: secret, score: winner.score, country: winner.country });
+    }
+  }
+})();
 
 window.incrementGlobalPlays=incrementGlobalPlays; window.saveScore=saveScore;
 window.showWeeklyPanel=showWeeklyPanel; window.bumpLocation=bumpLocation;
