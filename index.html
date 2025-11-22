@@ -14,52 +14,55 @@
   #power{position:fixed;top:max(8px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));color:#a7f3d0;font-weight:700;z-index:10}
   #lives{position:fixed;bottom:max(60px,env(safe-area-inset-bottom));left:0;right:0;text-align:center;color:#f87171;font-weight:700;z-index:10}
 
-  /* PAUSE BUTONU - KÜÇÜK VE YUVARLAK */
-  #pauseBtn{
-    position:fixed;left:50%;transform:translateX(-50%);bottom:max(15px,env(safe-area-inset-bottom));z-index:50;
-    width:36px;height:36px;
-    background:#0f172a;border:2px solid #38bdf8;color:#38bdf8;border-radius:50%;
-    font-size:14px;font-weight:900;display:flex;align-items:center;justify-content:center;cursor:pointer;
-    box-shadow:0 0 8px rgba(56,189,248,0.4)
-  }
+  /* PAUSE BUTONU */
+  #pauseBtn{position:fixed;left:50%;transform:translateX(-50%);bottom:max(15px,env(safe-area-inset-bottom));z-index:50;width:36px;height:36px;background:#0f172a;border:2px solid #38bdf8;color:#38bdf8;border-radius:50%;font-size:14px;font-weight:900;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 8px rgba(56,189,248,0.4)}
 
   /* OVERLAYLER */
   #startOverlay,#gameOver,#pauseOverlay,#countdownOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:60}
   #startOverlay{background:rgba(0,0,0,.95);color:#fff;display:flex}
   #pauseOverlay{background:rgba(0,0,0,0.8);color:#fff;backdrop-filter:blur(3px)}
   
-  /* GAME OVER DÜZENİ - KRİTİK DÜZELTME */
-  /* Üstten %45 boşluk bırakıyoruz ki Canvas yazıları orada rahatça görünsün */
+  /* GAME OVER DÜZENİ */
   #gameOver {
     background: transparent; 
-    justify-content: flex-start; 
-    padding-top: 42vh; 
-    overflow-y: auto; 
+    justify-content: flex-start; /* Yukarıdan hizala */
+    padding-top: 60px; /* Üstten boşluk */
+    overflow-y: auto;
   }
-  
-  /* ŞAMPİYON KUTUSU */
-  #mondayChampBox {
-    display: none; /* JS ile Pazartesi açılacak */
-    flex-direction: column; align-items: center;
-    margin-bottom: 10px; 
-    padding: 8px 15px;
-    background: rgba(250, 204, 21, 0.15); 
-    border: 1px solid #facc15; 
-    border-radius: 8px; 
-    box-shadow: 0 0 15px rgba(250, 204, 21, 0.4);
-    width: min(320px, 80vw);
+
+  /* YENİ: HAFTALIK ŞAMPİYON KUTUSU (Sadece Pazartesi) */
+  #weeklyWinnerBox {
+    display: none; /* JS ile açılacak */
+    flex-direction: column; 
+    align-items: center;
+    width: min(340px, 85vw);
+    background: rgba(0, 0, 0, 0.85);
+    border: 1px solid #fbbf24; /* Altın sarısı çerçeve */
+    border-radius: 8px;
+    padding: 10px 15px;
+    margin-bottom: 10px; /* "Babypeacock" yazısının üstüne gelmesi için */
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.2);
+    z-index: 70;
     text-align: center;
-    backdrop-filter: blur(5px);
   }
-  .champ-label { color: #facc15; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2px; }
-  .champ-name { color: #fff; font-size: 15px; font-weight: 900; margin-bottom: 4px; text-shadow: 0 0 5px rgba(255,255,255,0.5); }
   
-  /* KAZANANA ÖZEL KOD */
-  #winnerSecret {
-    display: none;
-    font-family: monospace; color: #00ffc8; font-size: 13px; font-weight: bold;
-    background: #000; padding: 4px 8px; border-radius: 4px; border: 1px dashed #00ffc8;
-    margin-top: 4px;
+  .ww-title {
+    color: #fbbf24; font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px;
+  }
+  .ww-info {
+    color: #fff; font-size: 15px; font-weight: 700; margin-bottom: 4px;
+  }
+  .ww-secret {
+    display: none; /* Sadece kazanana görünür */
+    margin-top: 6px;
+    padding: 4px 8px;
+    background: #222;
+    border: 1px dashed #fbbf24;
+    border-radius: 4px;
+    color: #fbbf24;
+    font-family: monospace;
+    font-size: 12px;
+    font-weight: bold;
   }
 
   #countdownOverlay{background:transparent;pointer-events:none;z-index:70}
@@ -67,7 +70,17 @@
   @keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
 
   /* RESTART BUTONU */
-  .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer; margin-bottom: 5px;}
+  /* Canvas yazılarıyla çakışmaması için margin ayarı */
+  #restart {
+    padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer; 
+    margin-bottom: 5px;
+    margin-top: 140px; /* Canvas üzerindeki "Game Over" ve Skor yazılarının altına iter */
+    box-shadow: 0 0 20px rgba(0,255,200,0.4);
+  }
+  
+  .btn { /* Genel buton stili */
+    padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer; margin-bottom: 10px;
+  }
 
   /* TOP 10 KUTUSU */
   #bpc-top10 {
@@ -79,7 +92,7 @@
     color: #fff; 
     font-size: 13px; 
     line-height: 1.4; 
-    margin-top: 10px; 
+    margin-top: 20px; 
     margin-bottom: 40px;
   }
   
@@ -119,13 +132,13 @@
   <div id="countdownOverlay"><div id="cntText"></div></div>
 
   <div id="gameOver">
-    <div id="mondayChampBox">
-      <div class="champ-label">👑 Week <span id="mc-week">--</span> Champion</div>
-      <div class="champ-name" id="mc-name">Loading...</div>
-      <div id="winnerSecret">CODE: <span id="mc-code">---</span></div>
+    <div id="weeklyWinnerBox">
+      <div class="ww-title">🏆 Weekly Winner (Week <span id="ww-week">--</span>)</div>
+      <div class="ww-info" id="ww-info">Loading...</div>
+      <div id="ww-secret" class="ww-secret">🎁 Secret Claim Code: <span id="ww-code">---</span></div>
     </div>
 
-    <button id="restart" class="btn" style="box-shadow: 0 0 20px rgba(0,255,200,0.4);">Restart</button>
+    <button id="restart">Restart</button>
     
     <div id="globalCounterBox">Global plays: <span id="globalCounter">…</span></div>
 
@@ -152,12 +165,12 @@ const top10Box=document.getElementById("bpc-top10");
 const pauseBtn=document.getElementById("pauseBtn"), pauseOverlay=document.getElementById("pauseOverlay"), resumeBtn=document.getElementById("resumeBtn");
 const countOverlay=document.getElementById("countdownOverlay"), cntText=document.getElementById("cntText");
 
-/* Şampiyon Elementleri */
-const mondayBox = document.getElementById("mondayChampBox");
-const mcWeek = document.getElementById("mc-week");
-const mcName = document.getElementById("mc-name");
-const mcSecretBox = document.getElementById("winnerSecret");
-const mcCode = document.getElementById("mc-code");
+/* Winner Elements */
+const wwBox = document.getElementById("weeklyWinnerBox");
+const wwWeek = document.getElementById("ww-week");
+const wwInfo = document.getElementById("ww-info");
+const wwSecretDiv = document.getElementById("ww-secret");
+const wwCodeSpan = document.getElementById("ww-code");
 
 function clamp(v,a,b){return v<a?a:v>b?b:v;}
 function rand(a,b){return a+Math.random()*(b-a);}
@@ -250,24 +263,17 @@ function enemyShoot(e){ if(!e.canShoot) return; const cx=e.x+e.w/2; const mul=(s
   if(e.kind==="red") enemyBullets.push({x:cx-2,y:e.y+e.h,w:4,h:12,vy:6*mul,color:"#ef4444"});
   else enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6.5*mul,color:"#22c55e"}); }
 
-/* YENİ RENKLİ BABYPEACOCK YAZISI VE DÖNEN KOD */
+/* ESKİ HAVALI EKRAN ÇİZİMİ */
 function renderFinalScore(t){
-  const cx=cv.width/2;
-  const cy=cv.height * 0.35; // Canvas'ı biraz yukarı taşıdık (%35 yüksekliğe)
-  
+  const cx=cv.width/2, cy=cv.height/2;
   ctx.save();
-  // Koyu Perde
   const grd=ctx.createRadialGradient(cx,cy,20,cx,cy,Math.max(cv.width,cv.height)/1.2);
   grd.addColorStop(0,"rgba(0,0,0,0.55)"); grd.addColorStop(1,"rgba(0,0,0,0.95)");
   ctx.fillStyle=grd; ctx.fillRect(0,0,cv.width,cv.height);
 
   const pw=Math.min(360,cv.width-40), ph=160, rx=cx-pw/2, ry=cy-ph/2-6;
-  
-  // Dönen Kod Çemberi
-  ctx.save(); 
-  ctx.beginPath(); ctx.rect(rx-50,ry-50,pw+100,ph+100); ctx.clip();
-  ctx.translate(cx,cy); 
-  ctx.rotate(Math.sin(t / 4000) * 0.15); // Hafif salınım
+  ctx.save(); ctx.beginPath(); ctx.rect(rx-50,ry-50,pw+100,ph+100); ctx.clip();
+  ctx.translate(cx,cy); ctx.rotate(Math.sin(t / 4000) * 0.15); 
   
   ctx.fillStyle="rgba(0,255,200,0.15)"; 
   const line=`Babypeacock • SCORE ${score} • CODE ${verifyCode} • `;
@@ -275,20 +281,15 @@ function renderFinalScore(t){
   for(let y=-150;y<=150;y+=22){let x=-300; while(x<300){ctx.fillText(line,x,y); x+=ctx.measureText(line).width+40;}}
   ctx.restore();
 
-  // Mavi-Yeşil Gradient "Babypeacock"
   const gradText = ctx.createLinearGradient(cx - 100, 0, cx + 100, 0);
-  gradText.addColorStop(0, "#22d3ee");
-  gradText.addColorStop(1, "#34d399");
+  gradText.addColorStop(0, "#22d3ee"); gradText.addColorStop(1, "#34d399");
   ctx.fillStyle = gradText;
-  
   ctx.font="900 26px system-ui,Arial"; ctx.textAlign="center"; ctx.shadowColor="rgba(34,211,238,0.8)"; ctx.shadowBlur=15;
   ctx.fillText("Babypeacock",cx,cy-30); ctx.shadowBlur=0;
 
-  // Skor
   ctx.fillStyle="rgba(0,255,200,0.18)"; ctx.font="900 80px system-ui,Arial"; ctx.fillText(String(score),cx,cy+40);
   ctx.fillStyle="#00ffc8"; ctx.font="900 48px system-ui,Arial"; ctx.fillText(score,cx,cy+20);
   
-  // Verify Code (Küçük)
   ctx.font="700 14px system-ui,Arial"; ctx.fillStyle="#a7f3d0"; ctx.fillText("CODE: "+verifyCode,cx,cy+60);
   ctx.restore();
 }
@@ -296,7 +297,7 @@ function renderFinalScore(t){
 async function endGame(){
   gameOver=true; pauseBtn.style.display="none"; overEl.style.display="flex"; 
   
-  // Şampiyon Kontrolü
+  // Pazartesi Şampiyon Kontrolü
   if(window.checkMondayWinner) window.checkMondayWinner();
 
   try{ if (window.saveScore) await window.saveScore(score); 
@@ -347,9 +348,11 @@ restartBtn.onclick=()=>{
   score=0;lives=3;powerTime=0;scEl.textContent=0;pxEl.textContent=0;
   bullets=[];enemies=[];enemyBullets=[];gems=[];mascots=[];particles=[];
   updateLives();gameOver=false;scoreSent=false;paused=false;inCountdown=false;
+  
   overEl.style.display="none";top10Box.style.display="none";pauseBtn.style.display="none";
   playId=Math.floor(performance.now()+Math.random()*1e9); makeCode();
   
+  // RESTART: Geri Sayım YOK, Direkt Başla
   started=true; pauseBtn.style.display="flex"; player.y=cv.height-140; player.x=cv.width/2-player.w/2;
 };
 
@@ -368,6 +371,7 @@ const INSTANCE_URL="https://bpc-space-default-rtdb.europe-west1.firebasedatabase
 const app=getApps().length?getApps()[0]:initializeApp({databaseURL:INSTANCE_URL}); const db=getDatabase(app); window.db=db;
 
 function weekKey(d=new Date()){
+  // London time ile hesapla
   const now_utc = new Date(d.getTime() + d.getTimezoneOffset() * 60000);
   const year = now_utc.getFullYear();
   const startOfYear = new Date(year, 0, 1);
@@ -377,19 +381,51 @@ function weekKey(d=new Date()){
   return `${year}-W${String(weekNumber).padStart(2,"0")}`;
 }
 function getFlagEmoji(c){if(!c)return"🏳️";const cp=c.toUpperCase().split('').map(char=>127397+char.charCodeAt());return String.fromCodePoint(...cp);}
-function getCountryCode(){try{const l=(navigator.languages&&navigator.languages[0])||navigator.language||"en-US";let c=(l.split('-')[1]||"").toUpperCase();if(c==="UK")c="GB";if(!c)c="TR";return c;}catch{return"TR";}}
+
+/* ÜLKE KODU SADECE 2 HARF */
+function getCountryCode(){
+  try{
+    const lang=(navigator.languages&&navigator.languages[0])||navigator.language||"en-US";
+    let code=(lang.split('-')[1]||"").toUpperCase();
+    if(!code) code = lang.split('-')[0].toUpperCase(); // 'tr' gelirse 'TR' yap
+    // Eğer yine yoksa default US
+    if(code.length !== 2) code = "US"; 
+    if(code==="UK") code="GB";
+    return code;
+  }catch{return"US";}
+}
+// Firebase'e isim değil, kod kaydediyoruz
+function getCountryName(){ return getCountryCode(); } 
 
 const refCounter=ref(db,"stats/globalPlays"); const elGC=document.getElementById("globalCounter");
 const cached=Number(localStorage.getItem("bpc_global_plays"))||0; if(elGC)elGC.textContent=cached?cached.toLocaleString("en-US"):"…";
 onValue(refCounter,s=>{const v=Number(s.val()??0);if(elGC)elGC.textContent=v.toLocaleString("en-US");localStorage.setItem("bpc_global_plays",String(v));});
 function incrementGlobalPlays(){return runTransaction(refCounter,v=>(v||0)+1);}
 
-async function bumpLocation(){/* ... */}
-(async function bumpLocationOncePerDay(){/* ... */})();
+async function bumpLocation(){
+  try{
+    // SADECE ÜLKE KODU KAYDET (Örn: stats/locations/TR)
+    const code = getCountryCode(); 
+    const locRef = ref(db, `stats/locations/${code}`);
+    await runTransaction(locRef, v => (v||0) + 1);
+  }catch(e){}
+}
+(async function bumpLocationOncePerDay(){
+  try{
+    const tk="bpc_loc_day"; const td=new Date().toISOString().slice(0,10);
+    if(localStorage.getItem(tk)===td)return;
+    await bumpLocation();
+    const tr=ref(db,"stats/totalStarts"); await runTransaction(tr,v=>(v||0)+1);
+    localStorage.setItem(tk,td);
+  }catch(e){}
+})();
 
 async function saveScore(score){
-  const code=localStorage.getItem("playerCode")||"BPC"; const country=getCountryCode(); 
-  const payload={code,score,ts:Date.now(),country}; await push(ref(db,"scores"),payload);
+  const code=localStorage.getItem("playerCode")||"BPC"; 
+  const country=getCountryCode(); // Sadece kod
+  // countryName parametresi artık gereksiz ama kodda varsa countryCode ile aynı yolluyoruz
+  const payload={code,score,ts:Date.now(),country, countryName: country}; 
+  await push(ref(db,"scores"),payload);
   const wk=weekKey(new Date()); await push(ref(db,`scoresWeekly/${wk}`),{...payload,week:wk});
 }
 
@@ -399,18 +435,19 @@ async function getWeeklyTop10(wk=weekKey()){
   return Object.values(bestByCode).sort((a,b)=>b.score-a.score).slice(0,10);
 }
 
-// PAZARTESİ ŞAMPİYON KONTROLÜ
+// LONDON TIME PAZARTESİ ŞAMPİYONU
 async function checkMondayWinner(){
   const today = new Date();
+  // London Time Check
   const options = { weekday: 'long', timeZone: 'Europe/London' };
-  const londonDay = new Date(today.toLocaleString('en-US', options)).getDay(); 
-  
-  const isMondayActive = londonDay === 1;
+  const londonDayStr = today.toLocaleString('en-US', options); // "Monday"
+  const isMonday = londonDayStr.includes("Monday");
 
-  mondayBox.style.display = 'none';
+  wwBox.style.display = 'none';
 
-  if(!isMondayActive) return; 
+  if(!isMonday) return; 
 
+  // Geçen hafta (Pazartesi'den 1 gün geri -> Pazar -> Onun haftası)
   const d_prev = new Date(today);
   d_prev.setDate(d_prev.getDate() - 1); 
   const prevWk = weekKey(d_prev);
@@ -421,18 +458,29 @@ async function checkMondayWinner(){
   const winner = list[0];
   const myCode = localStorage.getItem("playerCode");
 
-  mondayBox.style.display = 'flex';
-  mcWeek.textContent = prevWk.split("-W")[1];
-  mcName.textContent = getFlagEmoji(winner.country) + " " + winner.code;
+  wwBox.style.display = 'flex';
+  wwWeek.textContent = prevWk.split("-W")[1];
+  // Info: "TR BPC12345 : 1500 pts"
+  wwInfo.textContent = `${getFlagEmoji(winner.country)} ${winner.code} : ${winner.score} pts`;
 
+  // SADECE KAZANAN GÖRÜR
   if(myCode === winner.code){
-    const secret = "WIN-" + Math.floor(100000 + Math.random() * 900000);
-    mcSecretBox.style.display = "block";
-    mcCode.textContent = secret;
+    // Önce DB'den var mı diye bak (tekrar tekrar üretmemek için)
     const winRef = ref(db, `winners/${prevWk}/${winner.code}`);
-    set(winRef, { secret: secret, score: winner.score, country: winner.country, ts: Date.now() });
+    const snap = await get(winRef);
+    let secret = "";
+    
+    if(snap.exists()){
+       secret = snap.val().secret;
+    } else {
+       secret = "WIN-" + Math.floor(100000 + Math.random() * 900000);
+       set(winRef, { secret: secret, score: winner.score, country: winner.country, ts: Date.now() });
+    }
+    
+    wwSecretDiv.style.display = "block";
+    wwCodeSpan.textContent = secret;
   } else {
-    mcSecretBox.style.display = "none";
+    wwSecretDiv.style.display = "none";
   }
 }
 window.checkMondayWinner = checkMondayWinner;
