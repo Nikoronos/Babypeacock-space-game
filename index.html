@@ -21,11 +21,11 @@
   #startOverlay{background:rgba(0,0,0,.95);color:#fff;display:flex}
   #pauseOverlay{background:rgba(0,0,0,0.8);color:#fff;backdrop-filter:blur(3px)}
   
-  /* GAME OVER: TRANSPARAN YAPILDI Kİ ARKADAKİ CANVASI GÖRELİM */
+  /* GAME OVER: TRANSPARAN ARKA PLAN */
   #gameOver {
-    background: transparent; /* ARKA PLAN GÖRÜNSÜN */
+    background: transparent; 
     justify-content: center; 
-    padding-top: 140px; /* Yazıların üstüne binmesin diye biraz aşağı aldık */
+    padding-top: 120px; /* Canvas üzerindeki yazıların üstüne binmesin */
   }
   
   #countdownOverlay{background:transparent;pointer-events:none;z-index:70}
@@ -34,18 +34,19 @@
 
   .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer; margin-bottom: 10px;}
 
-  /* TOP 10 KUTUSU */
+  /* TOP 10 KUTUSU - AŞAĞI ALINDI */
   #bpc-top10 {
     width: min(420px, 92vw);
-    background: rgba(5, 5, 5, 0.85); /* Hafif saydam siyah */
+    background: rgba(5, 5, 5, 0.85);
     border: 1px solid #333;
     border-radius: 10px;
     padding: 15px;
     color: #fff;
     font-size: 14px;
     line-height: 1.5;
-    margin-top: 10px;
-    backdrop-filter: blur(4px); /* Arkadaki efektler bulanık görünsün */
+    /* İŞTE BU SATIR LİSTEYİ AŞAĞI İTİYOR */
+    margin-top: 35px; 
+    backdrop-filter: blur(4px);
   }
   
   #bpc-top10 h4{margin:0 0 6px 0;font-size:15px;font-weight:800;text-align:center;color:#e2e8f0}
@@ -201,34 +202,35 @@ function enemyShoot(e){ if(!e.canShoot) return; const cx=e.x+e.w/2; const mul=(s
   if(e.kind==="red") enemyBullets.push({x:cx-2,y:e.y+e.h,w:4,h:12,vy:6*mul,color:"#ef4444"});
   else enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6.5*mul,color:"#22c55e"}); }
 
-/* ESKİ RENDER FONKSİYONU GERİ GELDİ */
+/* ÇİZİM FONKSİYONU: ARKA PLAN EFEKTİ DÜZELTİLDİ (Sallanıyor) */
 function renderFinalScore(t){
   const cx=cv.width/2, cy=cv.height/2;
   ctx.save();
-  // Koyu yarı-saydam perde
   const grd=ctx.createRadialGradient(cx,cy,20,cx,cy,Math.max(cv.width,cv.height)/1.2);
   grd.addColorStop(0,"rgba(0,0,0,0.55)"); grd.addColorStop(1,"rgba(0,0,0,0.95)");
   ctx.fillStyle=grd; ctx.fillRect(0,0,cv.width,cv.height);
 
-  // Dönen çember kodu
   const pw=Math.min(360,cv.width-40), ph=160, rx=cx-pw/2, ry=cy-ph/2-6;
   ctx.save(); ctx.beginPath(); ctx.rect(rx-50,ry-50,pw+100,ph+100); ctx.clip();
-  ctx.translate(cx,cy); ctx.rotate((t/2000)%6.283);
+  ctx.translate(cx,cy); 
+  
+  // --- İŞTE BURASI DEĞİŞTİ: 360 derece değil, hafif sallanma ---
+  // Math.sin fonksiyonu -1 ile 1 arasında gider gelir. 
+  // 0.15 ile çarparak çok küçük bir açı (yaklaşık 8 derece) sağlı sollu sallıyoruz.
+  ctx.rotate(Math.sin(t / 4000) * 0.15); 
+  
   ctx.fillStyle="rgba(0,255,200,0.06)"; const line=`Babypeacock • SCORE ${score} • CODE ${verifyCode} • `;
   ctx.font="700 13px system-ui,Arial"; 
   for(let y=-150;y<=150;y+=22){let x=-300; while(x<300){ctx.fillText(line,x,y); x+=ctx.measureText(line).width+40;}}
   ctx.restore();
 
-  // Ana Başlık
   ctx.fillStyle=ctx.createLinearGradient(cx-120,0,cx+120,0); ctx.fillStyle.addColorStop?.(0,"#22d3ee");
   ctx.font="900 26px system-ui,Arial"; ctx.textAlign="center"; ctx.shadowColor="rgba(34,211,238,0.8)"; ctx.shadowBlur=15;
   ctx.fillText("Babypeacock",cx,cy-30); ctx.shadowBlur=0;
 
-  // Skor
   ctx.fillStyle="rgba(0,255,200,0.18)"; ctx.font="900 80px system-ui,Arial"; ctx.fillText(String(score),cx,cy+40);
   ctx.fillStyle="#00ffc8"; ctx.font="900 48px system-ui,Arial"; ctx.fillText(score,cx,cy+20);
   
-  // Alt kod
   ctx.font="700 14px system-ui,Arial"; ctx.fillStyle="#a7f3d0"; ctx.fillText("CODE: "+verifyCode,cx,cy+60);
   ctx.restore();
 }
@@ -272,7 +274,6 @@ function draw(t){
   gems.forEach(g=>drawDiamondGem(ctx,g.x,g.y,g.w,g.h,performance.now()/1000)); if(peacockImg)mascots.forEach(m=>ctx.drawImage(peacockImg,m.x,m.y,m.w,m.h));
   particles.forEach(p=>{const a=Math.max(0,p.life/500);ctx.globalAlpha=a;ctx.fillStyle="rgba(255,200,80,1)";ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;});
 
-  // GAME OVER EKRANINI CANVAS'A ÇİZ (HAVALI EFEKT BURADA)
   if(gameOver){ renderFinalScore(t); if(!scoreSent){ scoreSent=true; } }
 }
 function loop(t){const dt=Math.min(t-(window._lt||t),32);window._lt=t;update(dt);draw(t);requestAnimationFrame(loop);} requestAnimationFrame(loop);
