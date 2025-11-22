@@ -14,20 +14,20 @@
   #power{position:fixed;top:max(8px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));color:#a7f3d0;font-weight:700;z-index:10}
   #lives{position:fixed;bottom:max(60px,env(safe-area-inset-bottom));left:0;right:0;text-align:center;color:#f87171;font-weight:700;z-index:10}
 
-  /* PAUSE BUTONU - KÜÇÜLTÜLDÜ */
+  /* PAUSE BUTONU - YUVARLAK VE KÜÇÜK (36px) */
   #pauseBtn {
     position: fixed;
     left: 50%;
     transform: translateX(-50%);
     bottom: max(15px, env(safe-area-inset-bottom));
     z-index: 50;
-    width: 36px;  /* 44px'ten 36px'e düşürüldü */
-    height: 36px; /* 44px'ten 36px'e düşürüldü */
+    width: 36px;  /* Eskisinden küçük */
+    height: 36px; /* Eskisinden küçük */
     background: #0f172a;
     border: 2px solid #38bdf8;
     color: #38bdf8;
-    border-radius: 50%;
-    font-size: 12px; /* Font küçültüldü */
+    border-radius: 50%; /* Yuvarlak */
+    font-size: 14px;
     font-weight: 900;
     display: flex;
     align-items: center;
@@ -41,17 +41,17 @@
   #startOverlay{background:rgba(0,0,0,.95);color:#fff;display:flex}
   #pauseOverlay{background:rgba(0,0,0,0.8);color:#fff;backdrop-filter:blur(3px)}
   
-  /* GAME OVER: TRANSPARAN VE FLEX-START */
+  /* GAME OVER: Eski havalı düzen için üstten boşluk */
   #gameOver {
     background: transparent; 
-    justify-content: flex-start; /* Elemanları yukarıdan dizecek */
-    padding-top: 15vh; /* Üstten rahat bir boşluk */
-    overflow-y: auto; /* Listeler için kaydırmayı aç */
+    justify-content: flex-start; 
+    padding-top: 160px; /* Canvas yazılarının altına inmesi için boşluk */
+    overflow-y: auto; 
   }
   
   /* ŞAMPİYON PANELİ STİLİ */
   #champPanel {
-    display: none; flex-direction: column; align-items: center; margin-top: 15px; margin-bottom: 15px; padding: 10px 15px;
+    display: none; flex-direction: column; align-items: center; margin-top: 10px; margin-bottom: 15px; padding: 10px 15px;
     background: rgba(250, 204, 21, 0.1); border: 1px solid #facc15; border-radius: 8px; box-shadow: 0 0 15px rgba(250, 204, 21, 0.3);
     width: min(300px, 80vw); text-align: center;
   }
@@ -63,10 +63,6 @@
   #countdownOverlay{background:transparent;pointer-events:none;z-index:70}
   #cntText{font-size:90px;font-weight:900;color:#fff;text-shadow:0 0 25px #22d3ee;font-family:monospace}
   @keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
-
-  /* GAME OVER STATİK YAZILAR */
-  #gameOver .static-title { font-weight:900;font-size:36px;margin-bottom:5px;color:#ef4444;text-shadow: 0 0 15px rgba(239,68,68,0.4);}
-  #gameOver .static-score { font-size:24px;color:#00ffc8;font-weight:bold;margin-bottom:20px;}
 
   .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer; margin-bottom: 10px;}
 
@@ -97,9 +93,7 @@
   <div id="score">🦚 Score: <span id="sc">0</span></div>
   <div id="power">💎 <span id="px">0</span>s</div>
   <div id="lives">❤️❤️❤️</div>
-  <div id="pauseBtn">II</div>
-
-  <div id="startOverlay">
+  <div id="pauseBtn">II</div> <div id="startOverlay">
     <div style="margin-bottom:12px;font-size:14px;color:#ccc;">Hold & drag to move</div>
     <button id="startBtn" class="btn">START GAME</button>
     <div id="playerCode" style="margin-top:15px;font-size:14px;color:#00ffc8;"></div>
@@ -113,9 +107,6 @@
   <div id="countdownOverlay"><div id="cntText"></div></div>
 
   <div id="gameOver">
-    <div class="static-title">GAME OVER</div>
-    <div class="static-score">Score: <span id="finalScoreDisp">0</span></div>
-    
     <div id="champPanel">
       <div class="champ-title">👑 Week <span id="champ-wk">--</span> Champion</div>
       <div class="champ-info" id="champ-pl">Loading...</div>
@@ -145,7 +136,7 @@ const scEl=document.getElementById("sc"),pxEl=document.getElementById("px"),live
 const startOverlay=document.getElementById("startOverlay"),startBtn=document.getElementById("startBtn");
 const overEl=document.getElementById("gameOver"),restartBtn=document.getElementById("restart"),boom=document.getElementById("boom");
 const top10Box=document.getElementById("bpc-top10");
-const finalScoreDisp = document.getElementById("finalScoreDisp");
+// const finalScoreDisp = document.getElementById("finalScoreDisp"); // Kaldırıldı
 const pauseBtn=document.getElementById("pauseBtn"), pauseOverlay=document.getElementById("pauseOverlay"), resumeBtn=document.getElementById("resumeBtn");
 const countOverlay=document.getElementById("countdownOverlay"), cntText=document.getElementById("cntText");
 const champPanel = document.getElementById("champPanel");
@@ -242,6 +233,7 @@ function enemyShoot(e){ if(!e.canShoot) return; const cx=e.x+e.w/2; const mul=(s
   if(e.kind==="red") enemyBullets.push({x:cx-2,y:e.y+e.h,w:4,h:12,vy:6*mul,color:"#ef4444"});
   else enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6.5*mul,color:"#22c55e"}); }
 
+/* ESKİ HAVALI GAME OVER EKRANI GERİ GELDİ */
 function renderFinalScore(t){
   const cx=cv.width/2, cy=cv.height/2;
   ctx.save();
@@ -260,18 +252,21 @@ function renderFinalScore(t){
   for(let y=-150;y<=150;y+=22){let x=-300; while(x<300){ctx.fillText(line,x,y); x+=ctx.measureText(line).width+40;}}
   ctx.restore();
 
-  // Bu çizimleri kaldırdık, çünkü HTML elementleri öncelikli ve daha okunaklı
-  // ctx.fillStyle=ctx.createLinearGradient(cx-120,0,cx+120,0); ctx.fillStyle.addColorStop?.(0,"#22d3ee");
-  // ctx.font="900 26px system-ui,Arial"; ctx.textAlign="center"; ctx.shadowColor="rgba(34,211,238,0.8)"; ctx.shadowBlur=15;
-  // ctx.fillText("Babypeacock",cx,cy-30); ctx.shadowBlur=0;
+  ctx.fillStyle=ctx.createLinearGradient(cx-120,0,cx+120,0); ctx.fillStyle.addColorStop?.(0,"#22d3ee");
+  ctx.font="900 26px system-ui,Arial"; ctx.textAlign="center"; ctx.shadowColor="rgba(34,211,238,0.8)"; ctx.shadowBlur=15;
+  ctx.fillText("Babypeacock",cx,cy-30); ctx.shadowBlur=0;
+
+  ctx.fillStyle="rgba(0,255,200,0.18)"; ctx.font="900 80px system-ui,Arial"; ctx.fillText(String(score),cx,cy+40);
+  ctx.fillStyle="#00ffc8"; ctx.font="900 48px system-ui,Arial"; ctx.fillText(score,cx,cy+20);
+  
+  ctx.font="700 14px system-ui,Arial"; ctx.fillStyle="#a7f3d0"; ctx.fillText("CODE: "+verifyCode,cx,cy+60);
   ctx.restore();
 }
 
 async function endGame(){
   gameOver=true; pauseBtn.style.display="none"; overEl.style.display="flex"; 
   
-  // Statik skor alanını doldur
-  document.getElementById("finalScoreDisp").textContent = score; 
+  // document.getElementById("finalScoreDisp").textContent = score; // Kaldırıldı
 
   if(window.checkChampionDisplay) window.checkChampionDisplay(); 
 
