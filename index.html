@@ -28,71 +28,77 @@
 
   #lives {
     position:fixed; left:0; right:0; text-align:center; color:#f87171; font-weight:700; z-index:10;
-    /* Pause butonuna yer açmak için biraz yukarı aldık */
     bottom: max(60px, env(safe-area-inset-bottom)); 
   }
 
-  /* PAUSE BUTONU (Düzeltildi) */
+  /* PAUSE BUTONU */
   #pauseBtn {
     position: fixed;
     left: 50%;
     transform: translateX(-50%);
-    bottom: max(15px, env(safe-area-inset-bottom)); /* En alta, güvenli alana */
-    z-index: 50; /* En üst katman */
+    bottom: max(15px, env(safe-area-inset-bottom));
+    z-index: 50;
     width: 44px; height: 44px;
-    background: #0f172a; /* Koyu mavi arka plan */
-    border: 2px solid #38bdf8; /* Parlak mavi çerçeve */
+    background: #0f172a;
+    border: 2px solid #38bdf8;
     color: #38bdf8;
     border-radius: 50%;
     font-size: 14px;
     font-weight: 900;
-    display: flex; /* İçini ortalamak için */
-    align-items: center; 
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     cursor: pointer;
     box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
   }
 
   /* Overlayler */
-  #startOverlay, #gameOver, #pauseOverlay, #countdownOverlay {
+  #startOverlay, #pauseOverlay, #countdownOverlay {
     position:fixed; inset:0; display:none; 
     align-items:center; justify-content:center; flex-direction:column; z-index:40;
   }
-  #startOverlay { background:rgba(0,0,0,.9); color:#fff; display:flex; }
-  #gameOver     { background:rgba(0,0,0,0.85); color:#fff; } /* Arkası hafif koyu olsun ki yazılar karışmasın */
+  
+  /* GAME OVER EKRANI (DÜZENLENDİ: Flex Yapısı) */
+  #gameOver {
+    position:fixed; inset:0; display:none;
+    flex-direction:column; align-items:center; justify-content:flex-start; /* Yukarıdan başlasın */
+    padding-top: 80px; /* Üstten boşluk */
+    background:rgba(0,0,0,0.92); 
+    z-index:60;
+    overflow-y: auto; /* Küçük ekranda taşarsa kaydırılabilsin */
+  }
+
+  #startOverlay { background:rgba(0,0,0,.95); color:#fff; display:flex; }
   #pauseOverlay { background:rgba(0,0,0,0.8); color:#fff; backdrop-filter:blur(3px); }
   
-  /* Geri Sayım */
   #countdownOverlay { 
-    background:transparent; 
-    pointer-events:none; 
-    z-index:60; /* Her şeyin üstünde */
+    background:transparent; pointer-events:none; z-index:70; 
   }
   #cntText {
     font-size: 90px; font-weight: 900; color: #fff;
-    text-shadow: 0 0 25px #22d3ee;
-    font-family: monospace; /* Sabit genişlikli font, titremeyi azaltır */
+    text-shadow: 0 0 25px #22d3ee; font-family: monospace;
   }
   @keyframes popIn { from{transform:scale(0.5);opacity:0} to{transform:scale(1);opacity:1} }
 
-  .btn { margin-top:12px; padding:12px 24px; border:1px solid #00ffc8; background:#0b1220; color:#00ffc8; border-radius:12px; font-weight:900; z-index:50; font-size:16px;}
+  .btn { margin-top:12px; padding:12px 32px; border:1px solid #00ffc8; background:#0b1220; color:#00ffc8; border-radius:12px; font-weight:900; z-index:50; font-size:16px;}
 
-  /* Top10 Listesi */
+  /* Top10 Listesi - ARTIK GAME OVER EKRANININ İÇİNDE, FIXED DEĞİL */
   #bpc-top10 {
-    position:fixed; left:50%; transform:translateX(-50%);
-    top:calc(50% + 20px); /* Game Over yazısının altına */
-    width:min(420px,92vw); background:#000; border:1px solid #222; border-radius:10px; padding:10px 12px;
-    color:#fff; font-size:14px; line-height:1.5; z-index:45;
+    width:min(400px,90vw); 
+    background:#050505; border:1px solid #222; border-radius:10px; padding:10px 12px;
+    color:#fff; font-size:14px; line-height:1.5; 
+    margin-top: 20px; /* Butondan uzaklaşsın */
+    margin-bottom: 40px; /* Alttan pay */
   } 
   #bpc-top10 h4 { margin:0 0 6px 0; font-size:15px; font-weight:800; text-align:center; color:#e2e8f0; }
   #week-timer { text-align:center; font-size:12px; color:#94a3b8; margin-bottom:8px; font-weight:600; border-bottom:1px dashed #333; padding-bottom:6px; }
   
-  /* LİSTE DÜZELTMESİ: Çift numarayı engellemek için list-style kapalı */
   #bpc-top10 ol { margin:0; padding-left:10px; list-style: none; } 
   #bpc-top10 li { margin-bottom:5px; border-bottom:1px solid #111; padding-bottom:2px;}
   #bpc-top10 .me { color:#ff5c5c; font-weight:bold; } 
   
   #globalCounterBox { margin-top:15px; font-size:13px; opacity: 0.8; }
+  
+  /* Kod Bilgisi Stili */
+  .info-line { color: #94a3b8; font-size: 13px; margin-top: 4px; font-family: monospace; }
 
   canvas { display:block; margin:0 auto; background:#020617; touch-action:none; user-select:none; width:100%; height:100%; }
 </style>
@@ -121,16 +127,21 @@
   </div>
 
   <div id="gameOver">
-    <div style="font-weight:900; font-size: 24px; margin-bottom:8px; color: #ef4444;">GAME OVER</div>
-    <div style="font-size: 18px; color: #00ffc8; margin-bottom: 12px;">Final Score: <span id="finalScoreDisp">0</span></div>
-    <button id="restart" class="btn">TRY AGAIN</button>
-    <div id="globalCounterBox">🌍 Global plays: <span id="globalCounter">…</span></div>
-  </div>
+    <div style="font-weight:900; font-size: 32px; margin-bottom:5px; color: #ef4444;">GAME OVER</div>
+    <div style="font-size: 20px; color: #00ffc8; font-weight:bold;">Score: <span id="finalScoreDisp">0</span></div>
+    
+    <div class="info-line" id="finalPlayerCode">Player: ...</div>
+    <div class="info-line" id="finalVerifyCode">Code: ...</div>
 
-  <div id="bpc-top10" style="display:none">
-    <h4>🏆 Weekly Top 10</h4>
-    <div id="week-timer">Week <span id="wk-num">--</span> • <span id="wk-rem" style="color:#facc15">--:--:--</span></div>
-    <ol id="bpc-list"></ol>
+    <button id="restart" class="btn">TRY AGAIN</button>
+    
+    <div id="globalCounterBox">🌍 Global plays: <span id="globalCounter">…</span></div>
+
+    <div id="bpc-top10" style="display:none">
+      <h4>🏆 Weekly Top 10</h4>
+      <div id="week-timer">Week <span id="wk-num">--</span> • <span id="wk-rem" style="color:#facc15">--:--:--</span></div>
+      <ol id="bpc-list"></ol>
+    </div>
   </div>
 
   <canvas id="game"></canvas>
@@ -151,8 +162,10 @@ const startOverlay=document.getElementById("startOverlay"),startBtn=document.get
 const overEl=document.getElementById("gameOver"),restartBtn=document.getElementById("restart"),boom=document.getElementById("boom");
 const top10Box=document.getElementById("bpc-top10");
 const finalScoreDisp = document.getElementById("finalScoreDisp");
+const finalPlayerCode = document.getElementById("finalPlayerCode");
+const finalVerifyCode = document.getElementById("finalVerifyCode");
 
-// Pause & Countdown Elements
+// Pause & Countdown
 const pauseBtn=document.getElementById("pauseBtn"), pauseOverlay=document.getElementById("pauseOverlay"), resumeBtn=document.getElementById("resumeBtn");
 const countOverlay=document.getElementById("countdownOverlay"), cntText=document.getElementById("cntText");
 
@@ -185,7 +198,8 @@ function getPlayerCode(){
   if (!code){ code = "BPC" + Math.floor(10000 + Math.random()*89999); localStorage.setItem("playerCode", code); }
   return code;
 }
-(function(){ const box=document.getElementById("playerCode"); if(box) box.innerHTML=`👤 Oyuncu: <b>${getPlayerCode()}</b>`; })();
+const myCode = getPlayerCode();
+(function(){ const box=document.getElementById("playerCode"); if(box) box.innerHTML=`👤 Oyuncu: <b>${myCode}</b>`; })();
 
 /* Anti-montaj code */
 let playId=Math.floor(performance.now()+Math.random()*1e9);
@@ -198,33 +212,29 @@ async function makeCode(){
 }
 makeCode();
 
-/* Stars - ORİJİNAL YAVAŞ HALİ */
+/* Stars - AZALTILMIŞ SAYI (Çizgi oluşumunu engellemek için) */
 const starsA=[], starsB=[];
-for(let i=0;i<60;i++) starsA.push({x:rand(0,cv.width),y:rand(0,cv.height)});
-for(let i=0;i<35;i++) starsB.push({x:rand(0,cv.width),y:rand(0,cv.height)});
+// Eskiden 60 ve 35 idi, şimdi 25 ve 15 yapıldı.
+for(let i=0;i<25;i++) starsA.push({x:rand(0,cv.width),y:rand(0,cv.height), sp: rand(0.2, 0.4)}); // Hafif hız farkı
+for(let i=0;i<15;i++) starsB.push({x:rand(0,cv.width),y:rand(0,cv.height), sp: rand(0.7, 1.1)}); 
 
-/* --- COUNTDOWN LOGIC --- */
+/* Countdown */
 function startCountdownSequence(callback) {
   inCountdown = true;
   countOverlay.style.display = "flex";
   let count = 3;
-  
   const showNum = (num) => {
     cntText.textContent = num;
     cntText.style.animation = 'none';
-    cntText.offsetHeight; // trigger reflow
+    cntText.offsetHeight; 
     cntText.style.animation = 'popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
   };
-
   showNum(3);
-
   const timer = setInterval(() => {
     count--;
-    if (count > 0) {
-      showNum(count);
-    } else if (count === 0) {
-      showNum("GO!");
-    } else {
+    if (count > 0) { showNum(count); } 
+    else if (count === 0) { showNum("GO!"); } 
+    else {
       clearInterval(timer);
       countOverlay.style.display = "none";
       inCountdown = false;
@@ -233,44 +243,39 @@ function startCountdownSequence(callback) {
   }, 800); 
 }
 
-/* --- GAME FLOW --- */
+/* Game Flow */
 function initGame() {
   if(started) return;
   const doc = document.documentElement;
   try { if (doc.requestFullscreen) doc.requestFullscreen(); else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen(); } catch(e){}
   
   startOverlay.style.display="none";
-  pauseBtn.style.display="none"; // Geri sayım bitene kadar gizle
+  pauseBtn.style.display="none";
   
   startCountdownSequence(() => {
     started = true;
     paused = false;
-    pauseBtn.style.display="flex"; // Oyun başlayınca göster
+    pauseBtn.style.display="flex";
     player.y = cv.height - 140;
     player.x = cv.width/2 - player.w/2;
   });
 }
-
 startBtn.onclick = initGame;
 
-// Pause Logic
 pauseBtn.onclick = () => {
   if (!started || gameOver || inCountdown) return;
   paused = true;
   pauseOverlay.style.display = "flex";
   pauseBtn.style.display = "none"; 
 };
-
 resumeBtn.onclick = () => {
   pauseOverlay.style.display = "none";
-  // Hemen başlatma, geri sayım yap
   startCountdownSequence(() => {
     paused = false;
     pauseBtn.style.display = "flex";
   });
 };
 
-// Controls
 function updateLives(){livesEl.innerHTML="❤️".repeat(lives);} updateLives();
 let holding=false;
 function getX(e){return (e.clientX??(e.touches?e.touches[0].clientX:0))-cv.getBoundingClientRect().left;}
@@ -279,7 +284,7 @@ cv.addEventListener("pointerdown",e=>{ if(!started || paused || inCountdown)retu
 cv.addEventListener("pointermove",e=>{ if(!holding || paused || inCountdown)return; player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w); });
 cv.addEventListener("pointerup",()=>holding=false); cv.addEventListener("pointercancel",()=>holding=false);
 
-/* Fire */
+/* Logic */
 function shoot(){
   if(powerTime>0){
     bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10});
@@ -290,7 +295,6 @@ function shoot(){
   }
 }
 
-/* Gem + Mascot + Explode */
 function drawDiamondGem(ctx,x,y,w,h,t){ctx.save();ctx.translate(x+w/2,y+h/2);ctx.rotate(Math.sin(t*2)*0.20);
   const W=w*0.9,H=h*0.9;ctx.shadowColor="rgba(56,189,248,.7)";ctx.shadowBlur=14;
   const grad=ctx.createLinearGradient(-W/2,0,W/2,0);grad.addColorStop(0,"#baf2ff");grad.addColorStop(0.5,"#60e8ff");grad.addColorStop(1,"#99f6e4");
@@ -302,7 +306,6 @@ function explosion(x,y,count=18){const left=Math.max(0,120-particles.length);con
   for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=1.2+Math.random()*2.8;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:420+Math.random()*280,size:1.6+Math.random()*2.4});}
   try{boom.currentTime=0;boom.play().catch(()=>{});}catch{}}
 
-/* Enemy */
 function allowedKindsByTime(t){if(t<10) return ["ufo_red","ufo_gray"]; if(t<40) return ["ufo_red","ufo_gray","green"]; return ["ufo_red","ufo_gray","green","red"];}
 function spawnEnemy(k){ if(enemies.length>12) return; const size=rand(48,70); const kind=k[Math.floor(Math.random()*k.length)];
   const img=enemyImg[kind]||null; enemies.push({x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3),kind,img,canShoot:(kind==="red"||kind==="green"),shootT:0,shootInt:500}); }
@@ -314,8 +317,12 @@ function enemyShoot(e){ if(!e.canShoot) return; const cx=e.x+e.w/2; const mul=(s
 async function endGame(){
   gameOver=true;
   pauseBtn.style.display="none"; 
-  overEl.style.display="flex"; // Background CSS'te ayarlandı
+  overEl.style.display="flex"; 
+  
+  // Bilgileri HTML'e yaz
   finalScoreDisp.textContent = score;
+  finalPlayerCode.textContent = "Player: " + myCode;
+  finalVerifyCode.textContent = "Verify: " + verifyCode;
 
   try{
     if (window.saveScore) await window.saveScore(score);
@@ -327,11 +334,11 @@ async function endGame(){
   top10Box.style.display = "block";
 }
 
-/* Update loop */
+/* Loop */
 function update(dt){
-  // Orijinal yıldız hareketi (Yavaş ve sakin)
-  starsA.forEach(s=>{ s.y+=0.35; if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} });
-  starsB.forEach(s=>{ s.y+=0.9;  if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} });
+  // Yıldızlar: Her biri kendi hızıyla (sp) iner, çizgi oluşmaz.
+  starsA.forEach(s=>{ s.y+=s.sp; if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} });
+  starsB.forEach(s=>{ s.y+=s.sp; if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} });
 
   if(!started || gameOver || paused || inCountdown) return;
 
@@ -373,10 +380,8 @@ function update(dt){
     p.x+=p.vx; p.y+=p.vy; p.vy+=0.02; }
 }
 
-/* Draw & Loop */
 function draw(t){
   ctx.clearRect(0,0,cv.width,cv.height);
-  // Yıldızları çiz
   ctx.fillStyle="rgba(190,220,255,.85)"; starsA.forEach(s=>ctx.fillRect(s.x,s.y,1,1));
   ctx.fillStyle="rgba(255,255,255,.95)";  starsB.forEach(s=>ctx.fillRect(s.x,s.y,1.2,1.2));
 
@@ -392,14 +397,10 @@ function draw(t){
 
   particles.forEach(p=>{ const a=Math.max(0,p.life/500); ctx.globalAlpha=a; ctx.fillStyle="rgba(255,200,80,1)";
     ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1; });
-
-  // Final Skoru renderFinalScore fonksiyonu çiziyor, Game Over ekranında altta kalıyor.
-  // Overlay kullandığımız için renderFinalScore'u silebiliriz ya da sadece efekt için tutabiliriz.
 }
 function loop(t){ const dt=Math.min(t-(window._lt||t),32); window._lt=t; update(dt); draw(t); requestAnimationFrame(loop); }
 requestAnimationFrame(loop);
 
-/* Restart */
 restartBtn.onclick=()=>{
   if(window.bpcTimer) clearInterval(window.bpcTimer);
   score=0;lives=3;powerTime=0; scEl.textContent=score; pxEl.textContent=0;
@@ -438,12 +439,6 @@ function weekKey(d=new Date()){
   const w  = Math.floor((d - new Date(y,0,1)) / 604800000) + 1;
   return `${y}-W${String(w).padStart(2,"0")}`;
 }
-function getPlayerCode(){
-  let c = localStorage.getItem("playerCode");
-  if(!c){ c = "BPC" + Math.floor(10000 + Math.random()*89999); localStorage.setItem("playerCode", c); }
-  return c;
-}
-
 function getFlagEmoji(countryCode) {
   if (!countryCode) return "🏳️"; 
   const codePoints = countryCode.toUpperCase().split('').map(char =>  127397 + char.charCodeAt());
@@ -453,8 +448,7 @@ function getCountryCode() {
   try {
     const lang = (navigator.languages && navigator.languages[0]) || navigator.language || "en-US";
     let code = (lang.split('-')[1] || "").toUpperCase();
-    if (code === "UK") code = "GB";
-    if (!code) code = "TR";
+    if (code === "UK") code = "GB"; if (!code) code = "TR";
     return code;
   } catch { return "TR"; }
 }
@@ -477,9 +471,7 @@ onValue(refCounter, s => {
   if (elGC) elGC.textContent = v.toLocaleString("en-US");
   localStorage.setItem("bpc_global_plays", String(v));
 });
-function incrementGlobalPlays(){
-  return runTransaction(refCounter, v => (v||0) + 1);
-}
+function incrementGlobalPlays(){ return runTransaction(refCounter, v => (v||0) + 1); }
 
 async function bumpLocation(){
   try{
@@ -501,11 +493,10 @@ async function bumpLocation(){
 })();
 
 async function saveScore(score){
-  const code = getPlayerCode();
+  const code = localStorage.getItem("playerCode") || "BPC";
   const country = getCountryCode(); 
   const countryName = getCountryName(); 
   const ts   = Date.now();
-  
   const payload = { code, score, ts, country, countryName };
   await push(ref(db, "scores"), payload);
   const wk = weekKey();
@@ -520,13 +511,12 @@ async function getWeeklyTop10(wk = weekKey()){
     if (!v || typeof v.score!=="number") return;
     if (!bestByCode[v.code] || v.score > bestByCode[v.code].score) bestByCode[v.code] = v;
   });
-  const list = Object.values(bestByCode).sort((a,b)=>b.score-a.score).slice(0,10);
-  return list;
+  return Object.values(bestByCode).sort((a,b)=>b.score-a.score).slice(0,10);
 }
 
 async function showWeeklyPanel(){
   const wk  = weekKey();
-  const me  = getPlayerCode();
+  const me  = localStorage.getItem("playerCode");
   const ol  = document.getElementById("bpc-list");
   const box = document.getElementById("bpc-top10");
   
@@ -560,7 +550,6 @@ async function showWeeklyPanel(){
       ? list.map((it,i)=>{
           const mine = it.code === me;
           const flag = it.country ? getFlagEmoji(it.country) : "🏳️";
-          // SIRA NUMARASI BURADAN GELİYOR. CSS'TE list-style KAPATILDIĞI İÇİN ARTIK SADECE BU GÖRÜNECEK
           return `<li class="${mine?'me':''}">${i+1}. ${flag} ${it.code} → ${it.score} pts</li>`;
         }).join("")
       : `<div style="opacity:.7;text-align:center">No scores this week yet.</div>`;
