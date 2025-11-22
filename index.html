@@ -7,48 +7,51 @@
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   
-  /* UI */
-  #brand { position:fixed; z-index:10; font-weight:900; background:linear-gradient(90deg,#22d3ee,#34d399); -webkit-background-clip:text; background-clip:text; color:transparent; top:max(6px,env(safe-area-inset-top)); left:max(12px,env(safe-area-inset-left)); }
-  #score { position:fixed; left:0; right:0; text-align:center; color:#00ffc8; font-weight:700; z-index:10; top:max(8px,env(safe-area-inset-top)); }
-  #power { position:fixed; color:#a7f3d0; font-weight:700; z-index:10; top:max(8px,env(safe-area-inset-top)); right:max(10px,env(safe-area-inset-right)); }
-  #lives { position:fixed; left:0; right:0; text-align:center; color:#f87171; font-weight:700; z-index:10; bottom:max(60px,env(safe-area-inset-bottom)); }
+  /* UI ELEMENTLERİ */
+  #brand{position:fixed;top:max(6px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));z-index:10;font-weight:900;
+    background:linear-gradient(90deg,#22d3ee,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent}
+  #score{position:fixed;top:max(8px,env(safe-area-inset-top));left:0;right:0;text-align:center;color:#00ffc8;font-weight:700;z-index:10}
+  #power{position:fixed;top:max(8px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));color:#a7f3d0;font-weight:700;z-index:10}
+  #lives{position:fixed;bottom:max(60px,env(safe-area-inset-bottom));left:0;right:0;text-align:center;color:#f87171;font-weight:700;z-index:10}
+
+  /* PAUSE BUTONU */
+  #pauseBtn{position:fixed;left:50%;transform:translateX(-50%);bottom:max(15px,env(safe-area-inset-bottom));z-index:50;width:44px;height:44px;background:#0f172a;border:2px solid #38bdf8;color:#38bdf8;border-radius:50%;font-size:14px;font-weight:900;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 10px rgba(56,189,248,0.4)}
+
+  /* OVERLAYLER */
+  #startOverlay,#gameOver,#pauseOverlay,#countdownOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:60}
+  #startOverlay{background:rgba(0,0,0,.95);color:#fff;display:flex}
+  #pauseOverlay{background:rgba(0,0,0,0.8);color:#fff;backdrop-filter:blur(3px)}
   
-  /* PAUSE BTN */
-  #pauseBtn { position:fixed; left:50%; transform:translateX(-50%); bottom:max(15px,env(safe-area-inset-bottom)); z-index:50; width:44px; height:44px; background:#0f172a; border:2px solid #38bdf8; color:#38bdf8; border-radius:50%; font-size:14px; font-weight:900; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 0 10px rgba(56,189,248,0.4); }
-
-  /* Overlays */
-  #startOverlay,#pauseOverlay,#countdownOverlay,#gameOver { position:fixed; inset:0; display:none; align-items:center; justify-content:center; flex-direction:column; z-index:60; }
-  #startOverlay { background:rgba(0,0,0,.95); color:#fff; display:flex; }
-  #pauseOverlay { background:rgba(0,0,0,0.8); color:#fff; backdrop-filter:blur(3px); }
+  /* GAME OVER - ESKİ DÜZEN (SCROLL EKLENDİ Kİ KÜÇÜK EKRANDA TAŞMASIN) */
+  #gameOver{background:rgba(0,0,0,0.92);justify-content:flex-start;padding-top:60px;overflow-y:auto;}
   
-  /* Game Over: Scroll eklendi, üstten padding */
-  #gameOver { background:rgba(0,0,0,0.92); justify-content:flex-start; padding-top:80px; overflow-y:auto; }
-  #gameOver > * { pointer-events:auto; }
+  #countdownOverlay{background:transparent;pointer-events:none;z-index:70}
+  #cntText{font-size:90px;font-weight:900;color:#fff;text-shadow:0 0 25px #22d3ee;font-family:monospace}
+  @keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
 
-  #countdownOverlay { background:transparent; pointer-events:none; z-index:70; }
-  #cntText { font-size:90px; font-weight:900; color:#fff; text-shadow:0 0 25px #22d3ee; font-family:monospace; }
-  @keyframes popIn { from{transform:scale(0.5);opacity:0} to{transform:scale(1);opacity:1} }
-  .btn { margin-top:12px; padding:12px 32px; border:1px solid #00ffc8; background:#0b1220; color:#00ffc8; border-radius:12px; font-weight:900; z-index:60; font-size:16px;}
+  .btn{margin-top:12px;padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer}
 
-  /* Top10 Box */
-  #bpc-top10 {
-    margin-top: 20px; margin-bottom: 40px;
+  /* TOP 10 KUTUSU */
+  #bpc-top10{
     width:min(420px,92vw); background:#050505; border:1px solid #222; border-radius:10px; padding:10px 12px;
-    color:#fff; font-size:14px; line-height:1.5; 
+    color:#fff; font-size:14px; line-height:1.5; margin-top:20px; margin-bottom:40px;
   } 
-  #bpc-top10 h4 { margin:0 0 6px 0; font-size:15px; font-weight:800; text-align:center; color:#e2e8f0; }
-  #week-timer { text-align:center; font-size:12px; color:#94a3b8; margin-bottom:8px; font-weight:600; border-bottom:1px dashed #333; padding-bottom:6px; }
+  #bpc-top10 h4{margin:0 0 6px 0;font-size:15px;font-weight:800;text-align:center;color:#e2e8f0}
+  #week-timer{text-align:center;font-size:12px;color:#94a3b8;margin-bottom:8px;font-weight:600;border-bottom:1px dashed #333;padding-bottom:6px}
   
-  /* Hizalama Ayarı */
-  #bpc-top10 ol { margin:0; padding:0; list-style:none; } 
-  #bpc-top10 li { margin-bottom:4px; display:flex; align-items:center; border-bottom:1px solid #111; padding-bottom:2px; }
-  .rank-num { display:inline-block; width:28px; text-align:right; margin-right:8px; color:#94a3b8; }
+  /* HİZALAMA İÇİN KRİTİK CSS */
+  #bpc-top10 ol{margin:0;padding:0;list-style:none} /* Çift numarayı engeller */
+  #bpc-top10 li{margin-bottom:4px;display:flex;align-items:center;border-bottom:1px solid #111;padding-bottom:2px}
+  
+  /* Numaralar için sabit genişlik (Bayrak hizalama çözümü) */
+  .rank-num{display:inline-block;width:28px;text-align:right;margin-right:8px;color:#94a3b8;font-weight:bold}
 
-  #bpc-top10 .me { color:#ff5c5c; font-weight:bold; } 
-  #bpc-top10 .me .rank-num { color:#ff5c5c; }
-  #globalCounterBox { margin-top:15px; font-size:13px; opacity:0.8; }
+  #bpc-top10 .me{color:#ff5c5c;font-weight:bold} 
+  #bpc-top10 .me .rank-num{color:#ff5c5c}
 
-  canvas { display:block; margin:0 auto; background:#020617; touch-action:none; user-select:none; width:100%; height:100%; }
+  #globalCounterBox{margin-top:15px;font-size:13px;opacity:0.8;text-align:center}
+
+  canvas{display:block;margin:0 auto;background:#020617;touch-action:none;user-select:none;width:100%;height:100%}
 </style>
 </head>
 <body>
@@ -73,7 +76,7 @@
 
   <div id="gameOver">
     <div style="font-weight:900;font-size:32px;margin-bottom:5px;color:#ef4444;">GAME OVER</div>
-    <div style="font-size:24px;color:#00ffc8;font-weight:bold;margin-bottom:20px;">Score: <span id="finalScoreDisp">0</span></div>
+    <div style="font-size:24px;color:#00ffc8;font-weight:bold;margin-bottom:10px;">Score: <span id="finalScoreDisp">0</span></div>
     <button id="restart" class="btn">Restart</button>
     <div id="globalCounterBox">🌍 Global plays: <span id="globalCounter">…</span></div>
 
@@ -92,6 +95,7 @@
 const cv=document.getElementById("game");
 function resize(){ cv.width=window.innerWidth; cv.height=window.innerHeight; }
 window.addEventListener('resize', resize); resize();
+
 const ctx=cv.getContext("2d"); ctx.imageSmoothingEnabled=false;
 const scEl=document.getElementById("sc"),pxEl=document.getElementById("px"),livesEl=document.getElementById("lives");
 const startOverlay=document.getElementById("startOverlay"),startBtn=document.getElementById("startBtn");
@@ -125,7 +129,6 @@ function getPlayerCode(){ let c=localStorage.getItem("playerCode"); if(!c){c="BP
 const myCode=getPlayerCode();
 (function(){const box=document.getElementById("playerCode");if(box)box.innerHTML=`👤 Oyuncu: <b>${myCode}</b>`;})();
 
-/* YILDIZLAR DÜZELTİLDİ */
 const starsA=[], starsB=[];
 for(let i=0;i<25;i++) starsA.push({x:rand(0,cv.width),y:rand(0,cv.height), sp:rand(0.2,0.4)});
 for(let i=0;i<15;i++) starsB.push({x:rand(0,cv.width),y:rand(0,cv.height), sp:rand(0.7,1.1)});
@@ -146,7 +149,6 @@ function initGame(){
 }
 startBtn.onclick=initGame;
 
-/* BUTON İŞLEVLERİ */
 pauseBtn.onclick=()=>{if(!started||gameOver||inCountdown)return;paused=true;pauseOverlay.style.display="flex";pauseBtn.style.display="none";};
 resumeBtn.onclick=()=>{pauseOverlay.style.display="none";startCountdownSequence(()=>{paused=false;pauseBtn.style.display="flex";});};
 
@@ -155,10 +157,9 @@ function updateLives(){livesEl.innerHTML="❤️".repeat(lives);} updateLives();
 let holding=false;
 function getX(e){return (e.clientX??(e.touches?e.touches[0].clientX:0))-cv.getBoundingClientRect().left;}
 
-/* EKSİK PARANTEZ DÜZELTİLDİ */
 cv.addEventListener("pointerdown",e=>{if(!started||paused||inCountdown)return;holding=true;player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w);});
 cv.addEventListener("pointermove",e=>{if(!holding||paused||inCountdown)return;player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w);});
-cv.addEventListener("pointerup",()=>holding=false); 
+cv.addEventListener("pointerup",()=>holding=false);
 cv.addEventListener("pointercancel",()=>holding=false);
 
 function shoot(){
