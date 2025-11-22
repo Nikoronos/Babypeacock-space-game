@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,59 +7,86 @@
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   
-  /* CSS DÜZENLEMELERİ (SAFE AREA) */
+  /* UI KONUMLANDIRMA (Safe Area Uyumlu) */
   #brand {
     position:fixed; z-index:4; font-weight:900;
     background:linear-gradient(90deg,#22d3ee,#34d399); -webkit-background-clip:text; background-clip:text; color:transparent;
-    /* Hem normal boşluk hem de çentik payı bırakır */
     top: max(6px, env(safe-area-inset-top));
     left: max(12px, env(safe-area-inset-left));
   }
 
   #score {
     position:fixed; left:0; right:0; text-align:center; color:#00ffc8; font-weight:700; z-index:4;
-    /* Çentik veya bildirim barı varsa altına iner */
     top: max(8px, env(safe-area-inset-top));
   }
 
   #power {
     position:fixed; color:#a7f3d0; font-weight:700; z-index:4;
-    /* Sağ üst köşe ayarı */
     top: max(8px, env(safe-area-inset-top));
     right: max(10px, env(safe-area-inset-right));
   }
 
+  /* Can göstergesini biraz yukarı aldık ki altına Pause butonu sığsın */
   #lives {
     position:fixed; left:0; right:0; text-align:center; color:#f87171; font-weight:700; z-index:4;
-    /* Alt bar (navigasyon tuşları) varsa üzerine çıkar */
-    bottom: max(10px, env(safe-area-inset-bottom));
+    bottom: max(60px, env(safe-area-inset-bottom)); /* Yukarı kaydırıldı */
   }
 
-  #startOverlay,#gameOver{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:6}
-  #startOverlay{background:rgba(0,0,0,.84);color:#fff}
-  #gameOver{background:transparent;color:#fff}
+  /* YENİ: PAUSE BUTONU (Canların altında) */
+  #pauseBtn {
+    position:fixed; left:50%; transform:translateX(-50%);
+    bottom: max(10px, env(safe-area-inset-bottom));
+    z-index:10;
+    background: rgba(11, 18, 32, 0.6);
+    border: 1px solid #334155;
+    color: #94a3b8;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    font-size: 16px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
 
-  .btn{margin-top:12px;padding:12px 22px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:6}
+  /* Overlayler */
+  #startOverlay, #gameOver, #pauseOverlay, #countdownOverlay {
+    position:fixed; inset:0; display:none; 
+    align-items:center; justify-content:center; flex-direction:column; z-index:20;
+  }
+  #startOverlay { background:rgba(0,0,0,.84); color:#fff; display:flex; } /* İlk açılışta görünür */
+  #gameOver     { background:transparent; color:#fff; }
+  #pauseOverlay { background:rgba(0,0,0,0.6); color:#fff; backdrop-filter:blur(4px); }
+  
+  /* Geri Sayım Overlay */
+  #countdownOverlay { 
+    background:transparent; 
+    pointer-events:none; /* Tıklamaları engellemesin */
+    z-index:30;
+  }
+  #cntText {
+    font-size: 80px; font-weight: 900; color: #fff;
+    text-shadow: 0 0 20px #22d3ee;
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  @keyframes popIn { from{transform:scale(0.5);opacity:0} to{transform:scale(1);opacity:1} }
+
+  .btn { margin-top:12px; padding:12px 22px; border:1px solid #00ffc8; background:#0b1220; color:#00ffc8; border-radius:12px; font-weight:900; z-index:20; font-size:16px;}
 
   /* Top10 kutusu */
-  #bpc-top10{position:fixed;left:50%;transform:translateX(-50%);
-    /* Ortalamayı biraz daha dinamik yapalım */
+  #bpc-top10 {
+    position:fixed; left:50%; transform:translateX(-50%);
     top:calc(50% + 40px);
-    width:min(420px,92vw);background:#000;border:1px solid #222;border-radius:10px;padding:10px 12px;
-    color:#fff;font-size:14px;line-height:1.5;z-index:5} 
-  #bpc-top10 h4{margin:0 0 6px 0;font-size:15px;font-weight:800; text-align:center; color:#e2e8f0;}
-  
-  #week-timer{text-align:center;font-size:12px;color:#94a3b8;margin-bottom:8px;font-weight:600;border-bottom:1px dashed #333;padding-bottom:6px;}
-  #wk-rem{ font-variant-numeric: tabular-nums; font-weight: 700; letter-spacing: 0.5px; }
+    width:min(420px,92vw); background:#000; border:1px solid #222; border-radius:10px; padding:10px 12px;
+    color:#fff; font-size:14px; line-height:1.5; z-index:15;
+  } 
+  #bpc-top10 h4 { margin:0 0 6px 0; font-size:15px; font-weight:800; text-align:center; color:#e2e8f0; }
+  #week-timer { text-align:center; font-size:12px; color:#94a3b8; margin-bottom:8px; font-weight:600; border-bottom:1px dashed #333; padding-bottom:6px; }
+  #wk-rem { font-variant-numeric: tabular-nums; font-weight: 700; letter-spacing: 0.5px; }
+  #bpc-top10 ol { margin:0; padding-left:24px; }
+  #bpc-top10 li { margin-bottom:4px; }
+  #bpc-top10 .me { color:#ff5c5c; font-weight:bold; } 
+  #globalCounterBox { margin-top:10px; font-size:14px; }
 
-  #bpc-top10 ol{margin:0;padding-left:24px}
-  #bpc-top10 li{margin-bottom:4px;}
-  #bpc-top10 .me{color:#ff5c5c; font-weight:bold;} 
-
-  #globalCounterBox{margin-top:10px;font-size:14px}
-
-  canvas{display:block;margin:0 auto;background:#020617;touch-action:none;user-select:none;
-    width:100%; height:100%; object-fit:contain;}
+  canvas { display:block; margin:0 auto; background:#020617; touch-action:none; user-select:none; width:100%; height:100%; }
 </style>
 </head>
 <body>
@@ -68,12 +94,22 @@
   <div id="score">🦚 Score: <span id="sc">0</span></div>
   <div id="power">💎 <span id="px">0</span>s</div>
   <div id="lives">❤️❤️❤️</div>
+  
+  <button id="pauseBtn">II</button>
 
-  <div id="startOverlay" style="display:flex">
-    <div style="margin-bottom:8px">Hold & drag to move — auto fire while holding</div>
+  <div id="startOverlay">
+    <div style="margin-bottom:8px">Hold & drag to move</div>
     <button id="startBtn" class="btn">START GAME</button>
     <div id="playerCode" style="margin-top:10px;font-size:14px;color:#00ffc8;"></div>
-    <div style="font-size:12px;opacity:.75;margin-top:8px">Tap to Enter Fullscreen</div>
+  </div>
+
+  <div id="pauseOverlay">
+    <div style="font-size:24px; font-weight:900; margin-bottom:10px; color:#e2e8f0;">PAUSED</div>
+    <button id="resumeBtn" class="btn">RESUME</button>
+  </div>
+
+  <div id="countdownOverlay">
+    <div id="cntText">3</div>
   </div>
 
   <div id="gameOver">
@@ -84,9 +120,7 @@
 
   <div id="bpc-top10" style="display:none">
     <h4>🏆 Weekly Top 10</h4>
-    <div id="week-timer">
-      Week <span id="wk-num">--</span> • <span id="wk-rem" style="color:#facc15">--:--:--</span>
-    </div>
+    <div id="week-timer">Week <span id="wk-num">--</span> • <span id="wk-rem" style="color:#facc15">--:--:--</span></div>
     <ol id="bpc-list"></ol>
   </div>
 
@@ -97,9 +131,8 @@
   </audio>
 
 <script>
-/* ====== OYUN KODU (Geliştirilmiş) ====== */
+/* ====== OYUN KODU ====== */
 const cv=document.getElementById("game");
-// Canvas boyutunu ekrana tam oturtma
 function resize(){ cv.width=window.innerWidth; cv.height=window.innerHeight; }
 window.addEventListener('resize', resize); resize();
 
@@ -108,6 +141,10 @@ const scEl=document.getElementById("sc"),pxEl=document.getElementById("px"),live
 const startOverlay=document.getElementById("startOverlay"),startBtn=document.getElementById("startBtn");
 const overEl=document.getElementById("gameOver"),restartBtn=document.getElementById("restart"),boom=document.getElementById("boom");
 const top10Box=document.getElementById("bpc-top10");
+
+// Pause & Countdown Elements
+const pauseBtn=document.getElementById("pauseBtn"), pauseOverlay=document.getElementById("pauseOverlay"), resumeBtn=document.getElementById("resumeBtn");
+const countOverlay=document.getElementById("countdownOverlay"), cntText=document.getElementById("cntText");
 
 /* Utils */
 function clamp(v,a,b){return v<a?a:v>b?b:v;}
@@ -126,12 +163,11 @@ const PEACOCK_SRC="yc3ku6.jpg";
 
 /* State */
 let bullets=[], enemies=[], enemyBullets=[], gems=[], mascots=[], particles=[];
-let score=0,lives=3,started=false,gameOver=false;
+let score=0,lives=3,started=false,gameOver=false,paused=false,inCountdown=false;
 let powerTime=0, fireTimer=0, FIRE_MS=170;
 let elapsed=0,enT=0,gemT=0,mascotT=0;
 let scoreSent=false;
-// Player başlangıç konumu dinamik
-let player={x:cv.width/2-33,y:cv.height-150,w:66,h:66};
+let player={x:cv.width/2-33,y:cv.height-140,w:66,h:66};
 
 /* Oyuncu kodu */
 function getPlayerCode(){
@@ -152,55 +188,85 @@ async function makeCode(){
 }
 makeCode();
 
-/* Stars - PARALLAX EFEKT EKLENDİ */
-// StarsA: Yavaş, StarsB: Orta, StarsC: Hızlı
-const starsA=[], starsB=[], starsC=[]; 
+/* Stars (SADE HALİ - starsC kaldırıldı) */
+const starsA=[], starsB=[];
 for(let i=0;i<60;i++) starsA.push({x:rand(0,cv.width),y:rand(0,cv.height)});
 for(let i=0;i<35;i++) starsB.push({x:rand(0,cv.width),y:rand(0,cv.height)});
-// Hızlı yıldızlar (Az sayıda ama belirgin)
-for(let i=0;i<20;i++) starsC.push({x:rand(0,cv.width),y:rand(0,cv.height)});
 
-/* Controls & Fullscreen Logic */
-function updateLives(){livesEl.innerHTML="❤️".repeat(lives);} updateLives();
-
-// OYUNU BAŞLAT VE TAM EKRAN YAP
-function startGame(){
-  if(started) return;
+/* --- COUNTDOWN LOGIC --- */
+function startCountdownSequence(callback) {
+  inCountdown = true;
+  countOverlay.style.display = "flex";
+  let count = 3;
   
-  // --- TAM EKRAN TETİKLEYİCİ ---
-  const doc = document.documentElement;
-  try {
-    if (doc.requestFullscreen) doc.requestFullscreen();
-    else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen();
-  } catch(err) { console.log("Fullscreen denied or not supported"); }
-  // ------------------------------
+  // İlk sayıyı göster
+  cntText.textContent = count;
+  cntText.style.animation = 'none';
+  cntText.offsetHeight; /* trigger reflow */
+  cntText.style.animation = 'popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
 
-  started=true; 
-  startOverlay.style.display="none";
-  // Oyuncuyu ekran altına hizala
-  player.y = cv.height - 140;
-  player.x = cv.width/2 - player.w/2;
+  const timer = setInterval(() => {
+    count--;
+    if (count > 0) {
+      cntText.textContent = count;
+      cntText.style.animation = 'none';
+      cntText.offsetHeight; 
+      cntText.style.animation = 'popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+    } else if (count === 0) {
+      cntText.textContent = "GO!";
+    } else {
+      // Bitti
+      clearInterval(timer);
+      countOverlay.style.display = "none";
+      inCountdown = false;
+      if (callback) callback();
+    }
+  }, 800); // Her adım 0.8 saniye
 }
 
-startBtn.onclick=startGame; 
-// Canvas'a dokunma da başlatır (Yedek)
-startOverlay.addEventListener("pointerup", (e) => {
-    if(e.target !== startBtn && !started) startGame();
-});
+/* --- GAME FLOW --- */
 
+function initGame() {
+  if(started) return;
+  // Tam ekran isteği
+  const doc = document.documentElement;
+  try { if (doc.requestFullscreen) doc.requestFullscreen(); else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen(); } catch(e){}
+  
+  startOverlay.style.display="none";
+  // Önce geri sayım, bitince başla
+  startCountdownSequence(() => {
+    started = true;
+    player.y = cv.height - 140;
+    player.x = cv.width/2 - player.w/2;
+  });
+}
+
+startBtn.onclick = initGame;
+
+// Pause Logic
+pauseBtn.onclick = () => {
+  if (!started || gameOver || inCountdown) return;
+  paused = true;
+  pauseOverlay.style.display = "flex";
+  pauseBtn.style.display = "none"; // Pause ekranında butonu gizle
+};
+
+resumeBtn.onclick = () => {
+  pauseOverlay.style.display = "none";
+  pauseBtn.style.display = "flex";
+  // Hemen başlatma, geri sayım yap
+  startCountdownSequence(() => {
+    paused = false;
+  });
+};
+
+// Controls
+function updateLives(){livesEl.innerHTML="❤️".repeat(lives);} updateLives();
 let holding=false;
 function getX(e){return (e.clientX??(e.touches?e.touches[0].clientX:0))-cv.getBoundingClientRect().left;}
-// Y ekseni için de kontrol (Parmağın altında kalsın)
-function getY(e){return (e.clientY??(e.touches?e.touches[0].clientY:0))-cv.getBoundingClientRect().top;}
 
-cv.addEventListener("pointerdown",e=>{if(!started)return;holding=true;
-    // Dokunulan yere gitmesin, sürüklemeyi beklesin veya direkt kontrol
-    player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w);
-});
-cv.addEventListener("pointermove",e=>{if(!holding)return;
-    player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w);
-    // İstersen Y hareketini de açabilirsin ama genelde sadece X istenir
-});
+cv.addEventListener("pointerdown",e=>{ if(!started || paused || inCountdown)return; holding=true; player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w); });
+cv.addEventListener("pointermove",e=>{ if(!holding || paused || inCountdown)return; player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w); });
 cv.addEventListener("pointerup",()=>holding=false); cv.addEventListener("pointercancel",()=>holding=false);
 
 /* Fire */
@@ -267,7 +333,7 @@ function renderFinalScore(t){
 /* END GAME */
 async function endGame(){
   gameOver=true;
-  // Tam ekrandan çıkmaya gerek yok, ama panel görünür olsun
+  pauseBtn.style.display="none"; // Game over olunca pause butonunu gizle
   overEl.style.display="flex";
   overEl.style.background="transparent";
 
@@ -283,13 +349,12 @@ async function endGame(){
 
 /* Update loop */
 function update(dt){
-  // PARALLAX YILDIZ HAREKETİ
+  // Yıldızlar her zaman akar (Pause olsa bile, şık dursun diye)
   starsA.forEach(s=>{ s.y+=0.35; if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} });
   starsB.forEach(s=>{ s.y+=0.9;  if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} });
-  // Hızlı katman
-  starsC.forEach(s=>{ s.y+=2.5;  if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} });
 
-  if(!started||gameOver) return;
+  // Eğer pause veya countdown varsa oyun mantığını dondur
+  if(!started || gameOver || paused || inCountdown) return;
 
   elapsed += dt/1000; enT += dt; gemT += dt; mascotT += dt;
   if(powerTime>0){ powerTime-=dt; if(powerTime<0) powerTime=0; }
@@ -334,8 +399,6 @@ function draw(t){
   ctx.clearRect(0,0,cv.width,cv.height);
   ctx.fillStyle="rgba(190,220,255,.85)"; starsA.forEach(s=>ctx.fillRect(s.x,s.y,1,1));
   ctx.fillStyle="rgba(255,255,255,.95)";  starsB.forEach(s=>ctx.fillRect(s.x,s.y,1.2,1.2));
-  // Hızlı yıldız çizimi
-  ctx.fillStyle="rgba(255,255,255,1)";    starsC.forEach(s=>ctx.fillRect(s.x,s.y,1.8,1.8));
 
   if(playerImg) ctx.drawImage(playerImg,player.x,player.y,player.w,player.h);
   else { ctx.fillStyle="#38bdf8"; ctx.fillRect(player.x,player.y,player.w,player.h); }
@@ -360,10 +423,12 @@ restartBtn.onclick=()=>{
   if(window.bpcTimer) clearInterval(window.bpcTimer);
   score=0;lives=3;powerTime=0; scEl.textContent=score; pxEl.textContent=0;
   bullets=[];enemies=[];enemyBullets=[];gems=[];mascots=[];particles=[];
-  updateLives(); gameOver=false; started=false; scoreSent=false;
+  updateLives(); gameOver=false; started=false; scoreSent=false; paused=false; inCountdown=false;
   overEl.style.display="none"; overEl.style.background="rgba(0,0,0,.84)";
   top10Box.style.display="none";
+  pauseBtn.style.display="flex"; // Pause butonunu geri getir
   playId=Math.floor(performance.now()+Math.random()*1e9); makeCode();
+  
   startOverlay.style.display="flex";
 };
 
@@ -493,11 +558,10 @@ async function showWeeklyPanel(){
   const weekNumEl = document.getElementById("wk-num");
   if(weekNumEl) weekNumEl.textContent = wk.split("-W")[1]; 
 
-  // Timer Logic
   if(window.bpcTimer) clearInterval(window.bpcTimer);
   function updateTimer(){
     const now = new Date();
-    const day = now.getUTCDay(); // 0=Pazar
+    const day = now.getUTCDay(); 
     const target = new Date(now);
     const daysUntilSunday = (7 - day) % 7; 
     target.setUTCDate(now.getUTCDate() + daysUntilSunday);
