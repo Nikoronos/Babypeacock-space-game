@@ -14,27 +14,34 @@
   #power{position:fixed;top:max(8px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));color:#a7f3d0;font-weight:700;z-index:10}
   #lives{position:fixed;bottom:max(60px,env(safe-area-inset-bottom));left:0;right:0;text-align:center;color:#f87171;font-weight:700;z-index:10}
 
-  /* PAUSE BUTONU - YUVARLAK VE KÜÇÜK */
-  #pauseBtn{position:fixed;left:50%;transform:translateX(-50%);bottom:max(15px,env(safe-area-inset-bottom));z-index:50;width:36px;height:36px;background:#0f172a;border:2px solid #38bdf8;color:#38bdf8;border-radius:50%;font-size:14px;font-weight:900;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 8px rgba(56,189,248,0.4)}
+  /* PAUSE BUTONU - KÜÇÜK VE YUVARLAK */
+  #pauseBtn{
+    position:fixed;left:50%;transform:translateX(-50%);bottom:max(15px,env(safe-area-inset-bottom));z-index:50;
+    width:36px;height:36px;
+    background:#0f172a;border:2px solid #38bdf8;color:#38bdf8;border-radius:50%;
+    font-size:14px;font-weight:900;display:flex;align-items:center;justify-content:center;cursor:pointer;
+    box-shadow:0 0 8px rgba(56,189,248,0.4)
+  }
 
   /* OVERLAYLER */
   #startOverlay,#gameOver,#pauseOverlay,#countdownOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:60}
   #startOverlay{background:rgba(0,0,0,.95);color:#fff;display:flex}
   #pauseOverlay{background:rgba(0,0,0,0.8);color:#fff;backdrop-filter:blur(3px)}
   
-  /* GAME OVER DÜZENİ */
+  /* GAME OVER DÜZENİ - KRİTİK DÜZELTME */
+  /* Üstten %45 boşluk bırakıyoruz ki Canvas yazıları orada rahatça görünsün */
   #gameOver {
     background: transparent; 
-    justify-content: flex-start; /* Yukarıdan hizala */
-    padding-top: 140px; /* Canvas yazılarının altına inmesi için boşluk */
-    overflow-y: auto; /* Sığmazsa kaydır */
+    justify-content: flex-start; 
+    padding-top: 42vh; 
+    overflow-y: auto; 
   }
   
-  /* ŞAMPİYON KUTUSU (Restart'ın Üstünde) */
+  /* ŞAMPİYON KUTUSU */
   #mondayChampBox {
     display: none; /* JS ile Pazartesi açılacak */
     flex-direction: column; align-items: center;
-    margin-bottom: 15px; /* Butonla arasına mesafe */
+    margin-bottom: 10px; 
     padding: 8px 15px;
     background: rgba(250, 204, 21, 0.15); 
     border: 1px solid #facc15; 
@@ -62,7 +69,7 @@
   /* RESTART BUTONU */
   .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer; margin-bottom: 5px;}
 
-  /* TOP 10 KUTUSU (BAYAĞI AŞAĞI ALINDI) */
+  /* TOP 10 KUTUSU */
   #bpc-top10 {
     width: min(380px, 90vw); 
     background: rgba(5, 5, 5, 0.9); 
@@ -72,8 +79,7 @@
     color: #fff; 
     font-size: 13px; 
     line-height: 1.4; 
-    /* BURASI ÖNEMLİ: Listeyi aşağı iter */
-    margin-top: 60px; 
+    margin-top: 10px; 
     margin-bottom: 40px;
   }
   
@@ -150,7 +156,7 @@ const countOverlay=document.getElementById("countdownOverlay"), cntText=document
 const mondayBox = document.getElementById("mondayChampBox");
 const mcWeek = document.getElementById("mc-week");
 const mcName = document.getElementById("mc-name");
-const mcSecret = document.getElementById("winnerSecret");
+const mcSecretBox = document.getElementById("winnerSecret");
 const mcCode = document.getElementById("mc-code");
 
 function clamp(v,a,b){return v<a?a:v>b?b:v;}
@@ -244,17 +250,24 @@ function enemyShoot(e){ if(!e.canShoot) return; const cx=e.x+e.w/2; const mul=(s
   if(e.kind==="red") enemyBullets.push({x:cx-2,y:e.y+e.h,w:4,h:12,vy:6*mul,color:"#ef4444"});
   else enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6.5*mul,color:"#22c55e"}); }
 
-/* YENİ RENKLİ BABYPEACOCK YAZISI */
+/* YENİ RENKLİ BABYPEACOCK YAZISI VE DÖNEN KOD */
 function renderFinalScore(t){
-  const cx=cv.width/2, cy=cv.height/2;
+  const cx=cv.width/2;
+  const cy=cv.height * 0.35; // Canvas'ı biraz yukarı taşıdık (%35 yüksekliğe)
+  
   ctx.save();
+  // Koyu Perde
   const grd=ctx.createRadialGradient(cx,cy,20,cx,cy,Math.max(cv.width,cv.height)/1.2);
   grd.addColorStop(0,"rgba(0,0,0,0.55)"); grd.addColorStop(1,"rgba(0,0,0,0.95)");
   ctx.fillStyle=grd; ctx.fillRect(0,0,cv.width,cv.height);
 
   const pw=Math.min(360,cv.width-40), ph=160, rx=cx-pw/2, ry=cy-ph/2-6;
-  ctx.save(); ctx.beginPath(); ctx.rect(rx-50,ry-50,pw+100,ph+100); ctx.clip();
-  ctx.translate(cx,cy); ctx.rotate(Math.sin(t / 4000) * 0.15); 
+  
+  // Dönen Kod Çemberi
+  ctx.save(); 
+  ctx.beginPath(); ctx.rect(rx-50,ry-50,pw+100,ph+100); ctx.clip();
+  ctx.translate(cx,cy); 
+  ctx.rotate(Math.sin(t / 4000) * 0.15); // Hafif salınım
   
   ctx.fillStyle="rgba(0,255,200,0.15)"; 
   const line=`Babypeacock • SCORE ${score} • CODE ${verifyCode} • `;
@@ -262,18 +275,20 @@ function renderFinalScore(t){
   for(let y=-150;y<=150;y+=22){let x=-300; while(x<300){ctx.fillText(line,x,y); x+=ctx.measureText(line).width+40;}}
   ctx.restore();
 
-  // MAVİ - YEŞİL GRADIENT YAZI (İSTEĞİNİZ)
+  // Mavi-Yeşil Gradient "Babypeacock"
   const gradText = ctx.createLinearGradient(cx - 100, 0, cx + 100, 0);
-  gradText.addColorStop(0, "#22d3ee"); // Mavi
-  gradText.addColorStop(1, "#34d399"); // Yeşil
+  gradText.addColorStop(0, "#22d3ee");
+  gradText.addColorStop(1, "#34d399");
   ctx.fillStyle = gradText;
   
   ctx.font="900 26px system-ui,Arial"; ctx.textAlign="center"; ctx.shadowColor="rgba(34,211,238,0.8)"; ctx.shadowBlur=15;
   ctx.fillText("Babypeacock",cx,cy-30); ctx.shadowBlur=0;
 
+  // Skor
   ctx.fillStyle="rgba(0,255,200,0.18)"; ctx.font="900 80px system-ui,Arial"; ctx.fillText(String(score),cx,cy+40);
   ctx.fillStyle="#00ffc8"; ctx.font="900 48px system-ui,Arial"; ctx.fillText(score,cx,cy+20);
   
+  // Verify Code (Küçük)
   ctx.font="700 14px system-ui,Arial"; ctx.fillStyle="#a7f3d0"; ctx.fillText("CODE: "+verifyCode,cx,cy+60);
   ctx.restore();
 }
@@ -281,11 +296,13 @@ function renderFinalScore(t){
 async function endGame(){
   gameOver=true; pauseBtn.style.display="none"; overEl.style.display="flex"; 
   
-  // Şampiyon Kontrolü (Pazartesi)
+  // Şampiyon Kontrolü
   if(window.checkMondayWinner) window.checkMondayWinner();
 
-  try{ if(window.saveScore)await window.saveScore(score); if(window.showWeeklyPanel)window.showWeeklyPanel();
-    if(window.incrementGlobalPlays)await window.incrementGlobalPlays(); if(window.bumpLocation)await window.bumpLocation();
+  try{ if (window.saveScore) await window.saveScore(score); 
+       if (window.showWeeklyPanel) window.showWeeklyPanel();
+       if (window.incrementGlobalPlays) await window.incrementGlobalPlays(); 
+       if (window.bumpLocation) await window.bumpLocation();
   }catch(e){}
   top10Box.style.display="block";
 }
