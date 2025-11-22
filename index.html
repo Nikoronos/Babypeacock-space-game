@@ -20,44 +20,32 @@
   #startOverlay,#pauseOverlay,#countdownOverlay,#gameOver { position:fixed; inset:0; display:none; align-items:center; justify-content:center; flex-direction:column; z-index:60; }
   #startOverlay { background:rgba(0,0,0,.95); color:#fff; display:flex; }
   #pauseOverlay { background:rgba(0,0,0,0.8); color:#fff; backdrop-filter:blur(3px); }
-  #gameOver     { background:transparent; color:#fff; z-index:60; pointer-events: none; /* Alttaki listeye tıklanabilsin diye */ }
-  /* Game Over içindeki butonlara tıklanabilsin */
-  #gameOver > * { pointer-events: auto; }
+  
+  /* Game Over: Scroll eklendi, üstten padding */
+  #gameOver { background:rgba(0,0,0,0.92); justify-content:flex-start; padding-top:80px; overflow-y:auto; }
+  #gameOver > * { pointer-events:auto; }
 
   #countdownOverlay { background:transparent; pointer-events:none; z-index:70; }
   #cntText { font-size:90px; font-weight:900; color:#fff; text-shadow:0 0 25px #22d3ee; font-family:monospace; }
   @keyframes popIn { from{transform:scale(0.5);opacity:0} to{transform:scale(1);opacity:1} }
   .btn { margin-top:12px; padding:12px 32px; border:1px solid #00ffc8; background:#0b1220; color:#00ffc8; border-radius:12px; font-weight:900; z-index:60; font-size:16px;}
 
-  /* Top10 Box - ESKİ YERİNE ALINDI (Game Over'ın altında ayrı kutu) */
+  /* Top10 Box */
   #bpc-top10 {
-    position:fixed; left:50%; transform:translateX(-50%);
-    top: calc(50% + 50px); /* Game Over yazılarının altına denk gelecek şekilde ayarlandı */
-    width:min(420px,92vw); background:#000; border:1px solid #222; border-radius:10px; padding:10px 12px;
-    color:#fff; font-size:14px; line-height:1.5; z-index:65;
+    margin-top: 20px; margin-bottom: 40px;
+    width:min(420px,92vw); background:#050505; border:1px solid #222; border-radius:10px; padding:10px 12px;
+    color:#fff; font-size:14px; line-height:1.5; 
   } 
   #bpc-top10 h4 { margin:0 0 6px 0; font-size:15px; font-weight:800; text-align:center; color:#e2e8f0; }
   #week-timer { text-align:center; font-size:12px; color:#94a3b8; margin-bottom:8px; font-weight:600; border-bottom:1px dashed #333; padding-bottom:6px; }
   
-  /* HİZALAMA DÜZELTME KODLARI */
+  /* Hizalama Ayarı */
   #bpc-top10 ol { margin:0; padding:0; list-style:none; } 
-  #bpc-top10 li {
-    margin-bottom:4px;
-    display: flex; /* Flexbox ile hizalama */
-    align-items: center;
-  }
-  /* Sıra numarası için sabit genişlikli alan */
-  .rank-num {
-    display: inline-block;
-    width: 28px; /* 10. sayısı için yeterli sabit genişlik */
-    text-align: right;
-    margin-right: 8px;
-    color: #94a3b8;
-  }
-  /* ------------------------- */
+  #bpc-top10 li { margin-bottom:4px; display:flex; align-items:center; border-bottom:1px solid #111; padding-bottom:2px; }
+  .rank-num { display:inline-block; width:28px; text-align:right; margin-right:8px; color:#94a3b8; }
 
   #bpc-top10 .me { color:#ff5c5c; font-weight:bold; } 
-  #bpc-top10 .me .rank-num { color:#ff5c5c; } /* Kendi sıran da kırmızı olsun */
+  #bpc-top10 .me .rank-num { color:#ff5c5c; }
   #globalCounterBox { margin-top:15px; font-size:13px; opacity:0.8; }
 
   canvas { display:block; margin:0 auto; background:#020617; touch-action:none; user-select:none; width:100%; height:100%; }
@@ -84,18 +72,16 @@
   <div id="countdownOverlay"><div id="cntText"></div></div>
 
   <div id="gameOver">
-    <div style="position:absolute; inset:0; background:radial-gradient(circle, rgba(34,211,238,0.15) 0%, rgba(0,0,0,0) 70%); pointer-events:none;"></div>
-    
-    <div style="font-weight:900;font-size:32px;margin-bottom:5px;color:#22d3ee;text-shadow:0 0 10px rgba(34,211,238,0.5);">GAME OVER</div>
+    <div style="font-weight:900;font-size:32px;margin-bottom:5px;color:#ef4444;">GAME OVER</div>
     <div style="font-size:24px;color:#00ffc8;font-weight:bold;margin-bottom:20px;">Score: <span id="finalScoreDisp">0</span></div>
-    <button id="restart" class="btn" style="background:#0f172a;box-shadow:0 0 15px rgba(34,211,238,0.3);">Restart</button>
+    <button id="restart" class="btn">Restart</button>
     <div id="globalCounterBox">🌍 Global plays: <span id="globalCounter">…</span></div>
-  </div>
 
-  <div id="bpc-top10" style="display:none">
-    <h4>🏆 Weekly Top 10</h4>
-    <div id="week-timer">Week <span id="wk-num">--</span> • <span id="wk-rem" style="color:#facc15">--:--:--</span></div>
-    <ol id="bpc-list"></ol>
+    <div id="bpc-top10" style="display:none">
+      <h4>🏆 Weekly Top 10</h4>
+      <div id="week-timer">Week <span id="wk-num">--</span> • <span id="wk-rem" style="color:#facc15">--:--:--</span></div>
+      <ol id="bpc-list"></ol>
+    </div>
   </div>
 
   <canvas id="game"></canvas>
@@ -139,6 +125,7 @@ function getPlayerCode(){ let c=localStorage.getItem("playerCode"); if(!c){c="BP
 const myCode=getPlayerCode();
 (function(){const box=document.getElementById("playerCode");if(box)box.innerHTML=`👤 Oyuncu: <b>${myCode}</b>`;})();
 
+/* YILDIZLAR DÜZELTİLDİ */
 const starsA=[], starsB=[];
 for(let i=0;i<25;i++) starsA.push({x:rand(0,cv.width),y:rand(0,cv.height), sp:rand(0.2,0.4)});
 for(let i=0;i<15;i++) starsB.push({x:rand(0,cv.width),y:rand(0,cv.height), sp:rand(0.7,1.1)});
@@ -150,21 +137,29 @@ function startCountdownSequence(callback) {
   const timer=setInterval(()=>{count--;if(count>0)showNum(count);else if(count===0)showNum("GO!");else{clearInterval(timer);countOverlay.style.display="none";inCountdown=false;if(callback)callback();}},800);
 }
 
-function initGame(){if(started)return;
-  const doc=document.documentElement; try{if(doc.requestFullscreen)doc.requestFullscreen();else if(doc.webkitRequestFullscreen)doc.webkitRequestFullscreen();}catch(e){}
+function initGame(){
+  if(started)return;
+  const doc=document.documentElement; 
+  try{if(doc.requestFullscreen)doc.requestFullscreen();else if(doc.webkitRequestFullscreen)doc.webkitRequestFullscreen();}catch(e){}
   startOverlay.style.display="none"; pauseBtn.style.display="none";
   startCountdownSequence(()=>{started=true;paused=false;pauseBtn.style.display="flex";player.y=cv.height-140;player.x=cv.width/2-player.w/2;});
 }
 startBtn.onclick=initGame;
+
+/* BUTON İŞLEVLERİ */
 pauseBtn.onclick=()=>{if(!started||gameOver||inCountdown)return;paused=true;pauseOverlay.style.display="flex";pauseBtn.style.display="none";};
 resumeBtn.onclick=()=>{pauseOverlay.style.display="none";startCountdownSequence(()=>{paused=false;pauseBtn.style.display="flex";});};
 
 function updateLives(){livesEl.innerHTML="❤️".repeat(lives);} updateLives();
+
 let holding=false;
 function getX(e){return (e.clientX??(e.touches?e.touches[0].clientX:0))-cv.getBoundingClientRect().left;}
+
+/* EKSİK PARANTEZ DÜZELTİLDİ */
 cv.addEventListener("pointerdown",e=>{if(!started||paused||inCountdown)return;holding=true;player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w);});
 cv.addEventListener("pointermove",e=>{if(!holding||paused||inCountdown)return;player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w);});
-cv.addEventListener("pointerup",()=>holding=false; cv.addEventListener("pointercancel",()=>holding=false);
+cv.addEventListener("pointerup",()=>holding=false); 
+cv.addEventListener("pointercancel",()=>holding=false);
 
 function shoot(){
   if(powerTime>0){ bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10}); bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10,ang:3}); bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10,ang:-3}); }
@@ -302,7 +297,6 @@ async function showWeeklyPanel(){
     ol.innerHTML=list.length
       ? list.map((it,i)=>{
           const mine=it.code===me; const flag=getFlagEmoji(it.country);
-          // HİZALAMA İÇİN span class="rank-num" EKLENDİ
           return `<li class="${mine?'me':''}"><span class="rank-num">${i+1}.</span>${flag} ${it.code} → ${it.score} pts</li>`;
         }).join("")
       : `<div style="opacity:.7;text-align:center">No scores this week yet.</div>`;
