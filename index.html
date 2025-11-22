@@ -21,57 +21,47 @@
   #startOverlay{background:rgba(0,0,0,.95);color:#fff;display:flex}
   #pauseOverlay{background:rgba(0,0,0,0.8);color:#fff;backdrop-filter:blur(3px)}
   
-  /* GAME OVER: TRANSPARAN ARKA PLAN */
+  /* GAME OVER: TRANSPARAN VE FLEX-START */
   #gameOver {
     background: transparent; 
-    justify-content: center; 
-    padding-top: 100px; 
+    justify-content: flex-start; /* Elemanları yukarıdan dizecek */
+    padding-top: 15vh; /* Üstten rahat bir boşluk */
+    overflow-y: auto; /* Listeler için kaydırmayı aç */
   }
   
   /* ŞAMPİYON PANELİ STİLİ */
   #champPanel {
-    display: none; 
-    flex-direction: column; 
-    align-items: center;
-    margin-top: 15px;
-    margin-bottom: 15px; /* Restart butonundan uzaklaşsın */
-    padding: 10px 15px;
-    background: rgba(250, 204, 21, 0.1); 
-    border: 1px solid #facc15;
-    border-radius: 8px;
-    box-shadow: 0 0 15px rgba(250, 204, 21, 0.3);
-    width: min(300px, 80vw);
-    text-align: center;
+    display: none; flex-direction: column; align-items: center; margin-top: 15px; margin-bottom: 15px; padding: 10px 15px;
+    background: rgba(250, 204, 21, 0.1); border: 1px solid #facc15; border-radius: 8px; box-shadow: 0 0 15px rgba(250, 204, 21, 0.3);
+    width: min(300px, 80vw); text-align: center;
   }
   .champ-title { color: #facc15; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
   .champ-info { color: #fff; font-size: 16px; font-weight: 900; text-shadow: 0 0 8px rgba(255,255,255,0.4); margin-bottom: 4px;}
-  
-  /* KAZANANA ÖZEL KOD ALANI */
-  #secretCodeBox {
-    display: none;
-    margin-top: 8px; padding: 6px 12px; background: #000; border: 1px dashed #facc15; border-radius: 6px;
-    color: #facc15; font-family: monospace; font-weight: bold; font-size: 13px;
-  }
-  
-  /* DİĞER OVERLAYLER */
+  #secretCodeBox { display: none; margin-top: 8px; padding: 6px 12px; background: #000; border: 1px dashed #facc15; border-radius: 6px; color: #facc15; font-family: monospace; font-weight: bold; font-size: 13px; }
+
+  /* Geri Sayım */
   #countdownOverlay{background:transparent;pointer-events:none;z-index:70}
   #cntText{font-size:90px;font-weight:900;color:#fff;text-shadow:0 0 25px #22d3ee;font-family:monospace}
   @keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
+
+  /* GAME OVER STATİK YAZILAR */
+  #gameOver .static-title { font-weight:900;font-size:36px;margin-bottom:5px;color:#ef4444;text-shadow: 0 0 15px rgba(239,68,68,0.4);}
+  #gameOver .static-score { font-size:24px;color:#00ffc8;font-weight:bold;margin-bottom:20px;}
 
   .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer; margin-bottom: 10px;}
 
   /* TOP 10 KUTUSU */
   #bpc-top10 {
     width: min(360px, 85vw); background: rgba(5, 5, 5, 0.85); border: 1px solid #333; border-radius: 10px; padding: 10px; font-size: 13px; line-height: 1.4; margin-top: 20px; margin-bottom: 40px;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px); color: #fff;
   }
   
   #bpc-top10 h4{margin:0 0 5px 0; font-size:12px; font-weight:800; text-align:center; color:#e2e8f0; letter-spacing: 0.5px; text-transform: uppercase;}
   #week-timer{text-align:center;font-size:11px;color:#94a3b8;margin-bottom:6px;font-weight:600;border-bottom:1px dashed #333;padding-bottom:4px}
   
-  /* HİZALAMA */
+  /* LİSTE HİZALAMA */
   #bpc-top10 ol { margin:0; padding:0; list-style:none; } 
-  #bpc-top10 li { margin-bottom: 4px; display: flex; align-items: center; border-bottom: 1px solid #222; padding-bottom: 2px; }
+  #bpc-top10 li { margin-bottom: 4px; display: flex; align-items: center; border-bottom: 1px solid #222; padding-bottom: 2px; color: #fff; }
   .rank-num { display: inline-block; width: 25px; text-align: right; margin-right: 8px; color: #94a3b8; font-weight: bold; font-family: monospace; }
   #bpc-top10 .me{color:#ff5c5c;font-weight:bold} 
   #bpc-top10 .me .rank-num{color:#ff5c5c}
@@ -102,13 +92,16 @@
   <div id="countdownOverlay"><div id="cntText"></div></div>
 
   <div id="gameOver">
+    <div class="static-title">GAME OVER</div>
+    <div class="static-score">Score: <span id="finalScoreDisp">0</span></div>
+    
     <div id="champPanel">
       <div class="champ-title">👑 Week <span id="champ-wk">--</span> Champion</div>
       <div class="champ-info" id="champ-pl">Loading...</div>
       <div id="secretCodeBox">CODE: <span id="secret-code">---</span></div>
     </div>
     
-    <button id="restart" class="btn" style="box-shadow: 0 0 20px rgba(0,255,200,0.4); margin-top: 10px;">Restart</button>
+    <button id="restart" class="btn" style="box-shadow: 0 0 20px rgba(0,255,200,0.4); margin-top: 25px;">Restart</button>
     <div id="globalCounterBox">🌍 Global plays: <span id="globalCounter">…</span></div>
 
     <div id="bpc-top10" style="display:none">
@@ -131,10 +124,11 @@ const scEl=document.getElementById("sc"),pxEl=document.getElementById("px"),live
 const startOverlay=document.getElementById("startOverlay"),startBtn=document.getElementById("startBtn");
 const overEl=document.getElementById("gameOver"),restartBtn=document.getElementById("restart"),boom=document.getElementById("boom");
 const top10Box=document.getElementById("bpc-top10");
+const finalScoreDisp = document.getElementById("finalScoreDisp"); /* YENİ: Statik skor */
 const pauseBtn=document.getElementById("pauseBtn"), pauseOverlay=document.getElementById("pauseOverlay"), resumeBtn=document.getElementById("resumeBtn");
 const countOverlay=document.getElementById("countdownOverlay"), cntText=document.getElementById("cntText");
-const champPanel = document.getElementById("champPanel"); // Yeni
-const secretCodeBox = document.getElementById("secretCodeBox"); // Yeni
+const champPanel = document.getElementById("champPanel");
+const secretCodeBox = document.getElementById("secretCodeBox");
 
 function clamp(v,a,b){return v<a?a:v>b?b:v;}
 function rand(a,b){return a+Math.random()*(b-a);}
@@ -156,7 +150,7 @@ let elapsed=0,enT=0,gemT=0,mascotT=0;
 let scoreSent=false;
 let player={x:cv.width/2-33,y:cv.height-140,w:66,h:66};
 
-function getPlayerCode(){ let c=localStorage.getItem("playerCode"); if(!c){c="BPC"+Math.floor(10000+Math.random()*89999);localStorage.setItem("playerCode",c);} return c; }
+function getPlayerCode(){ let c=localStorage.getItem("playerCode"); if(!c){c="BPC"+Math.floor(100000+Math.random()*899999);localStorage.setItem("playerCode",c);} return c; }
 const myCode=getPlayerCode();
 (function(){const box=document.getElementById("playerCode");if(box)box.innerHTML=`👤 Oyuncu: <b>${myCode}</b>`;})();
 
@@ -245,24 +239,25 @@ function renderFinalScore(t){
   for(let y=-150;y<=150;y+=22){let x=-300; while(x<300){ctx.fillText(line,x,y); x+=ctx.measureText(line).width+40;}}
   ctx.restore();
 
-  ctx.fillStyle=ctx.createLinearGradient(cx-120,0,cx+120,0); ctx.fillStyle.addColorStop?.(0,"#22d3ee");
-  ctx.font="900 26px system-ui,Arial"; ctx.textAlign="center"; ctx.shadowColor="rgba(34,211,238,0.8)"; ctx.shadowBlur=15;
-  ctx.fillText("Babypeacock",cx,cy-30); ctx.shadowBlur=0;
-
-  ctx.fillStyle="rgba(0,255,200,0.18)"; ctx.font="900 80px system-ui,Arial"; ctx.fillText(String(score),cx,cy+40);
-  ctx.fillStyle="#00ffc8"; ctx.font="900 48px system-ui,Arial"; ctx.fillText(score,cx,cy+20);
-  
-  ctx.font="700 14px system-ui,Arial"; ctx.fillStyle="#a7f3d0"; ctx.fillText("CODE: "+verifyCode,cx,cy+60);
+  // Bu çizimleri kaldırdık, çünkü HTML elementleri öncelikli ve daha okunaklı
+  // ctx.fillStyle=ctx.createLinearGradient(cx-120,0,cx+120,0); ctx.fillStyle.addColorStop?.(0,"#22d3ee");
+  // ctx.font="900 26px system-ui,Arial"; ctx.textAlign="center"; ctx.shadowColor="rgba(34,211,238,0.8)"; ctx.shadowBlur=15;
+  // ctx.fillText("Babypeacock",cx,cy-30); ctx.shadowBlur=0;
   ctx.restore();
 }
 
 async function endGame(){
   gameOver=true; pauseBtn.style.display="none"; overEl.style.display="flex"; 
   
+  // Statik skor alanını doldur
+  document.getElementById("finalScoreDisp").textContent = score; 
+
   if(window.checkChampionDisplay) window.checkChampionDisplay(); 
 
-  try{ if(window.saveScore)await window.saveScore(score); if(window.showWeeklyPanel)window.showWeeklyPanel();
-    if(window.incrementGlobalPlays)await window.incrementGlobalPlays(); if(window.bumpLocation)await window.bumpLocation();
+  try{ if (window.saveScore) await window.saveScore(score); 
+       if (window.showWeeklyPanel) window.showWeeklyPanel();
+       if (window.incrementGlobalPlays) await window.incrementGlobalPlays(); 
+       if (window.bumpLocation) await window.bumpLocation();
   }catch(e){}
   top10Box.style.display="block";
 }
@@ -330,7 +325,6 @@ const INSTANCE_URL="https://bpc-space-default-rtdb.europe-west1.firebasedatabase
 const app=getApps().length?getApps()[0]:initializeApp({databaseURL:INSTANCE_URL}); const db=getDatabase(app); window.db=db;
 
 function weekKey(d=new Date()){
-  // Tüm haftalık anahtar hesaplaması London/UTC'ye göre
   const now_utc = new Date(d.getTime() + d.getTimezoneOffset() * 60000);
   const year = now_utc.getFullYear();
   const startOfYear = new Date(year, 0, 1);
@@ -341,7 +335,6 @@ function weekKey(d=new Date()){
 }
 function getFlagEmoji(c){if(!c)return"🏳️";const cp=c.toUpperCase().split('').map(char=>127397+char.charCodeAt());return String.fromCodePoint(...cp);}
 function getCountryCode(){try{const l=(navigator.languages&&navigator.languages[0])||navigator.language||"en-US";let c=(l.split('-')[1]||"").toUpperCase();if(c==="UK")c="GB";if(!c)c="TR";return c;}catch{return"TR";}}
-function getCountryName(){/* ... */ return "Türkiye";}
 
 const refCounter=ref(db,"stats/globalPlays"); const elGC=document.getElementById("globalCounter");
 const cached=Number(localStorage.getItem("bpc_global_plays"))||0; if(elGC)elGC.textContent=cached?cached.toLocaleString("en-US"):"…";
@@ -369,17 +362,15 @@ async function checkChampionDisplay(){
   const options = { weekday: 'long', timeZone: 'Europe/London' };
   const londonDay = new Date(today.toLocaleString('en-US', options)).getDay(); // 0=Sun, 1=Mon, 2=Tue...
   
-  // SADECE Pazartesi (1) ise panel aktif. Salı (2) ve diğer günler kapalı.
   const isMondayActive = londonDay === 1;
 
-  // Paneli gizle
   champPanel.style.display = 'none';
 
   if(!isMondayActive) return; 
 
-  // Geçen haftanın anahtarını bulmak: Pazar'ın haftasını garantile (Şu anki günden 2 gün geri giderek, Pazartesi'yi Pazar'ın haftasına düşürüyoruz)
+  // Geçen haftanın anahtarını bulmak
   const d_prev = new Date(today);
-  d_prev.setDate(d_prev.getDate() - 1); // 1 gün geri git (Pazartesi'den Pazar'a)
+  d_prev.setDate(d_prev.getDate() - 1); 
   const prevWk = weekKey(d_prev); 
   
   const list = await getWeeklyTop10(prevWk);
