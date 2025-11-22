@@ -7,7 +7,7 @@
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   
-  /* UI */
+  /* UI ELEMENTLERİ */
   #brand{position:fixed;top:max(6px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));z-index:10;font-weight:900;
     background:linear-gradient(90deg,#22d3ee,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent}
   #score{position:fixed;top:max(8px,env(safe-area-inset-top));left:0;right:0;text-align:center;color:#00ffc8;font-weight:700;z-index:10}
@@ -28,12 +28,11 @@
   #startOverlay{background:rgba(0,0,0,.95);color:#fff;display:flex}
   #pauseOverlay{background:rgba(0,0,0,0.8);color:#fff;backdrop-filter:blur(3px)}
   
-  /* GAME OVER DÜZENİ - KRİTİK AYAR */
-  /* Üst kısmı (40vh) tamamen boş bırakıyoruz ki Canvas çizimleri orada görünsün */
+  /* GAME OVER DÜZENİ */
   #gameOver {
     background: transparent; 
     justify-content: flex-start; 
-    padding-top: 40vh; /* Ekranın %40'ı kadar boşluk bırak, çizimler burada olacak */
+    padding-top: 40vh; 
     overflow-y: auto; 
   }
   
@@ -246,12 +245,8 @@ function enemyShoot(e){ if(!e.canShoot) return; const cx=e.x+e.w/2; const mul=(s
   if(e.kind==="red") enemyBullets.push({x:cx-2,y:e.y+e.h,w:4,h:12,vy:6*mul,color:"#ef4444"});
   else enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6.5*mul,color:"#22c55e"}); }
 
-/* ESKİ HAVALI EKRAN (CANVAS ÇİZİMİ) - YUKARIDA KONUMLANDIRILDI */
 function renderFinalScore(t){
-  const cx=cv.width/2;
-  // Çizimi ekranın üst %25-30'una sabitliyoruz ki alttaki butonlara değmesin
-  const cy=cv.height * 0.28; 
-  
+  const cx=cv.width/2, cy=cv.height * 0.35; 
   ctx.save();
   const grd=ctx.createRadialGradient(cx,cy,20,cx,cy,Math.max(cv.width,cv.height)/1.2);
   grd.addColorStop(0,"rgba(0,0,0,0.55)"); grd.addColorStop(1,"rgba(0,0,0,0.95)");
@@ -267,7 +262,6 @@ function renderFinalScore(t){
   for(let y=-150;y<=150;y+=22){let x=-300; while(x<300){ctx.fillText(line,x,y); x+=ctx.measureText(line).width+40;}}
   ctx.restore();
 
-  // MAVİ-YEŞİL GRADIENT YAZI
   const gradText = ctx.createLinearGradient(cx - 100, 0, cx + 100, 0);
   gradText.addColorStop(0, "#22d3ee"); gradText.addColorStop(1, "#34d399");
   ctx.fillStyle = gradText;
@@ -284,7 +278,6 @@ function renderFinalScore(t){
 async function endGame(){
   gameOver=true; pauseBtn.style.display="none"; overEl.style.display="flex"; 
   
-  // Pazartesi Şampiyon Kontrolü
   if(window.checkMondayWinner) window.checkMondayWinner();
 
   try{ if (window.saveScore) await window.saveScore(score); 
@@ -365,7 +358,35 @@ function weekKey(d=new Date()){
   return `${year}-W${String(weekNumber).padStart(2,"0")}`;
 }
 function getFlagEmoji(c){if(!c)return"🏳️";const cp=c.toUpperCase().split('').map(char=>127397+char.charCodeAt());return String.fromCodePoint(...cp);}
-function getCountryCode(){try{const l=(navigator.languages&&navigator.languages[0])||navigator.language||"en-US";let c=(l.split('-')[1]||"").toUpperCase();if(c==="UK")c="GB";if(!c)c="TR";return c;}catch{return"TR";}}
+
+/* YENİ GÜÇLÜ ÜLKE KODU FONKSİYONU */
+function getCountryCode(){
+  try{
+    const lang=(navigator.languages&&navigator.languages[0])||navigator.language||"en-US";
+    
+    // 1. Önce tireden sonrasını (gerçek ülke kodunu) almayı dene
+    let country = (lang.split('-')[1] || "").toUpperCase();
+
+    // 2. Eğer ülke kodu yoksa veya 2 harfli değilse, Fallback tablosuna bak
+    if (!country || country.length !== 2) {
+        const code = lang.split('-')[0].toLowerCase();
+        const map = {
+            ar:'SA', en:'US', fr:'FR', de:'DE', es:'ES', it:'IT', pt:'BR',
+            ru:'RU', zh:'CN', ja:'JP', ko:'KR', tr:'TR', nl:'NL', hi:'IN',
+            sv:'SE', no:'NO', da:'DK', pl:'PL', cs:'CZ', sk:'SK', ro:'RO',
+            hu:'HU', fi:'FI', el:'GR', id:'ID', th:'TH', vi:'VN', uk:'UA',
+            bg:'BG', sr:'RS', hr:'HR', ms:'MY', he:'IL'
+        };
+        country = map[code] || "TR"; // Listede yoksa TR
+    }
+
+    // 3. Özel düzeltme (UK -> GB)
+    if (country === "UK") country = "GB";
+
+    return country;
+  }catch{return"TR";}
+}
+function getCountryName(){ return getCountryCode(); }
 
 const refCounter=ref(db,"stats/globalPlays"); const elGC=document.getElementById("globalCounter");
 const cached=Number(localStorage.getItem("bpc_global_plays"))||0; if(elGC)elGC.textContent=cached?cached.toLocaleString("en-US"):"…";
