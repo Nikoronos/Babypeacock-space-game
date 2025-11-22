@@ -13,80 +13,81 @@
   #score{position:fixed;top:max(8px,env(safe-area-inset-top));left:0;right:0;text-align:center;color:#00ffc8;font-weight:700;z-index:10}
   #power{position:fixed;top:max(8px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));color:#a7f3d0;font-weight:700;z-index:10}
   #lives{position:fixed;bottom:max(60px,env(safe-area-inset-bottom));left:0;right:0;text-align:center;color:#f87171;font-weight:700;z-index:10}
-  #pauseBtn{position:fixed;left:50%;transform:translateX(-50%);bottom:max(15px,env(safe-area-inset-bottom));z-index:50;width:44px;height:44px;background:#0f172a;border:2px solid #38bdf8;color:#38bdf8;border-radius:50%;font-size:14px;font-weight:900;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 10px rgba(56,189,248,0.4)}
+
+  /* PAUSE BUTONU - KÜÇÜLTÜLDÜ */
+  #pauseBtn {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: max(15px, env(safe-area-inset-bottom));
+    z-index: 50;
+    width: 36px;  /* 44px'ten 36px'e düşürüldü */
+    height: 36px; /* 44px'ten 36px'e düşürüldü */
+    background: #0f172a;
+    border: 2px solid #38bdf8;
+    color: #38bdf8;
+    border-radius: 50%;
+    font-size: 12px; /* Font küçültüldü */
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+  }
 
   /* OVERLAYLER */
   #startOverlay,#gameOver,#pauseOverlay,#countdownOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:60}
   #startOverlay{background:rgba(0,0,0,.95);color:#fff;display:flex}
   #pauseOverlay{background:rgba(0,0,0,0.8);color:#fff;backdrop-filter:blur(3px)}
   
-  /* GAME OVER EKRANI - ESKİ HALİ */
+  /* GAME OVER: TRANSPARAN VE FLEX-START */
   #gameOver {
-    background: transparent; /* Arka planı canvas'a bıraktık */
-    justify-content: flex-start;
-    padding-top: 120px; /* Yazılar yukarıda kalsın */
-    overflow-y: auto; 
+    background: transparent; 
+    justify-content: flex-start; /* Elemanları yukarıdan dizecek */
+    padding-top: 15vh; /* Üstten rahat bir boşluk */
+    overflow-y: auto; /* Listeler için kaydırmayı aç */
   }
   
-  /* ŞAMPİYON KUTUSU (Sadece Pazartesi Görünür) */
-  #mondayChampBox {
-    display: none; /* JS ile açılacak */
-    flex-direction: column; align-items: center;
-    margin-bottom: 15px;
-    padding: 10px 20px;
-    background: linear-gradient(90deg, rgba(0,0,0,0.6), rgba(250, 204, 21, 0.2), rgba(0,0,0,0.6));
-    border-top: 1px solid #facc15;
-    border-bottom: 1px solid #facc15;
-    width: 100%;
-    text-align: center;
+  /* ŞAMPİYON PANELİ STİLİ */
+  #champPanel {
+    display: none; flex-direction: column; align-items: center; margin-top: 15px; margin-bottom: 15px; padding: 10px 15px;
+    background: rgba(250, 204, 21, 0.1); border: 1px solid #facc15; border-radius: 8px; box-shadow: 0 0 15px rgba(250, 204, 21, 0.3);
+    width: min(300px, 80vw); text-align: center;
   }
-  .champ-label { color: #facc15; font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; text-shadow: 0 0 10px #facc15; margin-bottom: 4px;}
-  .champ-name { color: #fff; font-size: 16px; font-weight: 900; margin-bottom: 4px; }
-  
-  /* SADECE KAZANANIN GÖRECEĞİ KOD */
-  #winnerSecret {
-    display: none;
-    font-family: monospace; color: #00ffc8; font-size: 14px; font-weight: bold;
-    background: #000; padding: 4px 8px; border-radius: 4px; border: 1px dashed #00ffc8;
-    margin-top: 5px;
-  }
+  .champ-title { color: #facc15; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+  .champ-info { color: #fff; font-size: 16px; font-weight: 900; text-shadow: 0 0 8px rgba(255,255,255,0.4); margin-bottom: 4px;}
+  #secretCodeBox { display: none; margin-top: 8px; padding: 6px 12px; background: #000; border: 1px dashed #facc15; border-radius: 6px; color: #facc15; font-family: monospace; font-weight: bold; font-size: 13px; }
 
-  /* GERİ SAYIM */
+  /* Geri Sayım */
   #countdownOverlay{background:transparent;pointer-events:none;z-index:70}
   #cntText{font-size:90px;font-weight:900;color:#fff;text-shadow:0 0 25px #22d3ee;font-family:monospace}
   @keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
 
-  /* BUTON */
+  /* GAME OVER STATİK YAZILAR */
+  #gameOver .static-title { font-weight:900;font-size:36px;margin-bottom:5px;color:#ef4444;text-shadow: 0 0 15px rgba(239,68,68,0.4);}
+  #gameOver .static-score { font-size:24px;color:#00ffc8;font-weight:bold;margin-bottom:20px;}
+
   .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer; margin-bottom: 10px;}
 
-  /* TOP 10 KUTUSU (Eski haline döndü) */
+  /* TOP 10 KUTUSU */
   #bpc-top10 {
-    width: min(380px, 90vw); 
-    background: rgba(5, 5, 5, 0.9); 
-    border: 1px solid #333; 
-    border-radius: 10px; 
-    padding: 12px; 
-    color: #fff; 
-    font-size: 13px; 
-    line-height: 1.5; 
-    margin-top: 20px; 
-    margin-bottom: 40px;
+    width: min(360px, 85vw); background: rgba(5, 5, 5, 0.85); border: 1px solid #333; border-radius: 10px; padding: 10px; font-size: 13px; line-height: 1.4; margin-top: 20px; margin-bottom: 40px;
+    backdrop-filter: blur(4px); color: #fff;
   }
-  #bpc-top10 h4{margin:0 0 6px 0; font-size:13px; font-weight:800; text-align:center; color:#e2e8f0; letter-spacing: 0.5px;}
-  #week-timer{text-align:center;font-size:11px;color:#94a3b8;margin-bottom:8px;font-weight:600;border-bottom:1px dashed #333;padding-bottom:6px}
   
-  /* LİSTE RENGİ DÜZELTİLDİ (BEYAZ) */
+  #bpc-top10 h4{margin:0 0 5px 0; font-size:12px; font-weight:800; text-align:center; color:#e2e8f0; letter-spacing: 0.5px; text-transform: uppercase;}
+  #week-timer{text-align:center;font-size:11px;color:#94a3b8;margin-bottom:6px;font-weight:600;border-bottom:1px dashed #333;padding-bottom:4px}
+  
+  /* LİSTE HİZALAMA */
   #bpc-top10 ol { margin:0; padding:0; list-style:none; } 
-  #bpc-top10 li { 
-    margin-bottom: 5px; display: flex; align-items: center; border-bottom: 1px solid #222; padding-bottom: 3px; 
-    color: #ffffff; /* Yazı rengi beyaz */
-  }
+  #bpc-top10 li { margin-bottom: 4px; display: flex; align-items: center; border-bottom: 1px solid #222; padding-bottom: 2px; color: #fff; }
   .rank-num { display: inline-block; width: 25px; text-align: right; margin-right: 8px; color: #94a3b8; font-weight: bold; font-family: monospace; }
-  
   #bpc-top10 .me{color:#ff5c5c;font-weight:bold} 
   #bpc-top10 .me .rank-num{color:#ff5c5c}
 
   #globalCounterBox { margin-top: 5px; font-size: 12px; opacity: 0.9; text-align: center; color: #cbd5e1; text-shadow: 0 2px 4px #000; }
+  #globalCounterBox::before { content: "🌍 "; }
 
   canvas{display:block;margin:0 auto;background:#020617;touch-action:none;user-select:none;width:100%;height:100%}
 </style>
@@ -112,19 +113,20 @@
   <div id="countdownOverlay"><div id="cntText"></div></div>
 
   <div id="gameOver">
-    <div style="height: 160px;"></div> 
-
-    <div id="mondayChampBox">
-      <div class="champ-label">👑 <span id="mc-week">--</span>. Hafta Birincisi</div>
-      <div class="champ-name" id="mc-name">Yükleniyor...</div>
-      <div id="winnerSecret">KOD: <span id="mc-code">---</span></div>
+    <div class="static-title">GAME OVER</div>
+    <div class="static-score">Score: <span id="finalScoreDisp">0</span></div>
+    
+    <div id="champPanel">
+      <div class="champ-title">👑 Week <span id="champ-wk">--</span> Champion</div>
+      <div class="champ-info" id="champ-pl">Loading...</div>
+      <div id="secretCodeBox">CODE: <span id="secret-code">---</span></div>
     </div>
-
-    <button id="restart" class="btn" style="box-shadow: 0 0 20px rgba(0,255,200,0.4);">Restart</button>
-    <div id="globalCounterBox">🌍 Global plays: <span id="globalCounter">…</span></div>
+    
+    <button id="restart" class="btn" style="box-shadow: 0 0 20px rgba(0,255,200,0.4); margin-top: 25px;">Restart</button>
+    <div id="globalCounterBox">Global plays: <span id="globalCounter">…</span></div>
 
     <div id="bpc-top10" style="display:none">
-      <h4>🏆 WEEKLY TOP 10</h4>
+      <h4>🏆 Weekly Top 10</h4>
       <div id="week-timer">Week <span id="wk-num">--</span> • <span id="wk-rem" style="color:#facc15">--:--:--</span></div>
       <ol id="bpc-list"></ol>
     </div>
@@ -143,15 +145,11 @@ const scEl=document.getElementById("sc"),pxEl=document.getElementById("px"),live
 const startOverlay=document.getElementById("startOverlay"),startBtn=document.getElementById("startBtn");
 const overEl=document.getElementById("gameOver"),restartBtn=document.getElementById("restart"),boom=document.getElementById("boom");
 const top10Box=document.getElementById("bpc-top10");
+const finalScoreDisp = document.getElementById("finalScoreDisp");
 const pauseBtn=document.getElementById("pauseBtn"), pauseOverlay=document.getElementById("pauseOverlay"), resumeBtn=document.getElementById("resumeBtn");
 const countOverlay=document.getElementById("countdownOverlay"), cntText=document.getElementById("cntText");
-
-/* ŞAMPİYON ELEMENTLERİ */
-const mondayBox = document.getElementById("mondayChampBox");
-const mcWeek = document.getElementById("mc-week");
-const mcName = document.getElementById("mc-name");
-const mcSecretBox = document.getElementById("winnerSecret");
-const mcCode = document.getElementById("mc-code");
+const champPanel = document.getElementById("champPanel");
+const secretCodeBox = document.getElementById("secretCodeBox");
 
 function clamp(v,a,b){return v<a?a:v>b?b:v;}
 function rand(a,b){return a+Math.random()*(b-a);}
@@ -244,20 +242,17 @@ function enemyShoot(e){ if(!e.canShoot) return; const cx=e.x+e.w/2; const mul=(s
   if(e.kind==="red") enemyBullets.push({x:cx-2,y:e.y+e.h,w:4,h:12,vy:6*mul,color:"#ef4444"});
   else enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6.5*mul,color:"#22c55e"}); }
 
-/* ESKİ ÇİZİM FONKSİYONU - Dönen kodlu havalı ekran */
 function renderFinalScore(t){
   const cx=cv.width/2, cy=cv.height/2;
   ctx.save();
-  // Koyu perde
   const grd=ctx.createRadialGradient(cx,cy,20,cx,cy,Math.max(cv.width,cv.height)/1.2);
   grd.addColorStop(0,"rgba(0,0,0,0.55)"); grd.addColorStop(1,"rgba(0,0,0,0.95)");
   ctx.fillStyle=grd; ctx.fillRect(0,0,cv.width,cv.height);
 
   const pw=Math.min(360,cv.width-40), ph=160, rx=cx-pw/2, ry=cy-ph/2-6;
-  
-  // Arkada dönen kod çemberi
   ctx.save(); ctx.beginPath(); ctx.rect(rx-50,ry-50,pw+100,ph+100); ctx.clip();
-  ctx.translate(cx,cy); ctx.rotate(Math.sin(t / 4000) * 0.15); // Hafif sallanma
+  ctx.translate(cx,cy); 
+  ctx.rotate(Math.sin(t / 4000) * 0.15); 
   
   ctx.fillStyle="rgba(0,255,200,0.15)"; 
   const line=`Babypeacock • SCORE ${score} • CODE ${verifyCode} • `;
@@ -265,26 +260,25 @@ function renderFinalScore(t){
   for(let y=-150;y<=150;y+=22){let x=-300; while(x<300){ctx.fillText(line,x,y); x+=ctx.measureText(line).width+40;}}
   ctx.restore();
 
-  // Yazılar
-  ctx.fillStyle=ctx.createLinearGradient(cx-120,0,cx+120,0); ctx.fillStyle.addColorStop?.(0,"#22d3ee");
-  ctx.font="900 26px system-ui,Arial"; ctx.textAlign="center"; ctx.shadowColor="rgba(34,211,238,0.8)"; ctx.shadowBlur=15;
-  ctx.fillText("Babypeacock",cx,cy-30); ctx.shadowBlur=0;
-
-  ctx.fillStyle="rgba(0,255,200,0.18)"; ctx.font="900 80px system-ui,Arial"; ctx.fillText(String(score),cx,cy+40);
-  ctx.fillStyle="#00ffc8"; ctx.font="900 48px system-ui,Arial"; ctx.fillText(score,cx,cy+20);
-  
-  ctx.font="700 14px system-ui,Arial"; ctx.fillStyle="#a7f3d0"; ctx.fillText("CODE: "+verifyCode,cx,cy+60);
+  // Bu çizimleri kaldırdık, çünkü HTML elementleri öncelikli ve daha okunaklı
+  // ctx.fillStyle=ctx.createLinearGradient(cx-120,0,cx+120,0); ctx.fillStyle.addColorStop?.(0,"#22d3ee");
+  // ctx.font="900 26px system-ui,Arial"; ctx.textAlign="center"; ctx.shadowColor="rgba(34,211,238,0.8)"; ctx.shadowBlur=15;
+  // ctx.fillText("Babypeacock",cx,cy-30); ctx.shadowBlur=0;
   ctx.restore();
 }
 
 async function endGame(){
   gameOver=true; pauseBtn.style.display="none"; overEl.style.display="flex"; 
   
-  // PAZARTESİ ŞAMPİYON KONTROLÜ (GAME OVER EKRANINDA)
-  if(window.checkMondayWinner) window.checkMondayWinner();
+  // Statik skor alanını doldur
+  document.getElementById("finalScoreDisp").textContent = score; 
 
-  try{ if(window.saveScore)await window.saveScore(score); if(window.showWeeklyPanel)window.showWeeklyPanel();
-    if(window.incrementGlobalPlays)await window.incrementGlobalPlays(); if(window.bumpLocation)await window.bumpLocation();
+  if(window.checkChampionDisplay) window.checkChampionDisplay(); 
+
+  try{ if (window.saveScore) await window.saveScore(score); 
+       if (window.showWeeklyPanel) window.showWeeklyPanel();
+       if (window.incrementGlobalPlays) await window.incrementGlobalPlays(); 
+       if (window.bumpLocation) await window.bumpLocation();
   }catch(e){}
   top10Box.style.display="block";
 }
@@ -332,7 +326,9 @@ restartBtn.onclick=()=>{
   overEl.style.display="none";top10Box.style.display="none";pauseBtn.style.display="none";
   playId=Math.floor(performance.now()+Math.random()*1e9); makeCode();
   
-  started=true; pauseBtn.style.display="flex"; player.y=cv.height-140; player.x=cv.width/2-player.w/2;
+  started=true; 
+  pauseBtn.style.display="flex";
+  player.y=cv.height-140; player.x=cv.width/2-player.w/2;
 };
 
 let playerImg=null,enemyImg={red:null,green:null,ufo_red:null,ufo_gray:null},peacockImg=null;
@@ -381,47 +377,54 @@ async function getWeeklyTop10(wk=weekKey()){
   return Object.values(bestByCode).sort((a,b)=>b.score-a.score).slice(0,10);
 }
 
-// PAZARTESİ ŞAMPİYON KONTROLÜ (GAME OVER EKRANINDA)
-async function checkMondayWinner(){
+// PAZARTESİ ŞAMPİYON KONTROLÜ
+async function checkChampionDisplay(){
   const today = new Date();
-  // London Timezone
   const options = { weekday: 'long', timeZone: 'Europe/London' };
-  const londonDay = new Date(today.toLocaleString('en-US', options)).getDay(); // 0=Sun, 1=Mon...
+  const londonDay = new Date(today.toLocaleString('en-US', options)).getDay(); // 0=Sun, 1=Mon, 2=Tue...
   
-  // Pazartesi Değilse kutuyu gizle ve çık
-  const isMonday = (londonDay === 1);
-  mondayBox.style.display = 'none';
-  if(!isMonday) return;
+  const isMondayActive = londonDay === 1;
 
-  // Geçen haftayı bul (Pazartesi ise, 1 gün öncesi Pazar, onun haftası geçen haftadır)
+  champPanel.style.display = 'none';
+
+  if(!isMondayActive) return; 
+
+  // Geçen haftanın anahtarını bulmak
   const d_prev = new Date(today);
   d_prev.setDate(d_prev.getDate() - 1); 
-  const prevWk = weekKey(d_prev);
-
+  const prevWk = weekKey(d_prev); 
+  
   const list = await getWeeklyTop10(prevWk);
   if(!list || list.length === 0) return;
 
-  const winner = list[0];
+  const winner = list[0]; 
   const myCode = localStorage.getItem("playerCode");
 
-  // Kutuyu göster ve doldur
-  mondayBox.style.display = 'flex';
-  mcWeek.textContent = prevWk.split("-W")[1];
-  mcName.textContent = getFlagEmoji(winner.country) + " " + winner.code;
+  const champWk = document.getElementById("champ-wk");
+  const champPl = document.getElementById("champ-pl");
+  const secretCodeBox = document.getElementById("secretCodeBox");
+  const secretCodeEl = document.getElementById("secret-code");
 
-  // EĞER KAZANAN BİZSEK
+  // Herkesin göreceği panel aktif
+  champPanel.style.display = "flex";
+  champWk.textContent = prevWk.split("-W")[1];
+  champPl.textContent = `${getFlagEmoji(winner.country)} ${winner.code} → ${winner.score} pts`;
+
+  // SADECE Kazanan BİZSEK
   if(myCode === winner.code){
-    const secret = "WIN-" + Math.floor(100000 + Math.random() * 900000);
-    mcSecretBox.style.display = "block";
-    mcCode.textContent = secret;
-    // Firebase'e kaydet
-    const winRef = ref(db, `winners/${prevWk}/${winner.code}`);
-    set(winRef, { secret: secret, score: winner.score, country: winner.country, ts: Date.now() });
+      const secret = "WIN-" + Math.floor(100000 + Math.random() * 900000);
+      secretCodeBox.style.display = "block";
+      secretCodeEl.textContent = secret;
+      
+      const winRef = ref(db, `winners/${prevWk}/${winner.code}`);
+      set(winRef, { secret: secret, score: winner.score, country: winner.country, ts: Date.now() });
   } else {
-    mcSecretBox.style.display = "none";
+      secretCodeBox.style.display = "none";
   }
 }
-window.checkMondayWinner = checkMondayWinner;
+
+// Game Over olunca şampiyon kontrolünü çağır
+window.checkChampionDisplay = checkChampionDisplay;
 
 async function showWeeklyPanel(){
   const wk=weekKey(new Date()); const me=localStorage.getItem("playerCode");
