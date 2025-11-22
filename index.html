@@ -28,11 +28,12 @@
   #startOverlay{background:rgba(0,0,0,.95);color:#fff;display:flex}
   #pauseOverlay{background:rgba(0,0,0,0.8);color:#fff;backdrop-filter:blur(3px)}
   
-  /* GAME OVER DÜZENİ */
+  /* GAME OVER DÜZENİ - KRİTİK AYAR */
+  /* Üst kısmı (40vh) tamamen boş bırakıyoruz ki Canvas çizimleri orada görünsün */
   #gameOver {
     background: transparent; 
     justify-content: flex-start; 
-    padding-top: 40vh; 
+    padding-top: 40vh; /* Ekranın %40'ı kadar boşluk bırak, çizimler burada olacak */
     overflow-y: auto; 
   }
   
@@ -245,16 +246,22 @@ function enemyShoot(e){ if(!e.canShoot) return; const cx=e.x+e.w/2; const mul=(s
   if(e.kind==="red") enemyBullets.push({x:cx-2,y:e.y+e.h,w:4,h:12,vy:6*mul,color:"#ef4444"});
   else enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6.5*mul,color:"#22c55e"}); }
 
+/* YENİ RENKLİ BABYPEACOCK YAZISI VE DÖNEN KOD */
 function renderFinalScore(t){
-  const cx=cv.width/2, cy=cv.height * 0.35; 
+  const cx=cv.width/2;
+  const cy=cv.height * 0.35; 
+  
   ctx.save();
   const grd=ctx.createRadialGradient(cx,cy,20,cx,cy,Math.max(cv.width,cv.height)/1.2);
   grd.addColorStop(0,"rgba(0,0,0,0.55)"); grd.addColorStop(1,"rgba(0,0,0,0.95)");
   ctx.fillStyle=grd; ctx.fillRect(0,0,cv.width,cv.height);
 
   const pw=Math.min(360,cv.width-40), ph=160, rx=cx-pw/2, ry=cy-ph/2-6;
-  ctx.save(); ctx.beginPath(); ctx.rect(rx-50,ry-50,pw+100,ph+100); ctx.clip();
-  ctx.translate(cx,cy); ctx.rotate(Math.sin(t / 4000) * 0.15); 
+  
+  ctx.save(); 
+  ctx.beginPath(); ctx.rect(rx-50,ry-50,pw+100,ph+100); ctx.clip();
+  ctx.translate(cx,cy); 
+  ctx.rotate(Math.sin(t / 4000) * 0.15); 
   
   ctx.fillStyle="rgba(0,255,200,0.15)"; 
   const line=`Babypeacock • SCORE ${score} • CODE ${verifyCode} • `;
@@ -263,8 +270,10 @@ function renderFinalScore(t){
   ctx.restore();
 
   const gradText = ctx.createLinearGradient(cx - 100, 0, cx + 100, 0);
-  gradText.addColorStop(0, "#22d3ee"); gradText.addColorStop(1, "#34d399");
+  gradText.addColorStop(0, "#22d3ee");
+  gradText.addColorStop(1, "#34d399");
   ctx.fillStyle = gradText;
+  
   ctx.font="900 26px system-ui,Arial"; ctx.textAlign="center"; ctx.shadowColor="rgba(34,211,238,0.8)"; ctx.shadowBlur=15;
   ctx.fillText("Babypeacock",cx,cy-30); ctx.shadowBlur=0;
 
@@ -359,15 +368,10 @@ function weekKey(d=new Date()){
 }
 function getFlagEmoji(c){if(!c)return"🏳️";const cp=c.toUpperCase().split('').map(char=>127397+char.charCodeAt());return String.fromCodePoint(...cp);}
 
-/* YENİ GÜÇLÜ ÜLKE KODU FONKSİYONU */
 function getCountryCode(){
   try{
     const lang=(navigator.languages&&navigator.languages[0])||navigator.language||"en-US";
-    
-    // 1. Önce tireden sonrasını (gerçek ülke kodunu) almayı dene
     let country = (lang.split('-')[1] || "").toUpperCase();
-
-    // 2. Eğer ülke kodu yoksa veya 2 harfli değilse, Fallback tablosuna bak
     if (!country || country.length !== 2) {
         const code = lang.split('-')[0].toLowerCase();
         const map = {
@@ -377,12 +381,9 @@ function getCountryCode(){
             hu:'HU', fi:'FI', el:'GR', id:'ID', th:'TH', vi:'VN', uk:'UA',
             bg:'BG', sr:'RS', hr:'HR', ms:'MY', he:'IL'
         };
-        country = map[code] || "TR"; // Listede yoksa TR
+        country = map[code] || "TR";
     }
-
-    // 3. Özel düzeltme (UK -> GB)
     if (country === "UK") country = "GB";
-
     return country;
   }catch{return"TR";}
 }
@@ -423,7 +424,7 @@ async function getWeeklyTop10(wk=weekKey()){
   return Object.values(bestByCode).sort((a,b)=>b.score-a.score).slice(0,10);
 }
 
-// PAZARTESİ ŞAMPİYON KONTROLÜ
+// PAZARTESİ ŞAMPİYON KONTROLÜ + ADMIN DOĞRULAMA
 async function checkMondayWinner(){
   const today = new Date();
   const options = { weekday: 'long', timeZone: 'Europe/London' };
@@ -450,11 +451,28 @@ async function checkMondayWinner(){
   mcName.textContent = getFlagEmoji(winner.country) + " " + winner.code;
 
   if(myCode === winner.code){
-    const secret = "WIN-" + Math.floor(100000 + Math.random() * 900000);
+    // 1. Önce DB'de bu hafta için secretCode var mı kontrol et
+    const winRef = ref(db, `weeklyWinners/${prevWk}`);
+    const snapshot = await get(winRef);
+    let secret = "";
+
+    if(snapshot.exists() && snapshot.val().secretCode){
+       // Varsa onu kullan
+       secret = snapshot.val().secretCode;
+    } else {
+       // Yoksa üret ve kaydet
+       secret = "WIN-" + Math.floor(100000 + Math.random() * 900000);
+       await set(winRef, {
+         secretCode: secret,
+         winnerCode: winner.code,
+         country: winner.country,
+         score: winner.score,
+         ts: Date.now()
+       });
+    }
+
     mcSecretBox.style.display = "block";
     mcCode.textContent = secret;
-    const winRef = ref(db, `winners/${prevWk}/${winner.code}`);
-    set(winRef, { secret: secret, score: winner.score, country: winner.country, ts: Date.now() });
   } else {
     mcSecretBox.style.display = "none";
   }
