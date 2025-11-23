@@ -28,6 +28,33 @@
   #startOverlay{background:rgba(0,0,0,.95);color:#fff;display:flex}
   #pauseOverlay{background:rgba(0,0,0,0.8);color:#fff;backdrop-filter:blur(3px)}
   
+  /* YENİ START EKRANI STİLLERİ (LOGO & SLOGAN) */
+  #startLogo {
+    width: 90px; height: 90px;
+    border-radius: 50%;
+    border: 3px solid #22d3ee;
+    box-shadow: 0 0 25px rgba(34, 211, 238, 0.5), inset 0 0 10px rgba(34, 211, 238, 0.3);
+    object-fit: cover;
+    margin-bottom: 8px;
+    animation: floatLogo 3.5s ease-in-out infinite;
+  }
+  @keyframes floatLogo {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  .slogan {
+    font-size: 15px;
+    font-style: italic;
+    background: linear-gradient(90deg, #a7f3d0, #22d3ee);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 25px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 10px rgba(34, 211, 238, 0.2);
+  }
+
   /* GAME OVER DÜZENİ - KRİTİK AYAR */
   /* Üst kısmı (40vh) tamamen boş bırakıyoruz ki Canvas çizimleri orada görünsün */
   #gameOver {
@@ -102,6 +129,9 @@
   <div id="pauseBtn">II</div>
 
   <div id="startOverlay">
+    <img id="startLogo" src="yc3ku6.jpg" alt="BPC Logo">
+    <div class="slogan">From feather to flight</div>
+
     <div style="margin-bottom:12px;font-size:14px;color:#ccc;">Hold & drag to move</div>
     <button id="startBtn" class="btn">START GAME</button>
     <div id="playerCode" style="margin-top:15px;font-size:14px;color:#00ffc8;"></div>
@@ -177,7 +207,8 @@ let player={x:cv.width/2-33,y:cv.height-140,w:66,h:66};
 
 function getPlayerCode(){ let c=localStorage.getItem("playerCode"); if(!c){c="BPC"+Math.floor(100000+Math.random()*899999);localStorage.setItem("playerCode",c);} return c; }
 const myCode=getPlayerCode();
-(function(){const box=document.getElementById("playerCode");if(box)box.innerHTML=`👤 Oyuncu: <b>${myCode}</b>`;})();
+// PLAYER TEXT DEĞİŞİKLİĞİ: Oyuncu -> Player
+(function(){const box=document.getElementById("playerCode");if(box)box.innerHTML=`👤 Player: <b>${myCode}</b>`;})();
 
 /* Anti-montaj code */
 let playId=Math.floor(performance.now()+Math.random()*1e9);
