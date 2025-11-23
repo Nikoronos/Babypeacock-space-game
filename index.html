@@ -534,10 +534,12 @@ function getCountryCode(){
 }
 function getCountryName(){ return getCountryCode(); }
 
-// YENİ EKLENEN FONKSİYON: Global Time (London)
+// YENİ DÜZELTİLMİŞ FONKSİYON: en-US kullanımı (Mobil uyumlu)
 function getLondonNow(){
+  // en-GB yerine en-US yaptık ki tarih formatını tüm tarayıcılar (Ay/Gün/Yıl) olarak anlasın
+  // TimeZone hala Europe/London olduğu için saat Londra saati olarak kalır.
   return new Date(
-    new Date().toLocaleString("en-GB", { timeZone: "Europe/London" })
+    new Date().toLocaleString("en-US", { timeZone: "Europe/London" })
   );
 }
 
@@ -701,7 +703,7 @@ async function showWeeklyPanel(){
   const wnEl=document.getElementById("wk-num"); if(wnEl)wnEl.textContent=wk.split("-W")[1]; 
   if(window.bpcTimer)clearInterval(window.bpcTimer);
   function updateTimer(){
-    // BURAYI DEĞİŞTİRDİK: ARTIK LONDRA SAATİNİ ALIYOR
+    // DÜZELTİLDİ: Artık en-US formatından gelen (anlaşılır) Londra tarihini kullanıyor
     const now = getLondonNow();
     
     const target = new Date(now);
