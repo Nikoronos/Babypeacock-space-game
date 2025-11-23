@@ -234,15 +234,27 @@ function drawDiamondGem(ctx,x,y,w,h,t){ctx.save();ctx.translate(x+w/2,y+h/2);ctx
   ctx.fillStyle=grad;ctx.beginPath();ctx.moveTo(0,-H*0.5);ctx.lineTo(W*0.48,0);ctx.lineTo(0,H*0.56);ctx.lineTo(-W*0.48,0);ctx.closePath();ctx.fill();
   ctx.shadowBlur=0;ctx.lineWidth=1.8;ctx.strokeStyle="#0e7490";ctx.stroke();ctx.restore();}
 
-// Phase-2: Gem Spawn Logic Update is in update() loop now for dynamic interval
+// Gem oluşturma (logic update içinde)
 function spawnGem(){ if(powerTime>0) return; const s=22; gems.push({x:rand(0,cv.width-s), y:-s, w:s, h:s, vy:1.5}); }
 
+// Mascot oluşturma - YENİ ZORLUK EŞİKLERİNE GÖRE
 function spawnMascot(){ 
-  // PHASE-2: 1000+ sonrası can neredeyse hiç gelmesin (%95 engelle)
-  if(score>=1000 && Math.random()<0.95) return;
+  // DYNAMIC CALCULATION FOR MASCOT
+  let dyn = 1;
+  if(score > 2000){
+    const over = score - 2000;
+    dyn = 1 + over * 0.0006;
+    dyn = Math.min(dyn, 2.0);
+  }
 
-  // mevcut kural: 200+ sonrası %80 engelle
-  if(score>=200 && Math.random()<0.8) return;
+  // EŞİKLER
+  if(score >= 300 && score < 800 && Math.random() < 0.60) return;
+  if(score >= 800 && score < 1300 && Math.random() < 0.90) return;
+  if(score >= 1300 && score < 1500 && Math.random() < 0.95) return;
+  if(score >= 1500 && Math.random() < 0.98) return;
+
+  // 2000+ sonrası dyn ile neredeyse imkansız
+  if(score > 2000 && Math.random() < (0.98 * dyn)) return;
 
   const s=22; 
   mascots.push({x:rand(0,cv.width-s), y:-s, w:s, h:s, vy:1.4}); 
@@ -254,23 +266,47 @@ function explosion(x,y,count=18){const left=Math.max(0,120-particles.length);con
 
 function allowedKindsByTime(t){if(t<10) return ["ufo_red","ufo_gray"]; if(t<40) return ["ufo_red","ufo_gray","green"]; return ["ufo_red","ufo_gray","green","red"];}
 
-function spawnEnemy(k){ 
-  // Phase-2: 1000+ sonrası ekranda 18 düşman olabilir
-  const enemyCap = (score>=1000) ? 18 : 12;
+function spawnEnemy(k, spMul){ 
+  // Eşiklere göre düşman limiti
+  const enemyCap =
+    (score >= 1500) ? 22 :
+    (score >= 1300) ? 20 :
+    (score >= 800)  ? 18 :
+    (score >= 500)  ? 14 :
+                      12;
+
   if(enemies.length > enemyCap) return; 
 
   const size=rand(48,70); const kind=k[Math.floor(Math.random()*k.length)];
-  const img=enemyImg[kind]||null; enemies.push({x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3),kind,img,canShoot:(kind==="red"||kind==="green"),shootT:0,shootInt:500}); 
+  const img=enemyImg[kind]||null; 
+  // Hız spMul ile çarpılıyor
+  enemies.push({x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul,kind,img,canShoot:(kind==="red"||kind==="green"),shootT:0,shootInt:500}); 
 }
 
 function enemyShoot(e){ 
   if(!e.canShoot) return; 
   const cx=e.x+e.w/2; 
-  // Phase-2: 1000+ sonrası mermi 1.55x hızlı
-  const mul = (score>=1000) ? 1.55 : (score>=500) ? 1.25 : (score>=300) ? 1.15 : 1;
+  
+  // 2000+ Dynamic Calc
+  let dyn = 1;
+  if(score > 2000){
+    const over = score - 2000;
+    dyn = 1 + over * 0.0006;
+    dyn = Math.min(dyn, 2.0);
+  }
 
-  if(e.kind==="red") enemyBullets.push({x:cx-2,y:e.y+e.h,w:4,h:12,vy:6*mul,color:"#ef4444"});
-  else enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6.5*mul,color:"#22c55e"}); 
+  // Zorluk Eşikleri
+  const mul =
+    (score >= 1500) ? 1.78 :
+    (score >= 1300) ? 1.60 :
+    (score >= 800)  ? 1.45 :
+    (score >= 500)  ? 1.20 :
+    (score >= 300)  ? 1.10 : 1.00;
+
+  const finalMul = mul * dyn;
+
+  if(e.kind==="red") enemyBullets.push({x:cx-2,y:e.y+e.h,w:4,h:12,vy:6*finalMul,color:"#ef4444"});
+  else enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6.5*finalMul,color:"#22c55e"}); 
 }
 
 /* YENİ RENKLİ BABYPEACOCK YAZISI VE DÖNEN KOD */
@@ -345,19 +381,72 @@ function update(dt){
   if(powerTime>0){powerTime-=dt;if(powerTime<0)powerTime=0;} pxEl.textContent=powerTime>0?Math.ceil(powerTime/1000):0;
   fireTimer+=dt;if(holding&&fireTimer>FIRE_MS){shoot();fireTimer=0;}
   
-  // PHASE-2: Speed Multipliers
-  let spMul=1, spwMul=1;
-  if(score>=300) spMul=1.3;
-  if(score>=500){ spMul=1.3; spwMul=1.4; }
-  if(score>=1000){ spMul=1.45; spwMul=1.9; } // Phase 2: Hard Mode
+  // ===== DIFFICULTY CURVE: 300 / 500 / 800 / 1300 / 1500 =====
+  let spMul = 1.0;
+  let spwMul = 1.0;
 
-  if(enT>600/spwMul){spawnEnemy(allowedKindsByTime(elapsed));enT=0;}
+  // 0–299: Normal (Default 1.0)
+
+  if(score >= 300 && score < 500){
+    spMul  = 1.15;
+    spwMul = 1.10;
+  }
+  if(score >= 500 && score < 800){
+    spMul  = 1.25;
+    spwMul = 1.25;
+  }
+  if(score >= 800 && score < 1300){
+    spMul  = 1.45;
+    spwMul = 1.75;
+  }
+  if(score >= 1300 && score < 1500){
+    spMul  = 1.58;
+    spwMul = 2.00;
+  }
+  if(score >= 1500){
+    spMul  = 1.72;
+    spwMul = 2.35;
+  }
+
+  // ===== DYNAMIC DIFFICULTY AFTER 2000 =====
+  let dyn = 1;
+  if(score > 2000){
+    const over = score - 2000;
+    dyn = 1 + over * 0.0006;   // her 1 puanda mikro artış
+    dyn = Math.min(dyn, 2.0);  // maksimum 2x tavan
+  }
+
+  // Düşman Spawn Kontrolü
+  if(enT > 600/(spwMul * dyn)){
+    spawnEnemy(allowedKindsByTime(elapsed), spMul); // spMul'u fonksiyona geçiriyoruz
+    enT = 0;
+  }
   
-  // PHASE-2: Rare Gems
-  const gemInterval = (score>=1000) ? 20000 : (score>=200) ? 13000 : 9000;
-  if(gemT > gemInterval){
-     if(Math.random() < (score>=1000 ? 0.40 : 0.55)) spawnGem();
-     gemT=0;
+  // Elmas (Power) Spawn Kontrolü - Eşikler + Dyn
+  const gemInterval =
+    (score >= 1500) ? 25000 :
+    (score >= 1300) ? 21000 :
+    (score >= 800)  ? 18000 :
+    (score >= 500)  ? 11000 :
+    (score >= 300)  ? 9500  : 9000;
+
+  const gemChance =
+    (score >= 1500) ? 0.28 :
+    (score >= 1300) ? 0.35 :
+    (score >= 800)  ? 0.40 :
+                      0.55;
+
+  let intervalFinal = gemInterval;
+  let chanceFinal = gemChance;
+
+  if(score > 2000){
+    intervalFinal = gemInterval * dyn;
+    chanceFinal   = gemChance / dyn;
+  }
+
+  if(gemT > intervalFinal){
+    if(Math.random() < chanceFinal) spawnGem();
+    gemT = 0;
   }
 
   if(mascotT>12000){spawnMascot();mascotT=0;}
