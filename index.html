@@ -534,6 +534,13 @@ function getCountryCode(){
 }
 function getCountryName(){ return getCountryCode(); }
 
+// YENİ EKLENEN FONKSİYON: Global Time (London)
+function getLondonNow(){
+  return new Date(
+    new Date().toLocaleString("en-GB", { timeZone: "Europe/London" })
+  );
+}
+
 // ===== OFFLINE SCORE QUEUE SYSTEM =====
 function savePendingScore(score){
   const code = localStorage.getItem("playerCode") || "BPC";
@@ -694,7 +701,9 @@ async function showWeeklyPanel(){
   const wnEl=document.getElementById("wk-num"); if(wnEl)wnEl.textContent=wk.split("-W")[1]; 
   if(window.bpcTimer)clearInterval(window.bpcTimer);
   function updateTimer(){
-    const now = new Date();
+    // BURAYI DEĞİŞTİRDİK: ARTIK LONDRA SAATİNİ ALIYOR
+    const now = getLondonNow();
+    
     const target = new Date(now);
     const day = target.getDay(); 
     const daysUntilSunday = (7 - day) % 7; 
