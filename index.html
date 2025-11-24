@@ -56,7 +56,7 @@
     overflow-y: auto; 
   }
   
-  /* ŞAMPİYON KUTUSU - TEST İÇİN GÖRÜNÜR OLACAK */
+  /* ŞAMPİYON KUTUSU */
   #mondayChampBox {
     display: none; 
     flex-direction: column; align-items: center;
@@ -485,34 +485,55 @@ async function getWeeklyTop10(wk=weekKey()){
   return Object.values(bestByCode).sort((a,b)=>b.score-a.score).slice(0,10);
 }
 
-// ==== TEST MODU AKTİF OLAN FONKSİYON ====
+// ==== ORİJİNAL KOD (TEST KALDIRILDI) ====
 async function checkMondayWinner(){
-  // 1. TEST İÇİN: Pazartesi kontrolünü iptal ettik (Her zaman true kabul ediyoruz)
-  const isMondayActive = true; 
+  const today = new Date();
+  const options = { weekday: 'long', timeZone: 'Europe/London' };
+  const londonDay = new Date(today.toLocaleString('en-US', options)).getDay(); 
+  
+  const isMondayActive = londonDay === 1; // Sadece Pazartesi çalışır
 
   mondayBox.style.display = 'none';
+
   if(!isMondayActive) return; 
 
-  // 2. TEST İÇİN: Geçmiş hafta yerine BU HAFTAYI kontrol ediyoruz (Veri burada olduğu için)
-  // Normalde: d_prev.setDate(d_prev.getDate() - 1); vs...
-  // Test:
-  const currentWk = weekKey(new Date());
+  const d_prev = new Date(today);
+  d_prev.setDate(d_prev.getDate() - 1); // Düne git (Geçen haftayı bul)
+  const prevWk = weekKey(d_prev);
 
-  const list = await getWeeklyTop10(currentWk);
+  const list = await getWeeklyTop10(prevWk);
   if(!list || list.length === 0) return;
 
   const winner = list[0];
   const myCode = localStorage.getItem("playerCode");
 
   mondayBox.style.display = 'flex';
-  mcWeek.textContent = currentWk.split("-W")[1]; // Ekranda 48 yazacak
+  mcWeek.textContent = prevWk.split("-W")[1];
   mcName.textContent = getFlagEmoji(winner.country) + " " + winner.code;
 
   if(myCode === winner.code){
-    // Test modunda veritabanına "Week 48 Winner" diye kayıt atmayalım, sadece görseli gösterelim.
-    // O yüzden buraya sahte bir kod koyuyorum görmen için.
+    // 1. Önce DB'de bu hafta için secretCode var mı kontrol et
+    const winRef = ref(db, `weeklyWinners/${prevWk}`);
+    const snapshot = await get(winRef);
+    let secret = "";
+
+    if(snapshot.exists() && snapshot.val().secretCode){
+       // Varsa onu kullan
+       secret = snapshot.val().secretCode;
+    } else {
+       // Yoksa üret ve kaydet
+       secret = "WIN-" + Math.floor(100000 + Math.random() * 900000);
+       await set(winRef, {
+         secretCode: secret,
+         winnerCode: winner.code,
+         country: winner.country,
+         score: winner.score,
+         ts: Date.now()
+       });
+    }
+
     mcSecretBox.style.display = "block";
-    mcCode.textContent = "TEST-WIN";
+    mcCode.textContent = secret;
   } else {
     mcSecretBox.style.display = "none";
   }
