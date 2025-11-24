@@ -48,42 +48,43 @@
     margin-bottom: 25px; font-weight: 600; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(34, 211, 238, 0.2);
   }
 
-  /* GAME OVER EKRANI */
+  /* GAME OVER EKRANI - DÜZENLEME */
   #gameOver {
     background: transparent; 
     justify-content: flex-start; 
-    padding-top: 40vh; 
+    padding-top: 35vh; /* Biraz yukarı aldım, kutu sığsın diye */
     overflow-y: auto; 
   }
   
-  /* ŞAMPİYON KUTUSU */
+  /* ŞAMPİYON KUTUSU (Havalı Kısım) */
   #mondayChampBox {
     display: none; 
     flex-direction: column; align-items: center;
-    margin-bottom: 10px; 
-    padding: 8px 15px;
-    background: rgba(250, 204, 21, 0.15); 
+    margin-bottom: 15px; /* Alt boşluk */
+    padding: 10px 20px;
+    background: rgba(250, 204, 21, 0.1); 
     border: 1px solid #facc15; 
-    border-radius: 8px; 
-    box-shadow: 0 0 15px rgba(250, 204, 21, 0.4);
-    width: min(320px, 80vw);
+    border-radius: 12px; 
+    box-shadow: 0 0 20px rgba(250, 204, 21, 0.3); /* Parlama efekti */
+    width: min(340px, 85vw);
     text-align: center;
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(8px);
+    animation: popIn 0.5s ease-out;
   }
-  .champ-label { color: #facc15; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2px; }
-  .champ-name { color: #fff; font-size: 15px; font-weight: 900; margin-bottom: 4px; text-shadow: 0 0 5px rgba(255,255,255,0.5); }
+  .champ-label { color: #facc15; font-size: 12px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; }
+  .champ-name { color: #fff; font-size: 18px; font-weight: 900; margin-bottom: 4px; text-shadow: 0 0 8px rgba(255,255,255,0.6); }
   #winnerSecret {
     display: none;
-    font-family: monospace; color: #00ffc8; font-size: 13px; font-weight: bold;
-    background: #000; padding: 4px 8px; border-radius: 4px; border: 1px dashed #00ffc8;
-    margin-top: 4px;
+    font-family: monospace; color: #00ffc8; font-size: 14px; font-weight: bold;
+    background: #000; padding: 6px 12px; border-radius: 6px; border: 1px dashed #00ffc8;
+    margin-top: 6px;
   }
 
   #countdownOverlay{background:transparent;pointer-events:none;z-index:70}
   #cntText{font-size:90px;font-weight:900;color:#fff;text-shadow:0 0 25px #22d3ee;font-family:monospace}
-  @keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
+  @keyframes popIn{from{transform:scale(0.8);opacity:0}to{transform:scale(1);opacity:1}}
 
-  .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer; margin-bottom: 5px;}
+  .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer; margin-bottom: 5px; box-shadow: 0 0 15px rgba(0,255,200,0.2);}
 
   /* TOP 10 KUTUSU */
   #bpc-top10 {
@@ -141,8 +142,9 @@
       <div id="winnerSecret">CODE: <span id="mc-code">---</span></div>
     </div>
 
-    <button id="restart" class="btn" style="box-shadow: 0 0 20px rgba(0,255,200,0.4);">Restart</button>
+    <button id="restart" class="btn">Restart</button>
     <div id="globalCounterBox">Global plays: <span id="globalCounter">…</span></div>
+    
     <div id="bpc-top10" style="display:none">
       <h4>🏆 Weekly Top 10</h4>
       <div id="week-timer">Week <span id="wk-num">--</span> • <span id="wk-rem" style="color:#facc15">--:--:--</span></div>
@@ -485,65 +487,60 @@ async function getWeeklyTop10(wk=weekKey()){
   return Object.values(bestByCode).sort((a,b)=>b.score-a.score).slice(0,10);
 }
 
-// ==== KESİN ÇÖZÜM: TARİH HATALARINI YOK SAYAN MANTIK ====
+// ==== KESİN VE SABİT ÇÖZÜM: KUTUYU GERİ GETİREN KOD ====
 async function checkMondayWinner(){
   mondayBox.style.display = 'none';
 
-  // 1. "Is Monday?" kontrolünü devre dışı bıraktık. (Her zaman açık)
+  // 1. HAFTA KONTROLÜ İPTAL (Her gün görünsün ki ekran bozulmasın)
   // const isMondayActive = ...
   
-  // 2. MATEMATİKSEL HAFTA HESABI (Kesin W47'yi bulur)
-  // Şu anki haftayı al (Oyun "Week 48" olduğunu zaten biliyor)
+  // 2. MATEMATİKSEL OLARAK "48 -> 47" GARANTİSİ
+  // Şu anki haftayı hesapla
   const thisWk = weekKey(new Date()); // "2025-W48"
-  
-  // String'i parçalayalım
   const parts = thisWk.split("-W");
   let y = parseInt(parts[0]);
   let w = parseInt(parts[1]);
 
-  // 1 Hafta Geri Git (Matematiksel olarak)
-  w = w - 1;
-  if(w < 1) { 
-     y = y - 1; 
-     w = 52; // Basit yıl dönüşü
-  }
-  
-  const prevWk = `${y}-W${String(w).padStart(2,"0")}`; // "2025-W47" garantilenir
+  // Bir geri git (Hata payı olmadan)
+  w = w - 1; 
+  if(w < 1) { y--; w = 52; }
 
-  // 3. Veritabanından Çek
+  const prevWk = `${y}-W${String(w).padStart(2,"0")}`; // "2025-W47"
+
+  // 3. O haftanın verisini çek
   const list = await getWeeklyTop10(prevWk);
   
-  if(!list || list.length === 0) return;
+  // Veri varsa KUTUYU GÖSTER
+  if(list && list.length > 0) {
+      const winner = list[0]; 
+      const myCode = localStorage.getItem("playerCode");
 
-  // 4. Şampiyonu Göster
-  const winner = list[0]; 
-  const myCode = localStorage.getItem("playerCode");
+      mondayBox.style.display = 'flex';
+      mcWeek.textContent = prevWk.split("-W")[1]; // "47"
+      mcName.textContent = getFlagEmoji(winner.country) + " " + winner.code;
 
-  mondayBox.style.display = 'flex';
-  mcWeek.textContent = prevWk.split("-W")[1]; // "47" yazar
-  mcName.textContent = getFlagEmoji(winner.country) + " " + winner.code;
+      if(myCode === winner.code){
+        const winRef = ref(db, `weeklyWinners/${prevWk}`);
+        const snapshot = await get(winRef);
+        let secret = "";
 
-  if(myCode === winner.code){
-    const winRef = ref(db, `weeklyWinners/${prevWk}`);
-    const snapshot = await get(winRef);
-    let secret = "";
-
-    if(snapshot.exists() && snapshot.val().secretCode){
-       secret = snapshot.val().secretCode;
-    } else {
-       secret = "WIN-" + Math.floor(100000 + Math.random() * 900000);
-       await set(winRef, {
-         secretCode: secret,
-         winnerCode: winner.code,
-         country: winner.country,
-         score: winner.score,
-         ts: Date.now()
-       });
-    }
-    mcSecretBox.style.display = "block";
-    mcCode.textContent = secret;
-  } else {
-    mcSecretBox.style.display = "none";
+        if(snapshot.exists() && snapshot.val().secretCode){
+           secret = snapshot.val().secretCode;
+        } else {
+           secret = "WIN-" + Math.floor(100000 + Math.random() * 900000);
+           await set(winRef, {
+             secretCode: secret,
+             winnerCode: winner.code,
+             country: winner.country,
+             score: winner.score,
+             ts: Date.now()
+           });
+        }
+        mcSecretBox.style.display = "block";
+        mcCode.textContent = secret;
+      } else {
+        mcSecretBox.style.display = "none";
+      }
   }
 }
 window.checkMondayWinner = checkMondayWinner;
