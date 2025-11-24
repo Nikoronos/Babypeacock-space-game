@@ -52,11 +52,11 @@
   #gameOver {
     background: transparent; 
     justify-content: flex-start; 
-    padding-top: 35vh; /* Kutu varken ve yokken ortalama iyi durması için */
+    padding-top: 43vh; /* BURASI DEĞİŞTİ: 35vh'den 43vh'ye çıkardım, aşağı indi */
     overflow-y: auto; 
   }
   
-  /* ŞAMPİYON KUTUSU (Havalı Tasarım) */
+  /* ŞAMPİYON KUTUSU */
   #mondayChampBox {
     display: none; 
     flex-direction: column; align-items: center;
@@ -156,7 +156,7 @@
   <audio id="boom" preload="auto" playsinline><source src="https://cdn.pixabay.com/audio/2022/03/15/audio_2b1b0dcd8c.mp3" type="audio/mpeg"></audio>
 
 <script>
-/* ====== OYUN KODU (AYNI) ====== */
+/* ====== OYUN KODU (DEĞİŞMEDİ) ====== */
 const cv=document.getElementById("game");
 function resize(){ cv.width=window.innerWidth; cv.height=window.innerHeight; }
 window.addEventListener('resize', resize); resize();
