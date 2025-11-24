@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -534,32 +533,19 @@ import { getDatabase, ref, get, set, push, onValue, runTransaction } from "https
 const INSTANCE_URL="https://bpc-space-default-rtdb.europe-west1.firebasedatabase.app/";
 const app=getApps().length?getApps()[0]:initializeApp({databaseURL:INSTANCE_URL}); const db=getDatabase(app); window.db=db;
 
-function getLondonNow(d = new Date()){
-  return new Date(
-    d.toLocaleString("en-US", { timeZone: "Europe/London" })
-  );
+function weekKey(d=new Date()){
+  // LONDRA SAATİNE GÖRE HAFTA HESABI (ISO 8601 - Pazartesi Başlangıç)
+  const londonStr = d.toLocaleString("en-US", { timeZone: "Europe/London" });
+  const target = new Date(londonStr);
+  
+  // Pazartesi başlangıçlı ISO hafta numarası hesabı
+  const dayNum = target.getDay() || 7;
+  target.setDate(target.getDate() + 4 - dayNum);
+  const yearStart = new Date(target.getFullYear(), 0, 1);
+  const weekNo = Math.ceil((((target - yearStart) / 86400000) + 1) / 7);
+  
+  return `${target.getFullYear()}-W${String(weekNo).padStart(2,"0")}`;
 }
-
-// Haftayı Londra’ya göre, Pazartesi başlangıçlı hesapla
-function weekKey(d = new Date()){
-  const now = getLondonNow(d);
-
-  // Pazartesi 00:00 başlangıç (week start)
-  const day = (now.getDay() + 6) % 7; // Pazartesi=0 ... Pazar=6
-  const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - day);
-  startOfWeek.setHours(0,0,0,0);
-
-  // Yıl başlangıcı da Londra’ya göre alınır
-  const startOfYear = getLondonNow(new Date(now.getFullYear(), 0, 1));
-  startOfYear.setHours(0,0,0,0);
-
-  const diff = startOfWeek - startOfYear;
-  const weekNumber = Math.floor(diff / (7*24*60*60*1000)) + 1;
-
-  return `${now.getFullYear()}-W${String(weekNumber).padStart(2,"0")}`;
-}
-
 function getFlagEmoji(c){if(!c)return"🏳️";const cp=c.toUpperCase().split('').map(char=>127397+char.charCodeAt());return String.fromCodePoint(...cp);}
 
 function getCountryCode(){
@@ -582,6 +568,15 @@ function getCountryCode(){
   }catch{return"TR";}
 }
 function getCountryName(){ return getCountryCode(); }
+
+// YENİ DÜZELTİLMİŞ FONKSİYON: en-US kullanımı (Mobil uyumlu)
+function getLondonNow(){
+  // en-GB yerine en-US yaptık ki tarih formatını tüm tarayıcılar (Ay/Gün/Yıl) olarak anlasın
+  // TimeZone hala Europe/London olduğu için saat Londra saati olarak kalır.
+  return new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Europe/London" })
+  );
+}
 
 // ===== OFFLINE SCORE QUEUE SYSTEM =====
 function savePendingScore(score){
