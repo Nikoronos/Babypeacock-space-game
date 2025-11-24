@@ -28,7 +28,7 @@
   #startOverlay{background:rgba(0,0,0,.95);color:#fff;display:flex}
   #pauseOverlay{background:rgba(0,0,0,0.8);color:#fff;backdrop-filter:blur(3px)}
   
-  /* START LOGO */
+  /* LOGO & SLOGAN */
   #startLogo {
     width: 90px; height: 90px;
     border-radius: 50%;
@@ -48,7 +48,7 @@
     margin-bottom: 25px; font-weight: 600; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(34, 211, 238, 0.2);
   }
 
-  /* GAME OVER DÜZENİ */
+  /* GAME OVER EKRANI */
   #gameOver {
     background: transparent; 
     justify-content: flex-start; 
@@ -154,7 +154,7 @@
   <audio id="boom" preload="auto" playsinline><source src="https://cdn.pixabay.com/audio/2022/03/15/audio_2b1b0dcd8c.mp3" type="audio/mpeg"></audio>
 
 <script>
-/* ====== OYUN KODU ====== */
+/* ====== OYUN KODU (AYNI) ====== */
 const cv=document.getElementById("game");
 function resize(){ cv.width=window.innerWidth; cv.height=window.innerHeight; }
 window.addEventListener('resize', resize); resize();
@@ -485,43 +485,56 @@ async function getWeeklyTop10(wk=weekKey()){
   return Object.values(bestByCode).sort((a,b)=>b.score-a.score).slice(0,10);
 }
 
-// ==== ORİJİNAL KOD (TEST KALDIRILDI) ====
+// ==== DÜZELTİLMİŞ PAZARTESİ KONTROLÜ (WEEK 47'Yİ HEDEF ALIR) ====
 async function checkMondayWinner(){
   const today = new Date();
+  
+  // 1. Bugünün Londra'da hangi gün olduğuna bak
   const options = { weekday: 'long', timeZone: 'Europe/London' };
   const londonDay = new Date(today.toLocaleString('en-US', options)).getDay(); 
   
-  const isMondayActive = londonDay === 1; // Sadece Pazartesi çalışır
+  // Sadece Pazartesi çalışsın (1 = Pazartesi)
+  // Not: Eğer test etmek için her gün görünsün istersen: const isMondayActive = true; yap.
+  const isMondayActive = (londonDay === 1); 
 
   mondayBox.style.display = 'none';
 
   if(!isMondayActive) return; 
 
-  const d_prev = new Date(today);
-  d_prev.setDate(d_prev.getDate() - 1); // Düne git (Geçen haftayı bul)
-  const prevWk = weekKey(d_prev);
+  // 2. HAFTA HESABI (Düne/Geçen haftaya git)
+  // Londra saatine göre dünü buluyoruz ki sapma olmasın
+  const londonNow = new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/London" }));
+  const d_prev = new Date(londonNow);
+  d_prev.setDate(londonNow.getDate() - 1); 
+  
+  const prevWk = weekKey(d_prev); // Bu bize "2025-W47" anahtarını verecek.
 
+  // 3. O haftanın verisini çek
   const list = await getWeeklyTop10(prevWk);
+  
+  // Veri yoksa kutuyu gösterme
   if(!list || list.length === 0) return;
 
-  const winner = list[0];
+  // 4. Şampiyonu belirle (BPC68049)
+  const winner = list[0]; 
+
   const myCode = localStorage.getItem("playerCode");
 
+  // 5. Kutuyu Ekrana Bas
   mondayBox.style.display = 'flex';
-  mcWeek.textContent = prevWk.split("-W")[1];
+  mcWeek.textContent = prevWk.split("-W")[1]; // Ekranda "47" yazacak
   mcName.textContent = getFlagEmoji(winner.country) + " " + winner.code;
 
+  // 6. Eğer kazanan sensen gizli kodu göster
   if(myCode === winner.code){
-    // 1. Önce DB'de bu hafta için secretCode var mı kontrol et
     const winRef = ref(db, `weeklyWinners/${prevWk}`);
     const snapshot = await get(winRef);
     let secret = "";
 
     if(snapshot.exists() && snapshot.val().secretCode){
-       // Varsa onu kullan
        secret = snapshot.val().secretCode;
     } else {
-       // Yoksa üret ve kaydet
+       // Kod yoksa üret ve kaydet
        secret = "WIN-" + Math.floor(100000 + Math.random() * 900000);
        await set(winRef, {
          secretCode: secret,
