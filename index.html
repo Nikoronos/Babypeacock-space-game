@@ -48,24 +48,24 @@
     margin-bottom: 25px; font-weight: 600; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(34, 211, 238, 0.2);
   }
 
-  /* GAME OVER EKRANI - DÜZENLEME */
+  /* GAME OVER EKRANI - DÜZENLENDİ */
   #gameOver {
     background: transparent; 
     justify-content: flex-start; 
-    padding-top: 35vh; /* Biraz yukarı aldım, kutu sığsın diye */
+    padding-top: 35vh; /* Kutu varken ve yokken ortalama iyi durması için */
     overflow-y: auto; 
   }
   
-  /* ŞAMPİYON KUTUSU (Havalı Kısım) */
+  /* ŞAMPİYON KUTUSU (Havalı Tasarım) */
   #mondayChampBox {
     display: none; 
     flex-direction: column; align-items: center;
-    margin-bottom: 15px; /* Alt boşluk */
+    margin-bottom: 15px; 
     padding: 10px 20px;
     background: rgba(250, 204, 21, 0.1); 
     border: 1px solid #facc15; 
     border-radius: 12px; 
-    box-shadow: 0 0 20px rgba(250, 204, 21, 0.3); /* Parlama efekti */
+    box-shadow: 0 0 20px rgba(250, 204, 21, 0.3);
     width: min(340px, 85vw);
     text-align: center;
     backdrop-filter: blur(8px);
@@ -156,7 +156,7 @@
   <audio id="boom" preload="auto" playsinline><source src="https://cdn.pixabay.com/audio/2022/03/15/audio_2b1b0dcd8c.mp3" type="audio/mpeg"></audio>
 
 <script>
-/* ====== OYUN KODU (DEĞİŞMEDİ) ====== */
+/* ====== OYUN KODU (AYNI) ====== */
 const cv=document.getElementById("game");
 function resize(){ cv.width=window.innerWidth; cv.height=window.innerHeight; }
 window.addEventListener('resize', resize); resize();
@@ -487,60 +487,64 @@ async function getWeeklyTop10(wk=weekKey()){
   return Object.values(bestByCode).sort((a,b)=>b.score-a.score).slice(0,10);
 }
 
-// ==== KESİN VE SABİT ÇÖZÜM: KUTUYU GERİ GETİREN KOD ====
+// ==== SADECE PAZARTESİ + MATEMATİKSEL HAFTA HESABI ====
 async function checkMondayWinner(){
   mondayBox.style.display = 'none';
 
-  // 1. HAFTA KONTROLÜ İPTAL (Her gün görünsün ki ekran bozulmasın)
-  // const isMondayActive = ...
-  
-  // 2. MATEMATİKSEL OLARAK "48 -> 47" GARANTİSİ
-  // Şu anki haftayı hesapla
-  const thisWk = weekKey(new Date()); // "2025-W48"
+  // 1. GÜN KONTROLÜ (Londra: Pazartesi mi?)
+  const today = new Date();
+  const londonDateStr = today.toLocaleString("en-US", { timeZone: "Europe/London" });
+  const londonDate = new Date(londonDateStr);
+  const day = londonDate.getDay(); // 0=Pazar, 1=Pazartesi...
+
+  // Eğer Pazartesi değilse ÇIK, kutu gizli kalsın.
+  if(day !== 1) return; 
+
+  // 2. HAFTA HESABI (Matematiksel: Bu hafta - 1)
+  const thisWk = weekKey(new Date()); // Örn: "2025-W48"
   const parts = thisWk.split("-W");
   let y = parseInt(parts[0]);
   let w = parseInt(parts[1]);
 
-  // Bir geri git (Hata payı olmadan)
   w = w - 1; 
   if(w < 1) { y--; w = 52; }
-
+  
   const prevWk = `${y}-W${String(w).padStart(2,"0")}`; // "2025-W47"
 
-  // 3. O haftanın verisini çek
+  // 3. VERİYİ ÇEK
   const list = await getWeeklyTop10(prevWk);
-  
-  // Veri varsa KUTUYU GÖSTER
-  if(list && list.length > 0) {
-      const winner = list[0]; 
-      const myCode = localStorage.getItem("playerCode");
+  if(!list || list.length === 0) return;
 
-      mondayBox.style.display = 'flex';
-      mcWeek.textContent = prevWk.split("-W")[1]; // "47"
-      mcName.textContent = getFlagEmoji(winner.country) + " " + winner.code;
+  // 4. KUTUYU GÖSTER
+  const winner = list[0]; 
+  const myCode = localStorage.getItem("playerCode");
 
-      if(myCode === winner.code){
-        const winRef = ref(db, `weeklyWinners/${prevWk}`);
-        const snapshot = await get(winRef);
-        let secret = "";
+  mondayBox.style.display = 'flex';
+  mcWeek.textContent = prevWk.split("-W")[1]; 
+  mcName.textContent = getFlagEmoji(winner.country) + " " + winner.code;
 
-        if(snapshot.exists() && snapshot.val().secretCode){
-           secret = snapshot.val().secretCode;
-        } else {
-           secret = "WIN-" + Math.floor(100000 + Math.random() * 900000);
-           await set(winRef, {
-             secretCode: secret,
-             winnerCode: winner.code,
-             country: winner.country,
-             score: winner.score,
-             ts: Date.now()
-           });
-        }
-        mcSecretBox.style.display = "block";
-        mcCode.textContent = secret;
-      } else {
-        mcSecretBox.style.display = "none";
-      }
+  // 5. KOD KONTROLÜ
+  if(myCode === winner.code){
+    const winRef = ref(db, `weeklyWinners/${prevWk}`);
+    const snapshot = await get(winRef);
+    let secret = "";
+
+    if(snapshot.exists() && snapshot.val().secretCode){
+       secret = snapshot.val().secretCode;
+    } else {
+       secret = "WIN-" + Math.floor(100000 + Math.random() * 900000);
+       await set(winRef, {
+         secretCode: secret,
+         winnerCode: winner.code,
+         country: winner.country,
+         score: winner.score,
+         ts: Date.now()
+       });
+    }
+    mcSecretBox.style.display = "block";
+    mcCode.textContent = secret;
+  } else {
+    mcSecretBox.style.display = "none";
   }
 }
 window.checkMondayWinner = checkMondayWinner;
