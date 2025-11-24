@@ -154,7 +154,7 @@
   <audio id="boom" preload="auto" playsinline><source src="https://cdn.pixabay.com/audio/2022/03/15/audio_2b1b0dcd8c.mp3" type="audio/mpeg"></audio>
 
 <script>
-/* ====== OYUN KODU (AYNI) ====== */
+/* ====== OYUN KODU (DEĞİŞMEDİ) ====== */
 const cv=document.getElementById("game");
 function resize(){ cv.width=window.innerWidth; cv.height=window.innerHeight; }
 window.addEventListener('resize', resize); resize();
@@ -485,47 +485,44 @@ async function getWeeklyTop10(wk=weekKey()){
   return Object.values(bestByCode).sort((a,b)=>b.score-a.score).slice(0,10);
 }
 
-// ==== DÜZELTİLMİŞ PAZARTESİ KONTROLÜ (WEEK 47'Yİ HEDEF ALIR) ====
+// ==== KESİN ÇÖZÜM: TARİH HATALARINI YOK SAYAN MANTIK ====
 async function checkMondayWinner(){
-  const today = new Date();
-  
-  // 1. Bugünün Londra'da hangi gün olduğuna bak
-  const options = { weekday: 'long', timeZone: 'Europe/London' };
-  const londonDay = new Date(today.toLocaleString('en-US', options)).getDay(); 
-  
-  // Sadece Pazartesi çalışsın (1 = Pazartesi)
-  // Not: Eğer test etmek için her gün görünsün istersen: const isMondayActive = true; yap.
-  const isMondayActive = (londonDay === 1); 
-
   mondayBox.style.display = 'none';
 
-  if(!isMondayActive) return; 
-
-  // 2. HAFTA HESABI (Düne/Geçen haftaya git)
-  // Londra saatine göre dünü buluyoruz ki sapma olmasın
-  const londonNow = new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/London" }));
-  const d_prev = new Date(londonNow);
-  d_prev.setDate(londonNow.getDate() - 1); 
+  // 1. "Is Monday?" kontrolünü devre dışı bıraktık. (Her zaman açık)
+  // const isMondayActive = ...
   
-  const prevWk = weekKey(d_prev); // Bu bize "2025-W47" anahtarını verecek.
+  // 2. MATEMATİKSEL HAFTA HESABI (Kesin W47'yi bulur)
+  // Şu anki haftayı al (Oyun "Week 48" olduğunu zaten biliyor)
+  const thisWk = weekKey(new Date()); // "2025-W48"
+  
+  // String'i parçalayalım
+  const parts = thisWk.split("-W");
+  let y = parseInt(parts[0]);
+  let w = parseInt(parts[1]);
 
-  // 3. O haftanın verisini çek
+  // 1 Hafta Geri Git (Matematiksel olarak)
+  w = w - 1;
+  if(w < 1) { 
+     y = y - 1; 
+     w = 52; // Basit yıl dönüşü
+  }
+  
+  const prevWk = `${y}-W${String(w).padStart(2,"0")}`; // "2025-W47" garantilenir
+
+  // 3. Veritabanından Çek
   const list = await getWeeklyTop10(prevWk);
   
-  // Veri yoksa kutuyu gösterme
   if(!list || list.length === 0) return;
 
-  // 4. Şampiyonu belirle (BPC68049)
+  // 4. Şampiyonu Göster
   const winner = list[0]; 
-
   const myCode = localStorage.getItem("playerCode");
 
-  // 5. Kutuyu Ekrana Bas
   mondayBox.style.display = 'flex';
-  mcWeek.textContent = prevWk.split("-W")[1]; // Ekranda "47" yazacak
+  mcWeek.textContent = prevWk.split("-W")[1]; // "47" yazar
   mcName.textContent = getFlagEmoji(winner.country) + " " + winner.code;
 
-  // 6. Eğer kazanan sensen gizli kodu göster
   if(myCode === winner.code){
     const winRef = ref(db, `weeklyWinners/${prevWk}`);
     const snapshot = await get(winRef);
@@ -534,7 +531,6 @@ async function checkMondayWinner(){
     if(snapshot.exists() && snapshot.val().secretCode){
        secret = snapshot.val().secretCode;
     } else {
-       // Kod yoksa üret ve kaydet
        secret = "WIN-" + Math.floor(100000 + Math.random() * 900000);
        await set(winRef, {
          secretCode: secret,
@@ -544,7 +540,6 @@ async function checkMondayWinner(){
          ts: Date.now()
        });
     }
-
     mcSecretBox.style.display = "block";
     mcCode.textContent = secret;
   } else {
