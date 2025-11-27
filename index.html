@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -154,6 +153,7 @@
   </div>
 
   <canvas id="game"></canvas>
+  
   <audio id="boom" preload="auto" playsinline><source src="https://cdn.pixabay.com/audio/2022/03/15/audio_2b1b0dcd8c.mp3" type="audio/mpeg"></audio>
   <audio id="laser" preload="auto" playsinline><source src="https://cdn.pixabay.com/audio/2022/03/10/audio_c230d77d17.mp3" type="audio/mpeg"></audio>
 
@@ -167,7 +167,7 @@ const scEl=document.getElementById("sc"),pxEl=document.getElementById("px"),live
 const startOverlay=document.getElementById("startOverlay"),startBtn=document.getElementById("startBtn");
 const overEl=document.getElementById("gameOver"),restartBtn=document.getElementById("restart");
 const boom=document.getElementById("boom");
-const laser=document.getElementById("laser"); // LAZER TANIMLAMASI
+const laser=document.getElementById("laser");
 const top10Box=document.getElementById("bpc-top10");
 const pauseBtn=document.getElementById("pauseBtn"), pauseOverlay=document.getElementById("pauseOverlay"), resumeBtn=document.getElementById("resumeBtn");
 const countOverlay=document.getElementById("countdownOverlay"), cntText=document.getElementById("cntText");
@@ -228,6 +228,14 @@ function initGame(){
   if(started)return;
   const doc=document.documentElement; 
   try{if(doc.requestFullscreen)doc.requestFullscreen();else if(doc.webkitRequestFullscreen)doc.webkitRequestFullscreen();}catch(e){}
+  
+  // SESİ BAŞLAT (Tarayıcı izni için)
+  try {
+    boom.volume=0.5; laser.volume=0.5;
+    boom.play().then(()=>boom.pause()).catch(()=>{});
+    laser.play().then(()=>laser.pause()).catch(()=>{});
+  } catch(e){}
+
   startOverlay.style.display="none"; pauseBtn.style.display="none";
   startCountdownSequence(()=>{started=true;paused=false;pauseBtn.style.display="flex";player.y=cv.height-140;player.x=cv.width/2-player.w/2;});
 }
@@ -247,9 +255,13 @@ cv.addEventListener("pointerup",()=>holding=false);
 cv.addEventListener("pointercancel",()=>holding=false);
 
 function shoot(){
-  // LAZER SESINI OYNAT (Hata olursa oyunu bozmasın diye try/catch içinde)
-  try{laser.currentTime=0;laser.play().catch(()=>{});}catch(e){}
-  
+  // LAZER SESİ (Clone yöntemi ile seri ateş)
+  try{
+    const snd = laser.cloneNode();
+    snd.volume = 0.4; // Ses yüksekliği ayarı
+    snd.play().catch(()=>{});
+  }catch(e){}
+
   if(powerTime>0){ bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10}); bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10,ang:3}); bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10,ang:-3}); }
   else { bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10}); }
 }
