@@ -167,19 +167,20 @@ function playLaser() {
   osc.connect(gain);
   gain.connect(audioCtx.destination);
   
-  // YENİ AYARLAR: Kulağı tırmalamayan, temiz Lazer sesi
-  osc.type = 'sine'; // "Square" yerine "Sine" kullanıyoruz, matkap gibi olmaz.
+  // YENİ AYARLAR: KULAĞI YORMAYAN "TOK" SES
+  osc.type = 'triangle'; // "Sine" veya "Square" değil, en yumuşak "Triangle" (Üçgen) dalga.
   
-  // Frekans: Yüksekten (1200Hz) başlayıp hızla (300Hz) düşüyor -> "Viyu" etkisi
-  osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1);
+  // Frekans: Çok daha düşük (Tokluk verir). 350'den 50'ye düşüyor.
+  // Eski tırmalayan ses 1200 civarıydı, bu çok daha bas.
+  osc.frequency.setValueAtTime(350, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.12);
   
-  // Ses Seviyesi: Temiz bir vuruş için kısa ve net
-  gain.gain.setValueAtTime(0.1, audioCtx.currentTime); 
-  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+  // Ses Seviyesi: Hafif ve nazik.
+  gain.gain.setValueAtTime(0.08, audioCtx.currentTime); 
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
 
   osc.start();
-  osc.stop(audioCtx.currentTime + 0.1);
+  osc.stop(audioCtx.currentTime + 0.12);
 }
 
 function playBoom() {
@@ -190,7 +191,7 @@ function playBoom() {
   osc.connect(gain);
   gain.connect(audioCtx.destination);
   
-  // Patlama sesi aynı kaldı (kalın ve tok)
+  // Patlama sesi (Aynı kaldı, kalın ve tok)
   osc.type = 'sawtooth';
   osc.frequency.setValueAtTime(150, audioCtx.currentTime);
   osc.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
@@ -293,7 +294,7 @@ cv.addEventListener("pointerup",()=>holding=false);
 cv.addEventListener("pointercancel",()=>holding=false);
 
 function shoot(){
-  playLaser(); // KOD İLE ÜRETİLEN YENİ LAZER SESİ
+  playLaser(); // YENİ TOK LAZER SESİ
   if(powerTime>0){ bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10}); bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10,ang:3}); bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10,ang:-3}); }
   else { bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10}); }
 }
