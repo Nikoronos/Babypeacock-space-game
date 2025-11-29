@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -160,7 +159,7 @@
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx = new AudioContext();
 
-/* --- GÜNCELLENMİŞ LASER SESİ (YUMUŞAK) --- */
+/* YENİ: DAHA LAZERİMSİ "PEW" SESİ */
 function playLaser() {
   if (!audioCtx) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -171,21 +170,22 @@ function playLaser() {
   osc.connect(gain);
   gain.connect(audioCtx.destination);
   
-  // SINE: En yumuşak, flüt benzeri temiz dalga
-  osc.type = 'sine'; 
+  // Sawtooth: Arcade tarzı keskin ses
+  osc.type = 'sawtooth';
   
-  // Frekans: 600Hz'den 150Hz'e yumuşak iniş
-  osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.15);
+  // Hızlı Frekans Düşüşü: 1200Hz'den 100Hz'e 0.1 saniyede
+  osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
   
-  // Ses Seviyesi: %5 seviyesinde, rahatsız etmez
+  // Gain: %5, kısa ve net
   gain.gain.setValueAtTime(0.05, audioCtx.currentTime); 
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
 
   osc.start();
-  osc.stop(audioCtx.currentTime + 0.15);
+  osc.stop(audioCtx.currentTime + 0.1);
 }
 
+/* YENİ: PATLAMA SESİ (Aynı kaldı) */
 function playBoom() {
   if (!audioCtx) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -194,7 +194,6 @@ function playBoom() {
   osc.connect(gain);
   gain.connect(audioCtx.destination);
   
-  // Patlama sesi (Aynı kaldı, kalın ve tok)
   osc.type = 'sawtooth';
   osc.frequency.setValueAtTime(150, audioCtx.currentTime);
   osc.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
@@ -204,6 +203,48 @@ function playBoom() {
 
   osc.start();
   osc.stop(audioCtx.currentTime + 0.3);
+}
+
+/* YENİ: ELMAS TOPLAMA SESİ (Tiz Çınlama) */
+function playGemSound() {
+  if (!audioCtx) return;
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(1800, audioCtx.currentTime + 0.1); // Yükselen tiz
+  
+  gain.gain.setValueAtTime(0.08, audioCtx.currentTime); 
+  gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.2);
+}
+
+/* YENİ: CAN TOPLAMA SESİ (Yükselen Ton) */
+function playLifeSound() {
+  if (!audioCtx) return;
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+  osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.15); // Power-up hissi
+  
+  gain.gain.setValueAtTime(0.08, audioCtx.currentTime); 
+  gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.2);
 }
 
 /* ====== OYUN KODU ====== */
@@ -297,7 +338,7 @@ cv.addEventListener("pointerup",()=>holding=false);
 cv.addEventListener("pointercancel",()=>holding=false);
 
 function shoot(){
-  playLaser(); // YENİ YUMUŞAK SES
+  playLaser(); 
   if(powerTime>0){ bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10}); bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10,ang:3}); bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10,ang:-3}); }
   else { bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10}); }
 }
@@ -321,7 +362,7 @@ function spawnMascot(){
 }
 
 function explosion(x,y,count=18){
-  playBoom(); // PATLAMA SESİ
+  playBoom(); 
   const left=Math.max(0,120-particles.length);const n=Math.min(count,left);
   for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=1.2+Math.random()*2.8;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:420+Math.random()*280,size:1.6+Math.random()*2.4});}
 }
@@ -413,10 +454,49 @@ function update(dt){
   enemies.forEach(e=>{e.y+=e.vy;e.shootT+=dt;if(e.canShoot&&e.shootT>=e.shootInt){e.shootT=0;enemyShoot(e);}}); enemies=enemies.filter(e=>e.y<=cv.height+40);
   enemyBullets.forEach(m=>{m.y+=m.vy;}); enemyBullets=enemyBullets.filter(m=>m.y<cv.height+40);
   gems.forEach(g=>g.y+=g.vy); gems=gems.filter(g=>g.y<cv.height+40); mascots.forEach(m=>m.y+=m.vy); mascots=mascots.filter(m=>m.y<cv.height+40);
+  
+  // Çarpışma Mantığı
   for(const e of enemies){if(rectHit(player,e)){explosion(player.x+player.w/2,player.y+player.h/2,22);lives--;updateLives();if(lives<=0)endGame();e.dead=1;}}
   for(const m of enemyBullets){if(rectHit(player,m)){explosion(player.x+player.w/2,player.y+player.h/2,22);lives--;updateLives();if(lives<=0)endGame();m.dead=1;}}
-  for(const b of bullets){for(const e of enemies){if(rectHit(b,e)){explosion(e.x+e.w/2,e.y+e.h/2,16);b.dead=1;e.dead=1;score++;scEl.textContent=score;}}}
-  for(const g of gems){if(rectHit(player,g)){powerTime=15000;g.dead=1;}} for(const m of mascots){if(rectHit(player,m)){lives=Math.min(5,lives+1);updateLives();m.dead=1;}}
+  
+  // BULLET COLLISION DUZELTME: Game Over ise skor artmasın
+  for(const b of bullets){
+    for(const e of enemies){
+      if(rectHit(b,e)){
+        explosion(e.x+e.w/2,e.y+e.h/2,16);
+        b.dead=1; e.dead=1;
+        if(!gameOver){ // <-- KRİTİK DÜZELTME BURADA
+          score++;
+          scEl.textContent=score;
+        }
+      }
+    }
+  }
+
+  // GEM ALMA
+  for(const g of gems){
+    if(rectHit(player,g)){
+      playGemSound(); // <--- SES
+      powerTime=15000;
+      g.dead=1;
+    }
+  } 
+  
+  // MASCOT (CAN) ALMA + PUAN
+  for(const m of mascots){
+    if(rectHit(player,m)){
+      playLifeSound(); // <--- SES
+      if(lives < 5){
+        lives++;
+        updateLives();
+      } else {
+        score += 2; // Can doluysa +2 Puan
+        scEl.textContent = score;
+      }
+      m.dead=1;
+    }
+  }
+
   enemies=enemies.filter(o=>!o.dead);bullets=bullets.filter(o=>!o.dead);enemyBullets=enemyBullets.filter(o=>!o.dead);gems=gems.filter(o=>!o.dead);mascots=mascots.filter(o=>!o.dead);
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;if(p.life<=0){particles.splice(i,1);continue;}p.x+=p.vx;p.y+=p.vy;p.vy+=0.02;}
 }
