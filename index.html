@@ -86,7 +86,7 @@
   /* RESTART BUTONU */
   .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer;margin-bottom:5px;box-shadow:0 0 20px rgba(0,255,200,0.4);}
 
-  /* TOP 10 KUTUSU */
+  /* TOP 20 KUTUSU (Scroll Özellikli) */
   #bpc-top10 {
     width: min(380px, 90vw); 
     background: rgba(5, 5, 5, 0.9); 
@@ -101,7 +101,21 @@
   }
   #bpc-top10 h4{margin:0 0 5px 0;font-size:12px;font-weight:800;text-align:center;color:#e2e8f0;letter-spacing:.5px;}
   #week-timer{text-align:center;font-size:11px;color:#94a3b8;margin-bottom:6px;font-weight:600;border-bottom:1px dashed #333;padding-bottom:4px}
-  #bpc-top10 ol { margin:0;padding:0;list-style:none; } 
+  
+  /* LİSTE KAYDIRMA AYARI */
+  #bpc-top10 ol { 
+    margin:0; padding:0; list-style:none; 
+    max-height: 35vh; /* Listenin yüksekliği ekranın %35'ini geçemez */
+    overflow-y: auto; /* Taşan kısmı kaydırma çubuğu ile göster */
+    -webkit-overflow-scrolling: touch; /* Mobilde yumuşak kaydırma */
+    padding-right: 5px; /* Scrollbar için boşluk */
+  } 
+  
+  /* Scrollbar Stili (Webkit) */
+  #bpc-top10 ol::-webkit-scrollbar { width: 4px; }
+  #bpc-top10 ol::-webkit-scrollbar-track { background: #111; border-radius: 2px; }
+  #bpc-top10 ol::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
   #bpc-top10 li { margin-bottom:4px;display:flex;align-items:center;border-bottom:1px solid #222;padding-bottom:2px;color:#fff; }
   .rank-num { display:inline-block;width:25px;text-align:right;margin-right:8px;color:#94a3b8;font-weight:bold;font-family:monospace; }
   #bpc-top10 .me{color:#ff5c5c;font-weight:bold} 
@@ -146,8 +160,7 @@
     <div id="globalCounterBox">Global plays: <span id="globalCounter">…</span></div>
     
     <div id="bpc-top10" style="display:none">
-      <h4>🏆 Weekly Top 10</h4>
-      <div id="week-timer">Week <span id="wk-num">--</span> • <span id="wk-rem" style="color:#facc15">--:--:--</span></div>
+      <h4>🏆 Weekly Top 20</h4> <div id="week-timer">Week <span id="wk-num">--</span> • <span id="wk-rem" style="color:#facc15">--:--:--</span></div>
       <ol id="bpc-list"></ol>
     </div>
   </div>
@@ -159,7 +172,7 @@
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx = new AudioContext();
 
-/* YENİ: DAHA LAZERİMSİ "PEW" SESİ */
+/* YENİ: ÇOK YUMUŞAK, TOK "PIT" SESİ (Kafa tırmalamaz) */
 function playLaser() {
   if (!audioCtx) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -170,22 +183,23 @@ function playLaser() {
   osc.connect(gain);
   gain.connect(audioCtx.destination);
   
-  // Sawtooth: Arcade tarzı keskin ses
-  osc.type = 'sawtooth';
+  // Triangle: Yumuşak ama duyulur (Sawtooth kadar cırtlak değil)
+  osc.type = 'triangle';
   
-  // Hızlı Frekans Düşüşü: 1200Hz'den 100Hz'e 0.1 saniyede
-  osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+  // Frekans: Çok daha düşük (Tokluk verir)
+  // 350Hz'den başlayıp hemen 50Hz'e düşüyor.
+  osc.frequency.setValueAtTime(350, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
   
-  // Gain: %5, kısa ve net
-  gain.gain.setValueAtTime(0.05, audioCtx.currentTime); 
+  // Ses seviyesi
+  gain.gain.setValueAtTime(0.08, audioCtx.currentTime); 
   gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
 
   osc.start();
   osc.stop(audioCtx.currentTime + 0.1);
 }
 
-/* YENİ: PATLAMA SESİ (Aynı kaldı) */
+/* PATLAMA SESİ (Aynı kaldı) */
 function playBoom() {
   if (!audioCtx) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -205,28 +219,7 @@ function playBoom() {
   osc.stop(audioCtx.currentTime + 0.3);
 }
 
-/* YENİ: ELMAS TOPLAMA SESİ (Tiz Çınlama) */
-function playGemSound() {
-  if (!audioCtx) return;
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(1800, audioCtx.currentTime + 0.1); // Yükselen tiz
-  
-  gain.gain.setValueAtTime(0.08, audioCtx.currentTime); 
-  gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
-
-  osc.start();
-  osc.stop(audioCtx.currentTime + 0.2);
-}
-
-/* YENİ: CAN TOPLAMA SESİ (Yükselen Ton) */
+/* CAN ALMA SESİ (Ortak Fonksiyon) */
 function playLifeSound() {
   if (!audioCtx) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -245,6 +238,11 @@ function playLifeSound() {
 
   osc.start();
   osc.stop(audioCtx.currentTime + 0.2);
+}
+
+// Elmas Sesi Artık Can Sesiyle Aynı
+function playGemSound() {
+  playLifeSound();
 }
 
 /* ====== OYUN KODU ====== */
@@ -316,7 +314,6 @@ function initGame(){
   const doc=document.documentElement; 
   try{if(doc.requestFullscreen)doc.requestFullscreen();else if(doc.webkitRequestFullscreen)doc.webkitRequestFullscreen();}catch(e){}
   
-  // Ses motorunu uyandır (Tarayıcı izni için)
   if(audioCtx && audioCtx.state === 'suspended') { audioCtx.resume(); }
 
   startOverlay.style.display="none"; pauseBtn.style.display="none";
@@ -455,42 +452,35 @@ function update(dt){
   enemyBullets.forEach(m=>{m.y+=m.vy;}); enemyBullets=enemyBullets.filter(m=>m.y<cv.height+40);
   gems.forEach(g=>g.y+=g.vy); gems=gems.filter(g=>g.y<cv.height+40); mascots.forEach(m=>m.y+=m.vy); mascots=mascots.filter(m=>m.y<cv.height+40);
   
-  // Çarpışma Mantığı
   for(const e of enemies){if(rectHit(player,e)){explosion(player.x+player.w/2,player.y+player.h/2,22);lives--;updateLives();if(lives<=0)endGame();e.dead=1;}}
   for(const m of enemyBullets){if(rectHit(player,m)){explosion(player.x+player.w/2,player.y+player.h/2,22);lives--;updateLives();if(lives<=0)endGame();m.dead=1;}}
   
-  // BULLET COLLISION DUZELTME: Game Over ise skor artmasın
   for(const b of bullets){
     for(const e of enemies){
       if(rectHit(b,e)){
         explosion(e.x+e.w/2,e.y+e.h/2,16);
         b.dead=1; e.dead=1;
-        if(!gameOver){ // <-- KRİTİK DÜZELTME BURADA
-          score++;
-          scEl.textContent=score;
-        }
+        if(!gameOver){ score++; scEl.textContent=score; }
       }
     }
   }
 
-  // GEM ALMA
   for(const g of gems){
     if(rectHit(player,g)){
-      playGemSound(); // <--- SES
+      playGemSound(); 
       powerTime=15000;
       g.dead=1;
     }
   } 
   
-  // MASCOT (CAN) ALMA + PUAN
   for(const m of mascots){
     if(rectHit(player,m)){
-      playLifeSound(); // <--- SES
+      playLifeSound();
       if(lives < 5){
         lives++;
         updateLives();
       } else {
-        score += 2; // Can doluysa +2 Puan
+        score += 2;
         scEl.textContent = score;
       }
       m.dead=1;
@@ -621,10 +611,12 @@ async function saveScore(score){
   const wk=weekKey(new Date()); await push(ref(db,`scoresWeekly/${wk}`),{...payload,week:wk});
 }
 
+// ARTIK TOP 20 ALIYOR
 async function getWeeklyTop10(wk=weekKey()){
   const snap=await get(ref(db,`scoresWeekly/${wk}`)); const bestByCode={};
   snap.forEach(ch=>{const v=ch.val();if(!v||typeof v.score!=="number")return;if(!bestByCode[v.code]||v.score>bestByCode[v.code].score)bestByCode[v.code]=v;});
-  return Object.values(bestByCode).sort((a,b)=>b.score-a.score).slice(0,10);
+  // BURASI 20 OLDU
+  return Object.values(bestByCode).sort((a,b)=>b.score-a.score).slice(0,20);
 }
 
 async function checkMondayWinner(){
