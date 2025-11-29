@@ -86,11 +86,11 @@
   /* RESTART BUTONU */
   .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer;margin-bottom:5px;box-shadow:0 0 20px rgba(0,255,200,0.4);}
 
-  /* YENİ: SES BUTONU STİLİ */
+  /* GÜNCELLENMİŞ SES BUTONU STİLİ (ALT TARAFA UYGUN) */
   #soundToggle {
-    position: absolute;
-    top: max(20px, env(safe-area-inset-top));
-    right: max(20px, env(safe-area-inset-right));
+    /* Absolute yerine akışa uygun margin */
+    margin-top: 20px; 
+    
     width: 44px; height: 44px;
     border-radius: 50%;
     border: 1px solid rgba(34, 211, 238, 0.5);
@@ -156,13 +156,14 @@
   <div id="pauseBtn">II</div>
 
   <div id="startOverlay">
-    <div id="soundToggle">🔊</div>
-    
     <img id="startLogo" src="yc3ku6.jpg" alt="BPC Logo">
     <div class="slogan">From feather to flight</div>
     <div style="margin-bottom:12px;font-size:14px;color:#ccc;">Hold & drag to move</div>
     <button id="startBtn" class="btn">START GAME</button>
+    
     <div id="playerCode" style="margin-top:15px;font-size:14px;color:#00ffc8;"></div>
+    
+    <div id="soundToggle">🔊</div>
   </div>
 
   <div id="pauseOverlay">
