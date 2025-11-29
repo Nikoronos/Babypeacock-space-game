@@ -86,6 +86,29 @@
   /* RESTART BUTONU */
   .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer;margin-bottom:5px;box-shadow:0 0 20px rgba(0,255,200,0.4);}
 
+  /* YENİ: SES BUTONU STİLİ */
+  #soundToggle {
+    position: absolute;
+    top: max(20px, env(safe-area-inset-top));
+    right: max(20px, env(safe-area-inset-right));
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: 1px solid rgba(34, 211, 238, 0.5);
+    background: rgba(15, 23, 42, 0.6);
+    color: #22d3ee;
+    font-size: 20px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    transition: all 0.3s ease;
+    z-index: 100;
+  }
+  #soundToggle:hover {
+    background: rgba(34, 211, 238, 0.15);
+    box-shadow: 0 0 15px rgba(34, 211, 238, 0.4);
+    transform: scale(1.05);
+  }
+
   /* TOP 20 KUTUSU (Scroll Özellikli) */
   #bpc-top10 {
     width: min(380px, 90vw); 
@@ -102,16 +125,14 @@
   #bpc-top10 h4{margin:0 0 5px 0;font-size:12px;font-weight:800;text-align:center;color:#e2e8f0;letter-spacing:.5px;}
   #week-timer{text-align:center;font-size:11px;color:#94a3b8;margin-bottom:6px;font-weight:600;border-bottom:1px dashed #333;padding-bottom:4px}
   
-  /* LİSTE KAYDIRMA AYARI */
   #bpc-top10 ol { 
     margin:0; padding:0; list-style:none; 
-    max-height: 35vh; /* Listenin yüksekliği ekranın %35'ini geçemez */
-    overflow-y: auto; /* Taşan kısmı kaydırma çubuğu ile göster */
-    -webkit-overflow-scrolling: touch; /* Mobilde yumuşak kaydırma */
-    padding-right: 5px; /* Scrollbar için boşluk */
+    max-height: 35vh; 
+    overflow-y: auto; 
+    -webkit-overflow-scrolling: touch; 
+    padding-right: 5px; 
   } 
   
-  /* Scrollbar Stili (Webkit) */
   #bpc-top10 ol::-webkit-scrollbar { width: 4px; }
   #bpc-top10 ol::-webkit-scrollbar-track { background: #111; border-radius: 2px; }
   #bpc-top10 ol::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
@@ -135,6 +156,8 @@
   <div id="pauseBtn">II</div>
 
   <div id="startOverlay">
+    <div id="soundToggle">🔊</div>
+    
     <img id="startLogo" src="yc3ku6.jpg" alt="BPC Logo">
     <div class="slogan">From feather to flight</div>
     <div style="margin-bottom:12px;font-size:14px;color:#ccc;">Hold & drag to move</div>
@@ -160,7 +183,8 @@
     <div id="globalCounterBox">Global plays: <span id="globalCounter">…</span></div>
     
     <div id="bpc-top10" style="display:none">
-      <h4>🏆 Weekly Top 20</h4> <div id="week-timer">Week <span id="wk-num">--</span> • <span id="wk-rem" style="color:#facc15">--:--:--</span></div>
+      <h4>🏆 Weekly Top 20</h4>
+      <div id="week-timer">Week <span id="wk-num">--</span> • <span id="wk-rem" style="color:#facc15">--:--:--</span></div>
       <ol id="bpc-list"></ol>
     </div>
   </div>
@@ -172,9 +196,28 @@
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx = new AudioContext();
 
-/* YENİ: ÇOK YUMUŞAK, TOK "PIT" SESİ (Kafa tırmalamaz) */
+/* SES YÖNETİMİ */
+let soundEnabled = localStorage.getItem("bpc_sound") !== "0"; // Varsayılan: Açık
+const soundBtn = document.getElementById("soundToggle");
+
+function updateSoundIcon() {
+  soundBtn.textContent = soundEnabled ? "🔊" : "🔇";
+  soundBtn.style.opacity = soundEnabled ? "1" : "0.5";
+  soundBtn.style.boxShadow = soundEnabled ? "0 0 15px rgba(34, 211, 238, 0.4)" : "none";
+}
+updateSoundIcon();
+
+soundBtn.onclick = (e) => {
+  e.stopPropagation(); // Butona basınca oyun başlamasın
+  soundEnabled = !soundEnabled;
+  localStorage.setItem("bpc_sound", soundEnabled ? "1" : "0");
+  updateSoundIcon();
+  if(soundEnabled && audioCtx.state === 'suspended') audioCtx.resume();
+};
+
+/* YUMUŞAK LAZER SESİ */
 function playLaser() {
-  if (!audioCtx) return;
+  if (!soundEnabled || !audioCtx) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
   
   const osc = audioCtx.createOscillator();
@@ -183,15 +226,10 @@ function playLaser() {
   osc.connect(gain);
   gain.connect(audioCtx.destination);
   
-  // Triangle: Yumuşak ama duyulur (Sawtooth kadar cırtlak değil)
   osc.type = 'triangle';
-  
-  // Frekans: Çok daha düşük (Tokluk verir)
-  // 350Hz'den başlayıp hemen 50Hz'e düşüyor.
   osc.frequency.setValueAtTime(350, audioCtx.currentTime);
   osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
   
-  // Ses seviyesi
   gain.gain.setValueAtTime(0.08, audioCtx.currentTime); 
   gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
 
@@ -199,9 +237,9 @@ function playLaser() {
   osc.stop(audioCtx.currentTime + 0.1);
 }
 
-/* PATLAMA SESİ (Aynı kaldı) */
+/* PATLAMA SESİ */
 function playBoom() {
-  if (!audioCtx) return;
+  if (!soundEnabled || !audioCtx) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
@@ -219,9 +257,9 @@ function playBoom() {
   osc.stop(audioCtx.currentTime + 0.3);
 }
 
-/* CAN ALMA SESİ (Ortak Fonksiyon) */
+/* CAN ALMA SESİ (Ortak) */
 function playLifeSound() {
-  if (!audioCtx) return;
+  if (!soundEnabled || !audioCtx) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
   
   const osc = audioCtx.createOscillator();
@@ -231,7 +269,7 @@ function playLifeSound() {
   
   osc.type = 'triangle';
   osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-  osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.15); // Power-up hissi
+  osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.15); 
   
   gain.gain.setValueAtTime(0.08, audioCtx.currentTime); 
   gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
@@ -240,10 +278,7 @@ function playLifeSound() {
   osc.stop(audioCtx.currentTime + 0.2);
 }
 
-// Elmas Sesi Artık Can Sesiyle Aynı
-function playGemSound() {
-  playLifeSound();
-}
+function playGemSound() { playLifeSound(); }
 
 /* ====== OYUN KODU ====== */
 const cv=document.getElementById("game");
@@ -611,11 +646,9 @@ async function saveScore(score){
   const wk=weekKey(new Date()); await push(ref(db,`scoresWeekly/${wk}`),{...payload,week:wk});
 }
 
-// ARTIK TOP 20 ALIYOR
 async function getWeeklyTop10(wk=weekKey()){
   const snap=await get(ref(db,`scoresWeekly/${wk}`)); const bestByCode={};
   snap.forEach(ch=>{const v=ch.val();if(!v||typeof v.score!=="number")return;if(!bestByCode[v.code]||v.score>bestByCode[v.code].score)bestByCode[v.code]=v;});
-  // BURASI 20 OLDU
   return Object.values(bestByCode).sort((a,b)=>b.score-a.score).slice(0,20);
 }
 
