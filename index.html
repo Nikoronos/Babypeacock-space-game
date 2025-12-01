@@ -152,7 +152,7 @@
 </style>
 </head>
 <body>
-  <video id="ufoRedVid" src="ufo_red.mp4" loop muted playsinline style="display:none"></video>
+  <video id="ufoRedVid" src="ufo_red.mp4" loop muted playsinline crossorigin="anonymous" style="display:none"></video>
 
   <div id="brand">Babypeacock 🦚</div>
   <div id="score">🦚 Score: <span id="sc">0</span></div>
@@ -255,7 +255,11 @@ function playGemSound() { playLifeSound(); }
 const cv=document.getElementById("game");
 function resize(){ cv.width=window.innerWidth; cv.height=window.innerHeight; }
 window.addEventListener('resize', resize); resize();
-const ctx=cv.getContext("2d"); ctx.imageSmoothingEnabled=false;
+const ctx=cv.getContext("2d", { willReadFrequently: true }); ctx.imageSmoothingEnabled=false;
+
+/* ---- ÖZEL SİYAH SİLİCİ (CHROMA KEY) İÇİN SANAL CANVAS ---- */
+const tempCv = document.createElement('canvas');
+const tempCtx = tempCv.getContext('2d', {willReadFrequently: true});
 
 const uiBrand = document.getElementById("brand");
 const uiScore = document.getElementById("score");
@@ -274,7 +278,7 @@ const mondayBox = document.getElementById("mondayChampBox"), mcWeek = document.g
 /* VİDEO TANIMLARI */
 const bgVid = document.getElementById("bgVideo");
 if(bgVid) { bgVid.playbackRate = 0.3; }
-const ufoRedVid = document.getElementById("ufoRedVid"); // UFO Videosu
+const ufoRedVid = document.getElementById("ufoRedVid"); 
 
 function clamp(v,a,b){return v<a?a:v>b?b:v;}
 function rand(a,b){return a+Math.random()*(b-a);}
@@ -330,7 +334,9 @@ function initGame(){
 
   /* UFO VİDEOSUNU ZORLA BAŞLAT */
   if(ufoRedVid) {
-      ufoRedVid.play().catch(e=>console.log("Video oynamadı:",e));
+      ufoRedVid.play().then(()=>{
+        // Video oynuyor
+      }).catch(e=>console.log("Video oynamadı:",e));
   }
 
   startOverlay.style.display="none"; 
@@ -390,7 +396,6 @@ function spawnEnemy(k, spMul){
   const enemyCap = (score >= 1500) ? 22 : (score >= 1300) ? 20 : (score >= 800)  ? 18 : (score >= 500)  ? 14 : 12;
   if(enemies.length > enemyCap) return; 
   const size=rand(48,70); const kind=k[Math.floor(Math.random()*k.length)]; 
-  /* "ufo_red" türü için img null olsun, video kullanacağız */
   const img = (kind==="ufo_red") ? null : (enemyImg[kind]||null); 
   enemies.push({x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul,kind,img,canShoot:(kind==="red"||kind==="green"),shootT:0,shootInt:500}); 
 }
@@ -479,6 +484,38 @@ function update(dt){
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;if(p.life<=0){particles.splice(i,1);continue;}p.x+=p.vx;p.y+=p.vy;p.vy+=0.02;}
 }
 
+/* === SİYAH & KOYU GRİ SİLİCİ (LUMA KEY) === */
+function drawNoBlack(ctx, video, x, y, w, h) {
+  if (video.readyState < 2) return;
+  
+  tempCv.width = w; tempCv.height = h;
+  tempCtx.drawImage(video, 0, 0, w, h);
+  
+  const frame = tempCtx.getImageData(0, 0, w, h);
+  const data = frame.data;
+  const l = data.length;
+  
+  for (let i = 0; i < l; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    
+    // Parlaklığı hesapla
+    const brightness = (r + g + b) / 3;
+    
+    // EŞİK DEĞERİ: 50'nin altındaki koyulukları siler (siyah, koyu gri)
+    if (brightness < 50) {
+      data[i + 3] = 0; // Tamamen şeffaf yap
+    } else if (brightness < 80) {
+      // Kenarları yumuşat (Yarı şeffaf)
+      data[i + 3] = (brightness - 50) * 8; 
+    }
+  }
+  
+  tempCtx.putImageData(frame, 0, 0);
+  ctx.drawImage(tempCv, x, y, w, h);
+}
+
 function draw(t){
   ctx.clearRect(0,0,cv.width,cv.height);
   if(!started) return;
@@ -487,19 +524,10 @@ function draw(t){
   if(playerImg)ctx.drawImage(playerImg,player.x,player.y,player.w,player.h); else{ctx.fillStyle="#38bdf8";ctx.fillRect(player.x,player.y,player.w,player.h);}
   ctx.fillStyle="#00ffc8";bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
   
-  /* DÜŞMAN ÇİZİMİ - GÜNCELLENMİŞ LIGHTER MODE */
+  /* DÜŞMAN ÇİZİMİ - YENİ LUMA KEY */
   enemies.forEach(e=>{
     if(e.kind === "ufo_red") {
-      /* LIGHTER MODE: Siyah (0,0,0) etkisiz kalır, renkler parlar */
-      ctx.save();
-      ctx.globalCompositeOperation = "lighter"; 
-      if(ufoRedVid && ufoRedVid.readyState >= 2) { 
-        ctx.drawImage(ufoRedVid, e.x, e.y, e.w, e.h);
-      } else { 
-        /* Video henüz hazır değilse kırmızı kare çiz */
-        ctx.fillStyle="#ef4444"; ctx.fillRect(e.x,e.y,e.w,e.h); 
-      }
-      ctx.restore();
+      drawNoBlack(ctx, ufoRedVid, e.x, e.y, e.w, e.h);
     } else if(e.img){
       ctx.drawImage(e.img,e.x,e.y,e.w,e.h);
     } else {
