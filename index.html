@@ -7,132 +7,71 @@
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   
-  /* UI ELEMENTLERİ - Başlangıçta GİZLİ */
+  /* UI ELEMENTLERİ */
   #brand{display:none; position:fixed;top:max(6px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));z-index:10;font-weight:900;
     background:linear-gradient(90deg,#22d3ee,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent}
-  
   #score{display:none; position:fixed;top:max(8px,env(safe-area-inset-top));left:0;right:0;text-align:center;color:#00ffc8;font-weight:700;z-index:10}
-  
   #power{display:none; position:fixed;top:max(8px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));color:#a7f3d0;font-weight:700;z-index:10}
-  
   #lives{display:none; position:fixed;bottom:max(60px,env(safe-area-inset-bottom));left:0;right:0;text-align:center;color:#f87171;font-weight:700;z-index:10}
 
   /* PAUSE BUTONU */
   #pauseBtn{
-    display:none;
-    position:fixed;left:50%;transform:translateX(-50%);bottom:max(15px,env(safe-area-inset-bottom));z-index:50;
-    width:36px;height:36px;
-    background:#0f172a;border:2px solid #38bdf8;color:#38bdf8;border-radius:50%;
+    display:none; position:fixed;left:50%;transform:translateX(-50%);bottom:max(15px,env(safe-area-inset-bottom));z-index:50;
+    width:36px;height:36px; background:#0f172a;border:2px solid #38bdf8;color:#38bdf8;border-radius:50%;
     font-size:14px;font-weight:900;align-items:center;justify-content:center;cursor:pointer;
     box-shadow:0 0 8px rgba(56,189,248,0.4)
   }
 
   /* OVERLAYLER */
   #startOverlay,#gameOver,#pauseOverlay,#countdownOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:60}
-  
-  /* Start Overlay - Video Arka Planı */
   #startOverlay{background:rgba(0,0,0,0.4);color:#fff;display:flex;overflow:hidden}
-  
-  /* Arka Plan Videosu (Mars) */
-  #bgVideo {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    object-fit: cover;
-    z-index: -1; 
-    opacity: 0.8;
-  }
-
   #pauseOverlay{background:rgba(0,0,0,0.8);color:#fff;backdrop-filter:blur(3px)}
   
+  /* ARKA PLAN VİDEOSU */
+  #bgVideo { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; opacity: 0.8; }
+
   /* LOGO & SLOGAN */
   #startLogo {
-    width: 90px; height: 90px;
-    border-radius: 50%;
-    border: 3px solid #22d3ee;
+    width: 90px; height: 90px; border-radius: 50%; border: 3px solid #22d3ee;
     box-shadow: 0 0 25px rgba(34, 211, 238, 0.5), inset 0 0 10px rgba(34, 211, 238, 0.3);
-    object-fit: cover;
-    margin-bottom: 8px;
-    animation: floatLogo 3.5s ease-in-out infinite;
+    object-fit: cover; margin-bottom: 8px; animation: floatLogo 3.5s ease-in-out infinite;
   }
-  @keyframes floatLogo {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-  }
+  @keyframes floatLogo { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
   .slogan {
     font-size: 15px; font-style: italic;
     background: linear-gradient(90deg, #a7f3d0, #22d3ee); -webkit-background-clip: text; background-clip: text; color: transparent;
     margin-bottom: 25px; font-weight: 600; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(34, 211, 238, 0.2);
   }
 
-  /* GAME OVER */
-  #gameOver {
-    background: transparent; 
-    justify-content: flex-start; 
-    padding-top: 40vh; 
-    overflow-y: auto; 
-  }
-  
-  /* ŞAMPİYON KUTUSU */
+  /* DİĞER UI */
+  #gameOver { background: transparent; justify-content: flex-start; padding-top: 40vh; overflow-y: auto; }
   #mondayChampBox {
-    display: none; 
-    flex-direction: column; align-items: center;
-    margin-bottom: 10px; 
-    padding: 8px 15px;
-    background: rgba(250, 204, 21, 0.15); 
-    border: 1px solid #facc15; 
-    border-radius: 8px; 
-    box-shadow: 0 0 15px rgba(250, 204, 21, 0.4);
-    width: min(320px, 80vw);
-    text-align: center;
-    backdrop-filter: blur(5px);
+    display: none; flex-direction: column; align-items: center; margin-bottom: 10px; padding: 8px 15px;
+    background: rgba(250, 204, 21, 0.15); border: 1px solid #facc15; border-radius: 8px; 
+    box-shadow: 0 0 15px rgba(250, 204, 21, 0.4); width: min(320px, 80vw); text-align: center; backdrop-filter: blur(5px);
   }
   .champ-label { color:#facc15;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px; }
   .champ-name { color:#fff;font-size:15px;font-weight:900;margin-bottom:4px;text-shadow:0 0 5px rgba(255,255,255,0.5); }
   #winnerSecret {
-    display: none;
-    font-family: monospace; color:#00ffc8;font-size:13px;font-weight:bold;
-    background:#000;padding:4px 8px;border-radius:4px;border:1px dashed #00ffc8;
-    margin-top:4px;
+    display: none; font-family: monospace; color:#00ffc8;font-size:13px;font-weight:bold;
+    background:#000;padding:4px 8px;border-radius:4px;border:1px dashed #00ffc8; margin-top:4px;
   }
-
   #countdownOverlay{background:transparent;pointer-events:none;z-index:70}
   #cntText{font-size:90px;font-weight:900;color:#fff;text-shadow:0 0 25px #22d3ee;font-family:monospace}
   @keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
-
   .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer;margin-bottom:5px;box-shadow:0 0 20px rgba(0,255,200,0.4);}
-
+  
   #soundToggle {
-    margin-top: 20px; 
-    width: 44px; height: 44px;
-    border-radius: 50%;
-    border: 1px solid rgba(34, 211, 238, 0.5);
-    background: rgba(15, 23, 42, 0.6);
-    color: #22d3ee;
-    font-size: 20px;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    backdrop-filter: blur(4px);
-    transition: all 0.3s ease;
-    z-index: 100;
+    margin-top: 20px; width: 44px; height: 44px; border-radius: 50%;
+    border: 1px solid rgba(34, 211, 238, 0.5); background: rgba(15, 23, 42, 0.6);
+    color: #22d3ee; font-size: 20px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; backdrop-filter: blur(4px); transition: all 0.3s ease; z-index: 100;
   }
-  #soundToggle:hover {
-    background: rgba(34, 211, 238, 0.15);
-    box-shadow: 0 0 15px rgba(34, 211, 238, 0.4);
-    transform: scale(1.05);
-  }
+  #soundToggle:hover { background: rgba(34, 211, 238, 0.15); box-shadow: 0 0 15px rgba(34, 211, 238, 0.4); transform: scale(1.05); }
 
   #bpc-top10 {
-    width: min(380px, 90vw); 
-    background: rgba(5, 5, 5, 0.9); 
-    border: 1px solid #333; 
-    border-radius: 10px; 
-    padding: 10px; 
-    color: #fff; 
-    font-size: 13px; 
-    line-height: 1.4; 
-    margin-top: 10px; 
-    margin-bottom: 40px;
+    width: min(380px, 90vw); background: rgba(5, 5, 5, 0.9); border: 1px solid #333; 
+    border-radius: 10px; padding: 10px; color: #fff; font-size: 13px; line-height: 1.4; margin-top: 10px; margin-bottom: 40px;
   }
   #bpc-top10 h4{margin:0 0 5px 0;font-size:12px;font-weight:800;text-align:center;color:#e2e8f0;letter-spacing:.5px;}
   #week-timer{text-align:center;font-size:11px;color:#94a3b8;margin-bottom:6px;font-weight:600;border-bottom:1px dashed #333;padding-bottom:4px}
@@ -144,16 +83,12 @@
   .rank-num { display:inline-block;width:25px;text-align:right;margin-right:8px;color:#94a3b8;font-weight:bold;font-family:monospace; }
   #bpc-top10 .me{color:#ff5c5c;font-weight:bold} 
   #bpc-top10 .me .rank-num{color:#ff5c5c}
-
   #globalCounterBox { margin-top:5px;font-size:12px;opacity:.9;text-align:center;color:#cbd5e1;text-shadow:0 2px 4px #000; }
   #globalCounterBox::before { content: "🌍 "; }
-
   canvas{display:block;margin:0 auto;background:#020617;touch-action:none;user-select:none;width:100%;height:100%}
 </style>
 </head>
 <body>
-  <video id="ufoRedVid" src="ufo_red.mp4" loop muted playsinline crossorigin="anonymous" style="display:none"></video>
-
   <div id="brand">Babypeacock 🦚</div>
   <div id="score">🦚 Score: <span id="sc">0</span></div>
   <div id="power">💎 <span id="px">0</span>s</div>
@@ -161,10 +96,7 @@
   <div id="pauseBtn">II</div>
 
   <div id="startOverlay">
-    <video id="bgVideo" autoplay muted loop playsinline>
-      <source src="marspngvdo.mp4" type="video/mp4">
-    </video>
-
+    <video id="bgVideo" autoplay muted loop playsinline><source src="marspngvdo.mp4" type="video/mp4"></video>
     <img id="startLogo" src="yc3ku6.jpg" alt="BPC Logo">
     <div class="slogan">From feather to flight</div>
     <div style="margin-bottom:12px;font-size:14px;color:#ccc;">Hold & drag to move</div>
@@ -255,11 +187,7 @@ function playGemSound() { playLifeSound(); }
 const cv=document.getElementById("game");
 function resize(){ cv.width=window.innerWidth; cv.height=window.innerHeight; }
 window.addEventListener('resize', resize); resize();
-const ctx=cv.getContext("2d", { willReadFrequently: true }); ctx.imageSmoothingEnabled=false;
-
-/* ---- ÖZEL SİYAH SİLİCİ (CHROMA KEY) İÇİN SANAL CANVAS ---- */
-const tempCv = document.createElement('canvas');
-const tempCtx = tempCv.getContext('2d', {willReadFrequently: true});
+const ctx=cv.getContext("2d"); ctx.imageSmoothingEnabled=false;
 
 const uiBrand = document.getElementById("brand");
 const uiScore = document.getElementById("score");
@@ -275,23 +203,37 @@ const pauseBtn=document.getElementById("pauseBtn"), pauseOverlay=document.getEle
 const countOverlay=document.getElementById("countdownOverlay"), cntText=document.getElementById("cntText");
 const mondayBox = document.getElementById("mondayChampBox"), mcWeek = document.getElementById("mc-week"), mcName = document.getElementById("mc-name"), mcSecretBox = document.getElementById("winnerSecret"), mcCode = document.getElementById("mc-code");
 
-/* VİDEO TANIMLARI */
+/* Video Tanımı (Sadece Arka Plan) */
 const bgVid = document.getElementById("bgVideo");
 if(bgVid) { bgVid.playbackRate = 0.3; }
-const ufoRedVid = document.getElementById("ufoRedVid"); 
 
 function clamp(v,a,b){return v<a?a:v>b?b:v;}
 function rand(a,b){return a+Math.random()*(b-a);}
 function rectHit(a,b){return !(a.x+a.w<b.x||a.x>b.x+b.w||a.y+a.h<b.y||a.y>b.y+b.h);}
 function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.crossOrigin="anonymous";i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
-function keyOutDark(img,TH=80){const w=img.width,h=img.height,off=document.createElement('canvas');off.width=w;off.height=h;
-  const g=off.getContext('2d'); g.drawImage(img,0,0); const d=g.getImageData(0,0,w,h),a=d.data;
-  for(let i=0;i<a.length;i+=4){const r=a[i],g1=a[i+1],b=a[i+2],lum=0.2126*r+0.7152*g1+0.0722*b;if((r<TH&&g1<TH&&b<TH)||lum<TH*0.8) a[i+3]=0;}
-  g.putImageData(d,0,0); return off;}
+
+/* SİYAH SİLİCİ (Resim yüklenirken arka planı temizler - Garanti olsun diye) */
+function keyOutDark(img, TH=50){
+  const w=img.width,h=img.height;
+  const off=document.createElement('canvas'); off.width=w; off.height=h;
+  const g=off.getContext('2d'); g.drawImage(img,0,0); 
+  const d=g.getImageData(0,0,w,h), a=d.data;
+  for(let i=0;i<a.length;i+=4){
+    const r=a[i], g1=a[i+1], b=a[i+2];
+    /* Eğer piksel çok koyuysa (siyahsa) tamamen sil */
+    if(r<TH && g1<TH && b<TH) a[i+3]=0;
+  }
+  g.putImageData(d,0,0); return off;
+}
 
 const PLAYER_SRC="img/player/bpc_mini.png";
 const ENEMY_SRC={red:"bpc_enemy_red.png", green:"bpc_enemy_green.png", ufo_red:"bpc_enemy_ufo_red.png", ufo_gray:"bpc_enemy_ufo_gray.png"};
 const PEACOCK_SRC="yc3ku6.jpg";
+
+/* == SPRITE SHEET TANIMI == */
+const UFO_SPRITE_SRC = "ufo_red_sprite.png";
+/* SENİN DOSYAN 85 KARE OLDUĞU İÇİN BURAYI 85 YAPTIM */
+const UFO_FRAMES = 85; 
 
 let bullets=[], enemies=[], enemyBullets=[], gems=[], mascots=[], particles=[];
 let score=0,lives=3,started=false,gameOver=false,paused=false,inCountdown=false;
@@ -329,15 +271,7 @@ function initGame(){
   if(started)return;
   const doc=document.documentElement; 
   try{if(doc.requestFullscreen)doc.requestFullscreen();else if(doc.webkitRequestFullscreen)doc.webkitRequestFullscreen();}catch(e){}
-  
   if(audioCtx && audioCtx.state === 'suspended') { audioCtx.resume(); }
-
-  /* UFO VİDEOSUNU ZORLA BAŞLAT */
-  if(ufoRedVid) {
-      ufoRedVid.play().then(()=>{
-        // Video oynuyor
-      }).catch(e=>console.log("Video oynamadı:",e));
-  }
 
   startOverlay.style.display="none"; 
   uiBrand.style.display = "block"; uiScore.style.display = "block"; uiPower.style.display = "block"; uiLives.style.display = "block";
@@ -396,8 +330,16 @@ function spawnEnemy(k, spMul){
   const enemyCap = (score >= 1500) ? 22 : (score >= 1300) ? 20 : (score >= 800)  ? 18 : (score >= 500)  ? 14 : 12;
   if(enemies.length > enemyCap) return; 
   const size=rand(48,70); const kind=k[Math.floor(Math.random()*k.length)]; 
-  const img = (kind==="ufo_red") ? null : (enemyImg[kind]||null); 
-  enemies.push({x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul,kind,img,canShoot:(kind==="red"||kind==="green"),shootT:0,shootInt:500}); 
+  
+  const isSprite = (kind==="ufo_red"); 
+  const img = isSprite ? ufoSpriteImg : (enemyImg[kind]||null); 
+  
+  enemies.push({
+    x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul,
+    kind, img, isSprite: isSprite,
+    frame:0, frameTimer:0, 
+    canShoot:(kind==="red"||kind==="green"),shootT:0,shootInt:500
+  }); 
 }
 
 function enemyShoot(e){ 
@@ -470,7 +412,24 @@ function update(dt){
   if(mascotT>12000){spawnMascot();mascotT=0;}
   
   bullets.forEach(b=>{b.y+=b.vy;b.x+=(b.ang||0)*0.5;}); bullets=bullets.filter(b=>b.y>-20);
-  enemies.forEach(e=>{e.y+=e.vy;e.shootT+=dt;if(e.canShoot&&e.shootT>=e.shootInt){e.shootT=0;enemyShoot(e);}}); enemies=enemies.filter(e=>e.y<=cv.height+40);
+  
+  /* --- DÜŞMAN ANIMASYON GÜNCELLEMESİ --- */
+  enemies.forEach(e=>{
+    e.y+=e.vy;
+    e.shootT+=dt;
+    if(e.canShoot&&e.shootT>=e.shootInt){e.shootT=0;enemyShoot(e);}
+    
+    // SPRITE ANIMASYONU
+    if(e.isSprite && ufoSpriteImg) {
+      e.frameTimer += dt;
+      if(e.frameTimer > 80) { // 80ms hızı
+        e.frameTimer = 0;
+        e.frame = (e.frame + 1) % UFO_FRAMES;
+      }
+    }
+  }); 
+  enemies=enemies.filter(e=>e.y<=cv.height+40);
+
   enemyBullets.forEach(m=>{m.y+=m.vy;}); enemyBullets=enemyBullets.filter(m=>m.y<cv.height+40);
   gems.forEach(g=>g.y+=g.vy); gems=gems.filter(g=>g.y<cv.height+40); mascots.forEach(m=>m.y+=m.vy); mascots=mascots.filter(m=>m.y<cv.height+40);
   
@@ -484,38 +443,6 @@ function update(dt){
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;if(p.life<=0){particles.splice(i,1);continue;}p.x+=p.vx;p.y+=p.vy;p.vy+=0.02;}
 }
 
-/* === SİYAH & KOYU GRİ SİLİCİ (LUMA KEY) === */
-function drawNoBlack(ctx, video, x, y, w, h) {
-  if (video.readyState < 2) return;
-  
-  tempCv.width = w; tempCv.height = h;
-  tempCtx.drawImage(video, 0, 0, w, h);
-  
-  const frame = tempCtx.getImageData(0, 0, w, h);
-  const data = frame.data;
-  const l = data.length;
-  
-  for (let i = 0; i < l; i += 4) {
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
-    
-    // Parlaklığı hesapla
-    const brightness = (r + g + b) / 3;
-    
-    // EŞİK DEĞERİ: 50'nin altındaki koyulukları siler (siyah, koyu gri)
-    if (brightness < 50) {
-      data[i + 3] = 0; // Tamamen şeffaf yap
-    } else if (brightness < 80) {
-      // Kenarları yumuşat (Yarı şeffaf)
-      data[i + 3] = (brightness - 50) * 8; 
-    }
-  }
-  
-  tempCtx.putImageData(frame, 0, 0);
-  ctx.drawImage(tempCv, x, y, w, h);
-}
-
 function draw(t){
   ctx.clearRect(0,0,cv.width,cv.height);
   if(!started) return;
@@ -524,10 +451,17 @@ function draw(t){
   if(playerImg)ctx.drawImage(playerImg,player.x,player.y,player.w,player.h); else{ctx.fillStyle="#38bdf8";ctx.fillRect(player.x,player.y,player.w,player.h);}
   ctx.fillStyle="#00ffc8";bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
   
-  /* DÜŞMAN ÇİZİMİ - YENİ LUMA KEY */
+  /* --- DÜŞMAN ÇİZİMİ (SPRITE DESTEKLİ) --- */
   enemies.forEach(e=>{
-    if(e.kind === "ufo_red") {
-      drawNoBlack(ctx, ufoRedVid, e.x, e.y, e.w, e.h);
+    if(e.isSprite && ufoSpriteImg) {
+      // 85 Kareye göre hesaplama
+      const frameW = ufoSpriteImg.width / UFO_FRAMES;
+      const frameH = ufoSpriteImg.height; 
+      const sx = e.frame * frameW;
+      
+      // Çizim
+      ctx.drawImage(ufoSpriteImg, sx, 0, frameW, frameH, e.x, e.y, e.w, e.h);
+      
     } else if(e.img){
       ctx.drawImage(e.img,e.x,e.y,e.w,e.h);
     } else {
@@ -550,19 +484,22 @@ restartBtn.onclick=()=>{
   updateLives();gameOver=false;scoreSent=false;paused=false;inCountdown=false;
   overEl.style.display="none";top10Box.style.display="none";uiPause.style.display="none";
   playId=Math.floor(performance.now()+Math.random()*1e9); makeCode();
-  
-  if(ufoRedVid) ufoRedVid.play().catch(()=>{}); 
-  
   started=true; 
   uiBrand.style.display="block"; uiScore.style.display="block"; uiPower.style.display="block"; uiLives.style.display="block"; uiPause.style.display="flex";
   player.y=cv.height-140; player.x=cv.width/2-player.w/2;
 };
 
-let playerImg=null,enemyImg={red:null,green:null,ufo_red:null,ufo_gray:null},peacockImg=null;
+let playerImg=null,enemyImg={red:null,green:null,ufo_red:null,ufo_gray:null},peacockImg=null,ufoSpriteImg=null;
 (async function(){
   try{const p=await loadImage(PLAYER_SRC);playerImg=keyOutDark(p,80);}catch{}
   for(const k of Object.keys(ENEMY_SRC)){try{const im=await loadImage(ENEMY_SRC[k]);enemyImg[k]=keyOutDark(im,80);}catch{}}
   try{const bird=await loadImage(PEACOCK_SRC);peacockImg=keyOutDark(bird,70);}catch{}
+  
+  // SPRITE SHEET YÜKLEME (Ve garanti olsun diye siyah temizleme)
+  try{
+    const sprite=await loadImage(UFO_SPRITE_SRC); 
+    ufoSpriteImg=keyOutDark(sprite, 50); // Eşik değeri 50'nin altındaki siyahları temizler
+  }catch(e){console.log("Sprite yuklenemedi", e)}
 })();
 </script>
 
