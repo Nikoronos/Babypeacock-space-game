@@ -328,8 +328,10 @@ function initGame(){
   
   if(audioCtx && audioCtx.state === 'suspended') { audioCtx.resume(); }
 
-  /* UFO VİDEOSUNU BAŞLAT */
-  if(ufoRedVid) ufoRedVid.play().catch(()=>{});
+  /* UFO VİDEOSUNU ZORLA BAŞLAT */
+  if(ufoRedVid) {
+      ufoRedVid.play().catch(e=>console.log("Video oynamadı:",e));
+  }
 
   startOverlay.style.display="none"; 
   uiBrand.style.display = "block"; uiScore.style.display = "block"; uiPower.style.display = "block"; uiLives.style.display = "block";
@@ -485,14 +487,18 @@ function draw(t){
   if(playerImg)ctx.drawImage(playerImg,player.x,player.y,player.w,player.h); else{ctx.fillStyle="#38bdf8";ctx.fillRect(player.x,player.y,player.w,player.h);}
   ctx.fillStyle="#00ffc8";bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
   
-  /* DÜŞMAN ÇİZİMİ GÜNCELLENDİ (UFO_RED İÇİN SCREEN MODE EKLENDİ) */
+  /* DÜŞMAN ÇİZİMİ - GÜNCELLENMİŞ LIGHTER MODE */
   enemies.forEach(e=>{
     if(e.kind === "ufo_red") {
-      /* Siyah arka planı silmek için Screen Mode */
+      /* LIGHTER MODE: Siyah (0,0,0) etkisiz kalır, renkler parlar */
       ctx.save();
-      ctx.globalCompositeOperation = "screen"; /* BU KOD SİYAHI SİLER */
-      if(ufoRedVid) ctx.drawImage(ufoRedVid, e.x, e.y, e.w, e.h);
-      else { ctx.fillStyle="#ef4444"; ctx.fillRect(e.x,e.y,e.w,e.h); }
+      ctx.globalCompositeOperation = "lighter"; 
+      if(ufoRedVid && ufoRedVid.readyState >= 2) { 
+        ctx.drawImage(ufoRedVid, e.x, e.y, e.w, e.h);
+      } else { 
+        /* Video henüz hazır değilse kırmızı kare çiz */
+        ctx.fillStyle="#ef4444"; ctx.fillRect(e.x,e.y,e.w,e.h); 
+      }
       ctx.restore();
     } else if(e.img){
       ctx.drawImage(e.img,e.x,e.y,e.w,e.h);
