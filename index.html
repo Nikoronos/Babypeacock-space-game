@@ -24,31 +24,42 @@
   }
 
   /* OVERLAYLER */
-  #startOverlay,#gameOver,#pauseOverlay,#countdownOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:60}
+  #gameOver,#pauseOverlay,#countdownOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:60}
   
-  /* --- GÜNCELLENEN KISIM: START EKRANI ARKA PLANI (MARS) --- */
-  #startOverlay{
-    /* Yazıların okunması için hafif karartma ve arka plan resmi eklendi */
-    background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), url('marsbpc.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    color:#fff;
-    display:flex
+  /* --- GÜNCELLENEN START EKRANI (BLUR & PARALLAX) --- */
+  #startOverlay {
+    position: fixed; inset: 0; z-index: 60;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    overflow: hidden; /* Taşmayı engelle */
+    color: #fff;
   }
-  /* --------------------------------------------------------- */
-
+  
+  /* Arka plan görseli için pseudo-element (Böylece sadece resim bulanıklaşır, yazılar net kalır) */
+  #startOverlay::before {
+    content: "";
+    position: absolute;
+    top: -5%; left: -5%; width: 110%; height: 110%; /* Parallax payı için biraz büyük */
+    background: url('marsbpc.png') no-repeat center center;
+    background-size: cover;
+    /* İstenilen Blur ve Parlaklık Ayarı */
+    filter: blur(4px) brightness(0.65); 
+    z-index: -1;
+    transition: transform 0.1s linear; /* Parallax akıcılığı */
+  }
+  
   #pauseOverlay{background:rgba(0,0,0,0.8);color:#fff;backdrop-filter:blur(3px)}
   
   /* LOGO & SLOGAN */
   #startLogo {
     width: 90px; height: 90px;
     border-radius: 50%;
-    border: 3px solid #22d3ee;
-    box-shadow: 0 0 25px rgba(34, 211, 238, 0.5), inset 0 0 10px rgba(34, 211, 238, 0.3);
+    border: 3px solid rgba(34, 211, 238, 0.8); /* Çerçeve biraz şeffaflaştı */
+    /* GLOW YUMUŞATILDI: Opaklık 0.5 -> 0.3 ve blur dağıtıldı */
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.25), inset 0 0 10px rgba(34, 211, 238, 0.15);
     object-fit: cover;
     margin-bottom: 8px;
     animation: floatLogo 3.5s ease-in-out infinite;
+    z-index: 2; /* Arka planın önünde */
   }
   @keyframes floatLogo {
     0%, 100% { transform: translateY(0); }
@@ -57,7 +68,29 @@
   .slogan {
     font-size: 15px; font-style: italic;
     background: linear-gradient(90deg, #a7f3d0, #22d3ee); -webkit-background-clip: text; background-clip: text; color: transparent;
-    margin-bottom: 25px; font-weight: 600; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(34, 211, 238, 0.2);
+    margin-bottom: 25px; font-weight: 600; letter-spacing: 0.5px; 
+    text-shadow: 0 0 15px rgba(34, 211, 238, 0.25); /* Yazı parlaması arttırıldı (%5 UI boost) */
+    z-index: 2;
+  }
+
+  /* NICKNAME ALANI STİLLERİ */
+  #nickWrapper {
+    display: flex; gap: 6px; align-items: center; margin-bottom: 5px; z-index: 2;
+    background: rgba(0,0,0,0.4); padding: 5px; border-radius: 8px; border: 1px solid rgba(34,211,238,0.2);
+  }
+  #nickInput {
+    background: transparent; border: none; color: #fff; font-family: inherit; font-size: 14px; font-weight: 600;
+    width: 130px; outline: none; text-align: center;
+  }
+  #nickInput::placeholder { color: rgba(255,255,255,0.4); font-weight: 400; }
+  #nickSaveBtn {
+    background: rgba(34,211,238,0.15); border: 1px solid rgba(34,211,238,0.4); color: #22d3ee;
+    border-radius: 6px; padding: 4px 10px; font-size: 12px; font-weight: 800; cursor: pointer;
+    transition: all 0.2s;
+  }
+  #nickSaveBtn:hover { background: rgba(34,211,238,0.3); color: #fff; }
+  #nickStatus {
+    font-size: 11px; color: rgba(255,255,255,0.5); margin-bottom: 15px; height: 14px; z-index: 2; font-weight: 600;
   }
 
   /* GAME OVER DÜZENİ */
@@ -98,11 +131,9 @@
   /* RESTART BUTONU */
   .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer;margin-bottom:5px;box-shadow:0 0 20px rgba(0,255,200,0.4);}
 
-  /* GÜNCELLENMİŞ SES BUTONU STİLİ (ALT TARAFA UYGUN) */
+  /* GÜNCELLENMİŞ SES BUTONU */
   #soundToggle {
-    /* Absolute yerine akışa uygun margin */
     margin-top: 20px; 
-    
     width: 44px; height: 44px;
     border-radius: 50%;
     border: 1px solid rgba(34, 211, 238, 0.5);
@@ -121,7 +152,7 @@
     transform: scale(1.05);
   }
 
-  /* TOP 20 KUTUSU (Scroll Özellikli) */
+  /* TOP 20 KUTUSU */
   #bpc-top10 {
     width: min(380px, 90vw); 
     background: rgba(5, 5, 5, 0.9); 
@@ -170,10 +201,16 @@
   <div id="startOverlay">
     <img id="startLogo" src="yc3ku6.jpg" alt="BPC Logo">
     <div class="slogan">From feather to flight</div>
-    <div style="margin-bottom:12px;font-size:14px;color:#ccc;">Hold & drag to move</div>
+    
+    <div id="nickWrapper">
+      <input type="text" id="nickInput" placeholder="Enter nickname (opt)" maxlength="14" autocomplete="off" spellcheck="false">
+      <button id="nickSaveBtn">Save</button>
+    </div>
+    <div id="nickStatus">Optional</div>
+    <div style="margin-bottom:12px;font-size:14px;color:#ccc; z-index:2;">Hold & drag to move</div>
     <button id="startBtn" class="btn">START GAME</button>
     
-    <div id="playerCode" style="margin-top:15px;font-size:14px;color:#00ffc8;"></div>
+    <div id="playerCode" style="margin-top:15px;font-size:14px;color:#00ffc8;z-index:2;"></div>
     
     <div id="soundToggle">🔊</div>
   </div>
@@ -205,6 +242,46 @@
   <canvas id="game"></canvas>
 
 <script>
+/* ====== PARALLAX EFEKTİ ====== */
+const startOv = document.getElementById("startOverlay");
+document.addEventListener("mousemove", (e) => {
+  // Oyun başlamadıysa efekt çalışsın
+  if(startOv.style.display !== "none"){
+    const x = (window.innerWidth - e.pageX * 2) / 60; // Hareket hassasiyeti
+    const y = (window.innerHeight - e.pageY * 2) / 60;
+    // before elementine erişemeyiz ama css variable ile position oynatabiliriz, 
+    // ya da basitçe overlay transformunu tersleyebiliriz ama en temizi wrapper oynatmaktır.
+    // CSS variable yöntemi:
+    startOv.style.setProperty('--mx', x + "px");
+    // Ancak en pratik yol JS ile pseudo elementi kontrol etmek zordur.
+    // Bu yüzden startOverlay'in style'ına transform verip, içindekileri terslemek yerine
+    // Background'u div'in kendisinde tutup position oynatmak daha kolaydır ama blur için pseudo kullandık.
+    // Çözüm: Pseudo element için custom style tag enjekte etmektense, basitçe css kuralı:
+    // ::before'a transform tanımlamak zor olduğu için JS ile basit bir trick:
+    // Tüm içeriği sarmadık, ama startOverlay bir flex container.
+    // Biz burada arka planı hafif oynatmak istiyoruz.
+    // En performanslı yol:
+  }
+});
+/* Parallax için CSS update: Mouse hareketi pseudo elementi etkilemesi zor olduğu için
+   basit bir JS+CSS Variable çözümü ekliyorum: */
+</script>
+<style>
+  /* Parallax için dinamik style */
+  #startOverlay::before {
+    transform: translate(var(--px, 0), var(--py, 0)) scale(1.1); /* Scale kenar boşluklarını kapatır */
+  }
+</style>
+<script>
+document.addEventListener('mousemove', (e) => {
+  if(document.getElementById("startOverlay").style.display !== "none"){
+    const moveX = (e.clientX / window.innerWidth - 0.5) * 20; // -10px ile +10px arası
+    const moveY = (e.clientY / window.innerHeight - 0.5) * 20;
+    document.getElementById("startOverlay").style.setProperty('--px', moveX + 'px');
+    document.getElementById("startOverlay").style.setProperty('--py', moveY + 'px');
+  }
+});
+
 /* ====== AUDIO SYSTEM (WEB AUDIO API) ====== */
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx = new AudioContext();
@@ -228,69 +305,34 @@ soundBtn.onclick = (e) => {
   if(soundEnabled && audioCtx.state === 'suspended') audioCtx.resume();
 };
 
-/* YUMUŞAK LAZER SESİ */
+/* SES EFEKTLERİ */
 function playLaser() {
   if (!soundEnabled || !audioCtx) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
-  
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  
-  osc.type = 'triangle';
-  osc.frequency.setValueAtTime(350, audioCtx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
-  
-  gain.gain.setValueAtTime(0.08, audioCtx.currentTime); 
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-
-  osc.start();
-  osc.stop(audioCtx.currentTime + 0.1);
+  const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.type = 'triangle'; osc.frequency.setValueAtTime(350, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
+  gain.gain.setValueAtTime(0.08, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+  osc.start(); osc.stop(audioCtx.currentTime + 0.1);
 }
-
-/* PATLAMA SESİ */
 function playBoom() {
   if (!soundEnabled || !audioCtx) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  
-  osc.type = 'sawtooth';
-  osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-  
-  gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-
-  osc.start();
-  osc.stop(audioCtx.currentTime + 0.3);
+  const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+  gain.gain.setValueAtTime(0.15, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+  osc.start(); osc.stop(audioCtx.currentTime + 0.3);
 }
-
-/* CAN ALMA SESİ (Ortak) */
 function playLifeSound() {
   if (!soundEnabled || !audioCtx) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
-  
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  
-  osc.type = 'triangle';
-  osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-  osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.15); 
-  
-  gain.gain.setValueAtTime(0.08, audioCtx.currentTime); 
-  gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
-
-  osc.start();
-  osc.stop(audioCtx.currentTime + 0.2);
+  const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.type = 'triangle'; osc.frequency.setValueAtTime(400, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.15); 
+  gain.gain.setValueAtTime(0.08, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+  osc.start(); osc.stop(audioCtx.currentTime + 0.2);
 }
-
 function playGemSound() { playLifeSound(); }
 
 /* ====== OYUN KODU ====== */
@@ -304,12 +346,8 @@ const overEl=document.getElementById("gameOver"),restartBtn=document.getElementB
 const top10Box=document.getElementById("bpc-top10");
 const pauseBtn=document.getElementById("pauseBtn"), pauseOverlay=document.getElementById("pauseOverlay"), resumeBtn=document.getElementById("resumeBtn");
 const countOverlay=document.getElementById("countdownOverlay"), cntText=document.getElementById("cntText");
-
-const mondayBox = document.getElementById("mondayChampBox");
-const mcWeek = document.getElementById("mc-week");
-const mcName = document.getElementById("mc-name");
-const mcSecretBox = document.getElementById("winnerSecret");
-const mcCode = document.getElementById("mc-code");
+const mondayBox = document.getElementById("mondayChampBox"); const mcWeek = document.getElementById("mc-week");
+const mcName = document.getElementById("mc-name"); const mcSecretBox = document.getElementById("winnerSecret"); const mcCode = document.getElementById("mc-code");
 
 function clamp(v,a,b){return v<a?a:v>b?b:v;}
 function rand(a,b){return a+Math.random()*(b-a);}
@@ -331,9 +369,47 @@ let elapsed=0,enT=0,gemT=0,mascotT=0;
 let scoreSent=false;
 let player={x:cv.width/2-33,y:cv.height-140,w:66,h:66};
 
+/* ====== NICKNAME SİSTEMİ ====== */
+function getNickName() { return localStorage.getItem("bpc_nick"); }
+function setNickName(nick) {
+  if(nick && nick.length >= 3 && nick.length <= 14) {
+    localStorage.setItem("bpc_nick", nick);
+    return true;
+  }
+  return false;
+}
 function getPlayerCode(){ let c=localStorage.getItem("playerCode"); if(!c){c="BPC"+Math.floor(100000+Math.random()*899999);localStorage.setItem("playerCode",c);} return c; }
 const myCode=getPlayerCode();
-(function(){const box=document.getElementById("playerCode");if(box)box.innerHTML=`👤 Player: <b>${myCode}</b>`;})();
+
+// Nickname UI Logic
+const nickInput = document.getElementById("nickInput");
+const nickSaveBtn = document.getElementById("nickSaveBtn");
+const nickStatus = document.getElementById("nickStatus");
+const playerCodeDisplay = document.getElementById("playerCode");
+
+function updatePlayerDisplay() {
+  const nick = getNickName();
+  if(nick) {
+    playerCodeDisplay.innerHTML = `👤 Player: <b>${nick}</b>`;
+    nickInput.value = nick; // Kayıtlıysa inputta göster
+  } else {
+    playerCodeDisplay.innerHTML = `👤 Player: <b>${myCode}</b>`;
+  }
+}
+updatePlayerDisplay();
+
+nickSaveBtn.onclick = () => {
+  const val = nickInput.value.trim();
+  if(setNickName(val)){
+    nickStatus.textContent = "Saved ✓";
+    nickStatus.style.color = "#34d399";
+    updatePlayerDisplay();
+  } else {
+    nickStatus.textContent = "3-14 chars required";
+    nickStatus.style.color = "#f87171";
+  }
+};
+/* ============================== */
 
 /* Anti-montaj code */
 let playId=Math.floor(performance.now()+Math.random()*1e9);
@@ -361,7 +437,6 @@ function initGame(){
   if(started)return;
   const doc=document.documentElement; 
   try{if(doc.requestFullscreen)doc.requestFullscreen();else if(doc.webkitRequestFullscreen)doc.webkitRequestFullscreen();}catch(e){}
-  
   if(audioCtx && audioCtx.state === 'suspended') { audioCtx.resume(); }
 
   startOverlay.style.display="none"; pauseBtn.style.display="none";
