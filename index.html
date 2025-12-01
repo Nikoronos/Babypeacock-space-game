@@ -7,7 +7,7 @@
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   
-  /* UI ELEMENTLERİ - Başlangıçta GİZLİ (display:none) */
+  /* UI ELEMENTLERİ - Başlangıçta GİZLİ */
   #brand{display:none; position:fixed;top:max(6px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));z-index:10;font-weight:900;
     background:linear-gradient(90deg,#22d3ee,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent}
   
@@ -17,9 +17,9 @@
   
   #lives{display:none; position:fixed;bottom:max(60px,env(safe-area-inset-bottom));left:0;right:0;text-align:center;color:#f87171;font-weight:700;z-index:10}
 
-  /* PAUSE BUTONU - Başlangıçta GİZLİ */
+  /* PAUSE BUTONU */
   #pauseBtn{
-    display:none; /* JS ile açılacak */
+    display:none;
     position:fixed;left:50%;transform:translateX(-50%);bottom:max(15px,env(safe-area-inset-bottom));z-index:50;
     width:36px;height:36px;
     background:#0f172a;border:2px solid #38bdf8;color:#38bdf8;border-radius:50%;
@@ -30,17 +30,17 @@
   /* OVERLAYLER */
   #startOverlay,#gameOver,#pauseOverlay,#countdownOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:60}
   
-  /* Start Overlay Arka Planı Video İçin Güncellendi (Yarı Saydam) */
+  /* Start Overlay - Video Arka Planı */
   #startOverlay{background:rgba(0,0,0,0.4);color:#fff;display:flex;overflow:hidden}
   
-  /* Video Stili */
+  /* Arka Plan Videosu */
   #bgVideo {
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
     object-fit: cover;
     z-index: -1; 
-    opacity: 0.8; /* Videonun parlaklığı */
+    opacity: 0.8;
   }
 
   #pauseOverlay{background:rgba(0,0,0,0.8);color:#fff;backdrop-filter:blur(3px)}
@@ -65,7 +65,7 @@
     margin-bottom: 25px; font-weight: 600; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(34, 211, 238, 0.2);
   }
 
-  /* GAME OVER DÜZENİ */
+  /* GAME OVER */
   #gameOver {
     background: transparent; 
     justify-content: flex-start; 
@@ -100,10 +100,8 @@
   #cntText{font-size:90px;font-weight:900;color:#fff;text-shadow:0 0 25px #22d3ee;font-family:monospace}
   @keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
 
-  /* RESTART BUTONU */
   .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer;margin-bottom:5px;box-shadow:0 0 20px rgba(0,255,200,0.4);}
 
-  /* SES BUTONU - Başlangıçta görünsün ama konumu Start ekranına uygun */
   #soundToggle {
     margin-top: 20px; 
     width: 44px; height: 44px;
@@ -124,7 +122,6 @@
     transform: scale(1.05);
   }
 
-  /* TOP 20 KUTUSU */
   #bpc-top10 {
     width: min(380px, 90vw); 
     background: rgba(5, 5, 5, 0.9); 
@@ -139,19 +136,10 @@
   }
   #bpc-top10 h4{margin:0 0 5px 0;font-size:12px;font-weight:800;text-align:center;color:#e2e8f0;letter-spacing:.5px;}
   #week-timer{text-align:center;font-size:11px;color:#94a3b8;margin-bottom:6px;font-weight:600;border-bottom:1px dashed #333;padding-bottom:4px}
-  
-  #bpc-top10 ol { 
-    margin:0; padding:0; list-style:none; 
-    max-height: 35vh; 
-    overflow-y: auto; 
-    -webkit-overflow-scrolling: touch; 
-    padding-right: 5px; 
-  } 
-  
+  #bpc-top10 ol { margin:0; padding:0; list-style:none; max-height: 35vh; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-right: 5px; } 
   #bpc-top10 ol::-webkit-scrollbar { width: 4px; }
   #bpc-top10 ol::-webkit-scrollbar-track { background: #111; border-radius: 2px; }
   #bpc-top10 ol::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
-
   #bpc-top10 li { margin-bottom:4px;display:flex;align-items:center;border-bottom:1px solid #222;padding-bottom:2px;color:#fff; }
   .rank-num { display:inline-block;width:25px;text-align:right;margin-right:8px;color:#94a3b8;font-weight:bold;font-family:monospace; }
   #bpc-top10 .me{color:#ff5c5c;font-weight:bold} 
@@ -164,6 +152,8 @@
 </style>
 </head>
 <body>
+  <video id="redEnemyVid" src="enemy_red.mp4" loop muted playsinline style="display:none"></video>
+
   <div id="brand">Babypeacock 🦚</div>
   <div id="score">🦚 Score: <span id="sc">0</span></div>
   <div id="power">💎 <span id="px">0</span>s</div>
@@ -179,9 +169,7 @@
     <div class="slogan">From feather to flight</div>
     <div style="margin-bottom:12px;font-size:14px;color:#ccc;">Hold & drag to move</div>
     <button id="startBtn" class="btn">START GAME</button>
-    
     <div id="playerCode" style="margin-top:15px;font-size:14px;color:#00ffc8;"></div>
-    
     <div id="soundToggle">🔊</div>
   </div>
 
@@ -198,10 +186,8 @@
       <div class="champ-name" id="mc-name">Loading...</div>
       <div id="winnerSecret">CODE: <span id="mc-code">---</span></div>
     </div>
-
     <button id="restart" class="btn">Restart</button>
     <div id="globalCounterBox">Global plays: <span id="globalCounter">…</span></div>
-    
     <div id="bpc-top10" style="display:none">
       <h4>🏆 Weekly Top 20</h4>
       <div id="week-timer">Week <span id="wk-num">--</span> • <span id="wk-rem" style="color:#facc15">--:--:--</span></div>
@@ -212,10 +198,9 @@
   <canvas id="game"></canvas>
 
 <script>
-/* ====== AUDIO SYSTEM ====== */
+/* ====== AUDIO ====== */
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx = new AudioContext();
-
 let soundEnabled = localStorage.getItem("bpc_sound") !== "0"; 
 const soundBtn = document.getElementById("soundToggle");
 
@@ -234,57 +219,44 @@ soundBtn.onclick = (e) => {
   if(soundEnabled && audioCtx.state === 'suspended') audioCtx.resume();
 };
 
-/* SES EFEKTLERİ */
 function playLaser() {
   if (!soundEnabled || !audioCtx) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
   osc.connect(gain); gain.connect(audioCtx.destination);
-  osc.type = 'triangle';
-  osc.frequency.setValueAtTime(350, audioCtx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
-  gain.gain.setValueAtTime(0.08, audioCtx.currentTime); 
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+  osc.type = 'triangle'; osc.frequency.setValueAtTime(350, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
+  gain.gain.setValueAtTime(0.08, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
   osc.start(); osc.stop(audioCtx.currentTime + 0.1);
 }
-
 function playBoom() {
   if (!soundEnabled || !audioCtx) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
   osc.connect(gain); gain.connect(audioCtx.destination);
-  osc.type = 'sawtooth';
-  osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-  gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+  osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+  gain.gain.setValueAtTime(0.15, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
   osc.start(); osc.stop(audioCtx.currentTime + 0.3);
 }
-
 function playLifeSound() {
   if (!soundEnabled || !audioCtx) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
   osc.connect(gain); gain.connect(audioCtx.destination);
-  osc.type = 'triangle';
-  osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-  osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.15); 
-  gain.gain.setValueAtTime(0.08, audioCtx.currentTime); 
-  gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+  osc.type = 'triangle'; osc.frequency.setValueAtTime(400, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.15); 
+  gain.gain.setValueAtTime(0.08, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
   osc.start(); osc.stop(audioCtx.currentTime + 0.2);
 }
 function playGemSound() { playLifeSound(); }
 
-/* ====== OYUN SETUP ====== */
+/* ====== GAME SETUP ====== */
 const cv=document.getElementById("game");
 function resize(){ cv.width=window.innerWidth; cv.height=window.innerHeight; }
 window.addEventListener('resize', resize); resize();
 const ctx=cv.getContext("2d"); ctx.imageSmoothingEnabled=false;
 
-/* UI ELEMANLARI */
 const uiBrand = document.getElementById("brand");
 const uiScore = document.getElementById("score");
 const uiPower = document.getElementById("power");
@@ -297,16 +269,12 @@ const overEl=document.getElementById("gameOver"),restartBtn=document.getElementB
 const top10Box=document.getElementById("bpc-top10");
 const pauseBtn=document.getElementById("pauseBtn"), pauseOverlay=document.getElementById("pauseOverlay"), resumeBtn=document.getElementById("resumeBtn");
 const countOverlay=document.getElementById("countdownOverlay"), cntText=document.getElementById("cntText");
+const mondayBox = document.getElementById("mondayChampBox"), mcWeek = document.getElementById("mc-week"), mcName = document.getElementById("mc-name"), mcSecretBox = document.getElementById("winnerSecret"), mcCode = document.getElementById("mc-code");
 
-const mondayBox = document.getElementById("mondayChampBox");
-const mcWeek = document.getElementById("mc-week");
-const mcName = document.getElementById("mc-name");
-const mcSecretBox = document.getElementById("winnerSecret");
-const mcCode = document.getElementById("mc-code");
-
-/* VİDEO HIZI - SLOW MOTION */
+/* VİDEO TANIMLARI */
 const bgVid = document.getElementById("bgVideo");
-if(bgVid) { bgVid.playbackRate = 0.3; } // Videoyu %30 hıza düşür (Çok yavaş aksın)
+if(bgVid) { bgVid.playbackRate = 0.3; }
+const redEnemyVid = document.getElementById("redEnemyVid"); // Yeni düşman videosu
 
 function clamp(v,a,b){return v<a?a:v>b?b:v;}
 function rand(a,b){return a+Math.random()*(b-a);}
@@ -318,6 +286,7 @@ function keyOutDark(img,TH=80){const w=img.width,h=img.height,off=document.creat
   g.putImageData(d,0,0); return off;}
 
 const PLAYER_SRC="img/player/bpc_mini.png";
+/* DİKKAT: Red için özel video kullanacağımız için buradaki red resmini kullanmayacağız ama hata vermesin diye tutuyoruz */
 const ENEMY_SRC={red:"bpc_enemy_red.png", green:"bpc_enemy_green.png", ufo_red:"bpc_enemy_ufo_red.png", ufo_gray:"bpc_enemy_ufo_gray.png"};
 const PEACOCK_SRC="yc3ku6.jpg";
 
@@ -332,7 +301,6 @@ function getPlayerCode(){ let c=localStorage.getItem("playerCode"); if(!c){c="BP
 const myCode=getPlayerCode();
 (function(){const box=document.getElementById("playerCode");if(box)box.innerHTML=`👤 Player: <b>${myCode}</b>`;})();
 
-/* Anti-montaj code */
 let playId=Math.floor(performance.now()+Math.random()*1e9);
 let verifyCode="--------";
 async function makeCode(){
@@ -361,21 +329,15 @@ function initGame(){
   
   if(audioCtx && audioCtx.state === 'suspended') { audioCtx.resume(); }
 
-  /* Start Ekranını Kapat ve UI'ı Aç */
+  /* VİDEOYU BAŞLAT */
+  if(redEnemyVid) redEnemyVid.play().catch(()=>{});
+
   startOverlay.style.display="none"; 
-  
-  // UI Elementlerini Görünür Yap
-  uiBrand.style.display = "block";
-  uiScore.style.display = "block";
-  uiPower.style.display = "block";
-  uiLives.style.display = "block";
+  uiBrand.style.display = "block"; uiScore.style.display = "block"; uiPower.style.display = "block"; uiLives.style.display = "block";
   
   startCountdownSequence(()=>{
-    started=true;
-    paused=false;
-    uiPause.style.display="flex"; // Pause butonu geri sayımdan sonra gelir
-    player.y=cv.height-140;
-    player.x=cv.width/2-player.w/2;
+    started=true; paused=false; uiPause.style.display="flex";
+    player.y=cv.height-140; player.x=cv.width/2-player.w/2;
   });
 }
 startBtn.onclick=initGame;
@@ -387,11 +349,9 @@ function updateLives(){livesEl.innerHTML="❤️".repeat(lives);} updateLives();
 
 let holding=false;
 function getX(e){return (e.clientX??(e.touches?e.touches[0].clientX:0))-cv.getBoundingClientRect().left;}
-
 cv.addEventListener("pointerdown",e=>{if(!started||paused||inCountdown)return;holding=true;player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w);});
 cv.addEventListener("pointermove",e=>{if(!holding||paused||inCountdown)return;player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w);});
-cv.addEventListener("pointerup",()=>holding=false);
-cv.addEventListener("pointercancel",()=>holding=false);
+cv.addEventListener("pointerup",()=>holding=false); cv.addEventListener("pointercancel",()=>holding=false);
 
 function shoot(){
   playLaser(); 
@@ -428,7 +388,9 @@ function allowedKindsByTime(t){if(t<10) return ["ufo_red","ufo_gray"]; if(t<40) 
 function spawnEnemy(k, spMul){ 
   const enemyCap = (score >= 1500) ? 22 : (score >= 1300) ? 20 : (score >= 800)  ? 18 : (score >= 500)  ? 14 : 12;
   if(enemies.length > enemyCap) return; 
-  const size=rand(48,70); const kind=k[Math.floor(Math.random()*k.length)]; const img=enemyImg[kind]||null; 
+  const size=rand(48,70); const kind=k[Math.floor(Math.random()*k.length)]; 
+  /* "red" türü için img null olsun, video kullanacağız */
+  const img = (kind==="red") ? null : (enemyImg[kind]||null); 
   enemies.push({x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul,kind,img,canShoot:(kind==="red"||kind==="green"),shootT:0,shootInt:500}); 
 }
 
@@ -447,22 +409,17 @@ function renderFinalScore(t){
   const grd=ctx.createRadialGradient(cx,cy,20,cx,cy,Math.max(cv.width,cv.height)/1.2);
   grd.addColorStop(0,"rgba(0,0,0,0.55)"); grd.addColorStop(1,"rgba(0,0,0,0.95)");
   ctx.fillStyle=grd; ctx.fillRect(0,0,cv.width,cv.height);
-
   const pw=Math.min(360,cv.width-40), ph=160, rx=cx-pw/2, ry=cy-ph/2-6;
   ctx.save(); ctx.beginPath(); ctx.rect(rx-50,ry-50,pw+100,ph+100); ctx.clip();
   ctx.translate(cx,cy); ctx.rotate(Math.sin(t / 4000) * 0.15); 
   ctx.fillStyle="rgba(0,255,200,0.15)"; const line=`Babypeacock • SCORE ${score} • CODE ${verifyCode} • `;
   ctx.font="700 13px system-ui,Arial"; for(let y=-150;y<=150;y+=22){let x=-300; while(x<300){ctx.fillText(line,x,y); x+=ctx.measureText(line).width+40;}}
   ctx.restore();
-
-  const gradText = ctx.createLinearGradient(cx - 100, 0, cx + 100, 0);
-  gradText.addColorStop(0, "#22d3ee"); gradText.addColorStop(1, "#34d399");
-  ctx.fillStyle = gradText;
-  ctx.font="900 26px system-ui,Arial"; ctx.textAlign="center"; ctx.shadowColor="rgba(34,211,238,0.8)"; ctx.shadowBlur=15;
+  const gradText = ctx.createLinearGradient(cx - 100, 0, cx + 100, 0); gradText.addColorStop(0, "#22d3ee"); gradText.addColorStop(1, "#34d399");
+  ctx.fillStyle = gradText; ctx.font="900 26px system-ui,Arial"; ctx.textAlign="center"; ctx.shadowColor="rgba(34,211,238,0.8)"; ctx.shadowBlur=15;
   ctx.fillText("Babypeacock",cx,cy-30); ctx.shadowBlur=0;
   ctx.fillStyle="rgba(0,255,200,0.18)"; ctx.font="900 80px system-ui,Arial"; ctx.fillText(String(score),cx,cy+40);
   ctx.fillStyle="#00ffc8"; ctx.font="900 48px system-ui,Arial"; ctx.fillText(score,cx,cy+20);
-  
   ctx.restore();
 }
 
@@ -513,38 +470,9 @@ function update(dt){
   
   for(const e of enemies){if(rectHit(player,e)){explosion(player.x+player.w/2,player.y+player.h/2,22);lives--;updateLives();if(lives<=0)endGame();e.dead=1;}}
   for(const m of enemyBullets){if(rectHit(player,m)){explosion(player.x+player.w/2,player.y+player.h/2,22);lives--;updateLives();if(lives<=0)endGame();m.dead=1;}}
-  
-  for(const b of bullets){
-    for(const e of enemies){
-      if(rectHit(b,e)){
-        explosion(e.x+e.w/2,e.y+e.h/2,16);
-        b.dead=1; e.dead=1;
-        if(!gameOver){ score++; scEl.textContent=score; }
-      }
-    }
-  }
-
-  for(const g of gems){
-    if(rectHit(player,g)){
-      playGemSound(); 
-      powerTime=15000;
-      g.dead=1;
-    }
-  } 
-  
-  for(const m of mascots){
-    if(rectHit(player,m)){
-      playLifeSound();
-      if(lives < 5){
-        lives++;
-        updateLives();
-      } else {
-        score += 2;
-        scEl.textContent = score;
-      }
-      m.dead=1;
-    }
-  }
+  for(const b of bullets){ for(const e of enemies){ if(rectHit(b,e)){ explosion(e.x+e.w/2,e.y+e.h/2,16); b.dead=1; e.dead=1; if(!gameOver){ score++; scEl.textContent=score; } } } }
+  for(const g of gems){ if(rectHit(player,g)){ playGemSound(); powerTime=15000; g.dead=1; } } 
+  for(const m of mascots){ if(rectHit(player,m)){ playLifeSound(); if(lives < 5){ lives++; updateLives(); } else { score += 2; scEl.textContent = score; } m.dead=1; } }
 
   enemies=enemies.filter(o=>!o.dead);bullets=bullets.filter(o=>!o.dead);enemyBullets=enemyBullets.filter(o=>!o.dead);gems=gems.filter(o=>!o.dead);mascots=mascots.filter(o=>!o.dead);
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;if(p.life<=0){particles.splice(i,1);continue;}p.x+=p.vx;p.y+=p.vy;p.vy+=0.02;}
@@ -552,14 +480,29 @@ function update(dt){
 
 function draw(t){
   ctx.clearRect(0,0,cv.width,cv.height);
-
-  /* EĞER OYUN BAŞLAMADIYSA ÇİZİM YAPMA (Start Ekranı Temiz Kalsın) */
   if(!started) return;
 
   ctx.fillStyle="rgba(190,220,255,.85)";starsA.forEach(s=>ctx.fillRect(s.x,s.y,1,1)); ctx.fillStyle="rgba(255,255,255,.95)";starsB.forEach(s=>ctx.fillRect(s.x,s.y,1.2,1.2));
   if(playerImg)ctx.drawImage(playerImg,player.x,player.y,player.w,player.h); else{ctx.fillStyle="#38bdf8";ctx.fillRect(player.x,player.y,player.w,player.h);}
   ctx.fillStyle="#00ffc8";bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
-  enemies.forEach(e=>{if(e.img)ctx.drawImage(e.img,e.x,e.y,e.w,e.h);else{ctx.fillStyle=e.kind==="green"?"#22c55e":"#ef4444";ctx.fillRect(e.x,e.y,e.w,e.h);}});
+  
+  /* DÜŞMAN ÇİZİMİ GÜNCELLENDİ (VİDEO DESTEĞİ) */
+  enemies.forEach(e=>{
+    if(e.kind === "red") {
+      /* Siyah arka planı silmek için Screen Mode */
+      ctx.save();
+      ctx.globalCompositeOperation = "screen"; 
+      if(redEnemyVid) ctx.drawImage(redEnemyVid, e.x, e.y, e.w, e.h);
+      else { ctx.fillStyle="#ef4444"; ctx.fillRect(e.x,e.y,e.w,e.h); }
+      ctx.restore();
+    } else if(e.img){
+      ctx.drawImage(e.img,e.x,e.y,e.w,e.h);
+    } else {
+      ctx.fillStyle=e.kind==="green"?"#22c55e":"#ef4444";
+      ctx.fillRect(e.x,e.y,e.w,e.h);
+    }
+  });
+
   enemyBullets.forEach(m=>{ctx.fillStyle=m.color;ctx.fillRect(m.x,m.y,m.w,m.h);});
   gems.forEach(g=>drawDiamondGem(ctx,g.x,g.y,g.w,g.h,performance.now()/1000)); if(peacockImg)mascots.forEach(m=>ctx.drawImage(peacockImg,m.x,m.y,m.w,m.h));
   particles.forEach(p=>{const a=Math.max(0,p.life/500);ctx.globalAlpha=a;ctx.fillStyle="rgba(255,200,80,1)";ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;});
@@ -575,7 +518,8 @@ restartBtn.onclick=()=>{
   overEl.style.display="none";top10Box.style.display="none";uiPause.style.display="none";
   playId=Math.floor(performance.now()+Math.random()*1e9); makeCode();
   
-  // Restart'ta direkt oyuna başla, start ekranına dönme
+  if(redEnemyVid) redEnemyVid.play().catch(()=>{}); /* Restart yapınca video durmuş olabilir, garanti olsun */
+  
   started=true; 
   uiBrand.style.display="block"; uiScore.style.display="block"; uiPower.style.display="block"; uiLives.style.display="block"; uiPause.style.display="flex";
   player.y=cv.height-140; player.x=cv.width/2-player.w/2;
