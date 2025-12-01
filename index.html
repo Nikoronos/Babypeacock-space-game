@@ -26,40 +26,50 @@
   /* OVERLAYLER */
   #gameOver,#pauseOverlay,#countdownOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:60}
   
-  /* --- GÜNCELLENEN START EKRANI (BLUR & PARALLAX) --- */
+  /* --- START EKRANI --- */
   #startOverlay {
     position: fixed; inset: 0; z-index: 60;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    overflow: hidden; /* Taşmayı engelle */
+    overflow: hidden; 
     color: #fff;
+    background: #000;
   }
-  
-  /* Arka plan görseli için pseudo-element (Böylece sadece resim bulanıklaşır, yazılar net kalır) */
-  #startOverlay::before {
-    content: "";
+
+  /* Video Stili (Mars Arka Plan) */
+  #bgVideo {
     position: absolute;
-    top: -5%; left: -5%; width: 110%; height: 110%; /* Parallax payı için biraz büyük */
-    background: url('marsbpc.png') no-repeat center center;
-    background-size: cover;
-    /* İstenilen Blur ve Parlaklık Ayarı */
+    top: 50%; left: 50%;
+    min-width: 100%; min-height: 100%;
+    width: auto; height: auto;
+    
+    /* Parallax transform JS ile güncellenecek */
+    transform: translate(-50%, -50%) translate(var(--px, 0), var(--py, 0)) scale(1.15);
+    
+    object-fit: cover;
+    z-index: 0;
+    
+    /* Video Efektleri: Hafif Blur ve Karartma */
     filter: blur(4px) brightness(0.65); 
-    z-index: -1;
-    transition: transform 0.1s linear; /* Parallax akıcılığı */
+    transition: transform 0.1s linear;
   }
   
+  /* UI Elemanlarının önde kalması için */
+  #startOverlay > *:not(#bgVideo) {
+    z-index: 2;
+    position: relative;
+  }
+
   #pauseOverlay{background:rgba(0,0,0,0.8);color:#fff;backdrop-filter:blur(3px)}
   
   /* LOGO & SLOGAN */
   #startLogo {
     width: 90px; height: 90px;
     border-radius: 50%;
-    border: 3px solid rgba(34, 211, 238, 0.8); /* Çerçeve biraz şeffaflaştı */
-    /* GLOW YUMUŞATILDI: Opaklık 0.5 -> 0.3 ve blur dağıtıldı */
+    border: 3px solid rgba(34, 211, 238, 0.8); 
     box-shadow: 0 0 20px rgba(34, 211, 238, 0.25), inset 0 0 10px rgba(34, 211, 238, 0.15);
     object-fit: cover;
     margin-bottom: 8px;
     animation: floatLogo 3.5s ease-in-out infinite;
-    z-index: 2; /* Arka planın önünde */
   }
   @keyframes floatLogo {
     0%, 100% { transform: translateY(0); }
@@ -69,13 +79,12 @@
     font-size: 15px; font-style: italic;
     background: linear-gradient(90deg, #a7f3d0, #22d3ee); -webkit-background-clip: text; background-clip: text; color: transparent;
     margin-bottom: 25px; font-weight: 600; letter-spacing: 0.5px; 
-    text-shadow: 0 0 15px rgba(34, 211, 238, 0.25); /* Yazı parlaması arttırıldı (%5 UI boost) */
-    z-index: 2;
+    text-shadow: 0 0 15px rgba(34, 211, 238, 0.25);
   }
 
   /* NICKNAME ALANI STİLLERİ */
   #nickWrapper {
-    display: flex; gap: 6px; align-items: center; margin-bottom: 5px; z-index: 2;
+    display: flex; gap: 6px; align-items: center; margin-bottom: 5px;
     background: rgba(0,0,0,0.4); padding: 5px; border-radius: 8px; border: 1px solid rgba(34,211,238,0.2);
   }
   #nickInput {
@@ -90,7 +99,7 @@
   }
   #nickSaveBtn:hover { background: rgba(34,211,238,0.3); color: #fff; }
   #nickStatus {
-    font-size: 11px; color: rgba(255,255,255,0.5); margin-bottom: 15px; height: 14px; z-index: 2; font-weight: 600;
+    font-size: 11px; color: rgba(255,255,255,0.5); margin-bottom: 15px; height: 14px; font-weight: 600;
   }
 
   /* GAME OVER DÜZENİ */
@@ -131,7 +140,7 @@
   /* RESTART BUTONU */
   .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer;margin-bottom:5px;box-shadow:0 0 20px rgba(0,255,200,0.4);}
 
-  /* GÜNCELLENMİŞ SES BUTONU */
+  /* SES BUTONU */
   #soundToggle {
     margin-top: 20px; 
     width: 44px; height: 44px;
@@ -199,6 +208,10 @@
   <div id="pauseBtn">II</div>
 
   <div id="startOverlay">
+    <video id="bgVideo" autoplay loop muted playsinline>
+      <source src="marspngvdo.mp4" type="video/mp4">
+    </video>
+    
     <img id="startLogo" src="yc3ku6.jpg" alt="BPC Logo">
     <div class="slogan">From feather to flight</div>
     
@@ -242,43 +255,18 @@
   <canvas id="game"></canvas>
 
 <script>
-/* ====== PARALLAX EFEKTİ ====== */
+/* ====== PARALLAX EFEKTİ (VIDEO İÇİN) ====== */
 const startOv = document.getElementById("startOverlay");
 document.addEventListener("mousemove", (e) => {
-  // Oyun başlamadıysa efekt çalışsın
   if(startOv.style.display !== "none"){
-    const x = (window.innerWidth - e.pageX * 2) / 60; // Hareket hassasiyeti
+    const x = (window.innerWidth - e.pageX * 2) / 60; 
     const y = (window.innerHeight - e.pageY * 2) / 60;
-    // before elementine erişemeyiz ama css variable ile position oynatabiliriz, 
-    // ya da basitçe overlay transformunu tersleyebiliriz ama en temizi wrapper oynatmaktır.
-    // CSS variable yöntemi:
-    startOv.style.setProperty('--mx', x + "px");
-    // Ancak en pratik yol JS ile pseudo elementi kontrol etmek zordur.
-    // Bu yüzden startOverlay'in style'ına transform verip, içindekileri terslemek yerine
-    // Background'u div'in kendisinde tutup position oynatmak daha kolaydır ama blur için pseudo kullandık.
-    // Çözüm: Pseudo element için custom style tag enjekte etmektense, basitçe css kuralı:
-    // ::before'a transform tanımlamak zor olduğu için JS ile basit bir trick:
-    // Tüm içeriği sarmadık, ama startOverlay bir flex container.
-    // Biz burada arka planı hafif oynatmak istiyoruz.
-    // En performanslı yol:
-  }
-});
-/* Parallax için CSS update: Mouse hareketi pseudo elementi etkilemesi zor olduğu için
-   basit bir JS+CSS Variable çözümü ekliyorum: */
-</script>
-<style>
-  /* Parallax için dinamik style */
-  #startOverlay::before {
-    transform: translate(var(--px, 0), var(--py, 0)) scale(1.1); /* Scale kenar boşluklarını kapatır */
-  }
-</style>
-<script>
-document.addEventListener('mousemove', (e) => {
-  if(document.getElementById("startOverlay").style.display !== "none"){
-    const moveX = (e.clientX / window.innerWidth - 0.5) * 20; // -10px ile +10px arası
-    const moveY = (e.clientY / window.innerHeight - 0.5) * 20;
-    document.getElementById("startOverlay").style.setProperty('--px', moveX + 'px');
-    document.getElementById("startOverlay").style.setProperty('--py', moveY + 'px');
+    
+    const bgVideo = document.getElementById("bgVideo");
+    if(bgVideo) {
+      bgVideo.style.setProperty('--px', x + "px");
+      bgVideo.style.setProperty('--py', y + "px");
+    }
   }
 });
 
@@ -298,7 +286,7 @@ function updateSoundIcon() {
 updateSoundIcon();
 
 soundBtn.onclick = (e) => {
-  e.stopPropagation(); // Butona basınca oyun başlamasın
+  e.stopPropagation(); 
   soundEnabled = !soundEnabled;
   localStorage.setItem("bpc_sound", soundEnabled ? "1" : "0");
   updateSoundIcon();
@@ -391,7 +379,7 @@ function updatePlayerDisplay() {
   const nick = getNickName();
   if(nick) {
     playerCodeDisplay.innerHTML = `👤 Player: <b>${nick}</b>`;
-    nickInput.value = nick; // Kayıtlıysa inputta göster
+    nickInput.value = nick; 
   } else {
     playerCodeDisplay.innerHTML = `👤 Player: <b>${myCode}</b>`;
   }
