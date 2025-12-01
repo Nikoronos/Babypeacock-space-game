@@ -25,7 +25,19 @@
 
   /* OVERLAYLER */
   #startOverlay,#gameOver,#pauseOverlay,#countdownOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:60}
-  #startOverlay{background:rgba(0,0,0,.95);color:#fff;display:flex}
+  
+  /* --- GÜNCELLENEN KISIM: START EKRANI ARKA PLANI (MARS) --- */
+  #startOverlay{
+    /* Yazıların okunması için hafif karartma ve arka plan resmi eklendi */
+    background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), url('marsbpc.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    color:#fff;
+    display:flex
+  }
+  /* --------------------------------------------------------- */
+
   #pauseOverlay{background:rgba(0,0,0,0.8);color:#fff;backdrop-filter:blur(3px)}
   
   /* LOGO & SLOGAN */
@@ -720,4 +732,3 @@ window.showWeeklyPanel=showWeeklyPanel; window.bumpLocation=bumpLocation;
 </script>
 </body>
 </html>
-
