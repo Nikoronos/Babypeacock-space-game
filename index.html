@@ -152,7 +152,7 @@
 </style>
 </head>
 <body>
-  <video id="redEnemyVid" src="enemy_red.mp4" loop muted playsinline style="display:none"></video>
+  <video id="ufoRedVid" src="ufo_red.mp4" loop muted playsinline style="display:none"></video>
 
   <div id="brand">Babypeacock 🦚</div>
   <div id="score">🦚 Score: <span id="sc">0</span></div>
@@ -274,7 +274,7 @@ const mondayBox = document.getElementById("mondayChampBox"), mcWeek = document.g
 /* VİDEO TANIMLARI */
 const bgVid = document.getElementById("bgVideo");
 if(bgVid) { bgVid.playbackRate = 0.3; }
-const redEnemyVid = document.getElementById("redEnemyVid"); // Yeni düşman videosu
+const ufoRedVid = document.getElementById("ufoRedVid"); // Yeni UFO videosu
 
 function clamp(v,a,b){return v<a?a:v>b?b:v;}
 function rand(a,b){return a+Math.random()*(b-a);}
@@ -286,7 +286,7 @@ function keyOutDark(img,TH=80){const w=img.width,h=img.height,off=document.creat
   g.putImageData(d,0,0); return off;}
 
 const PLAYER_SRC="img/player/bpc_mini.png";
-/* DİKKAT: Red için özel video kullanacağımız için buradaki red resmini kullanmayacağız ama hata vermesin diye tutuyoruz */
+/* DİKKAT: ufo_red için video kullanacağımız için buradaki resmi kullanmayacağız ama hata vermesin diye tutuyoruz */
 const ENEMY_SRC={red:"bpc_enemy_red.png", green:"bpc_enemy_green.png", ufo_red:"bpc_enemy_ufo_red.png", ufo_gray:"bpc_enemy_ufo_gray.png"};
 const PEACOCK_SRC="yc3ku6.jpg";
 
@@ -329,8 +329,8 @@ function initGame(){
   
   if(audioCtx && audioCtx.state === 'suspended') { audioCtx.resume(); }
 
-  /* VİDEOYU BAŞLAT */
-  if(redEnemyVid) redEnemyVid.play().catch(()=>{});
+  /* UFO VİDEOSUNU BAŞLAT */
+  if(ufoRedVid) ufoRedVid.play().catch(()=>{});
 
   startOverlay.style.display="none"; 
   uiBrand.style.display = "block"; uiScore.style.display = "block"; uiPower.style.display = "block"; uiLives.style.display = "block";
@@ -389,8 +389,8 @@ function spawnEnemy(k, spMul){
   const enemyCap = (score >= 1500) ? 22 : (score >= 1300) ? 20 : (score >= 800)  ? 18 : (score >= 500)  ? 14 : 12;
   if(enemies.length > enemyCap) return; 
   const size=rand(48,70); const kind=k[Math.floor(Math.random()*k.length)]; 
-  /* "red" türü için img null olsun, video kullanacağız */
-  const img = (kind==="red") ? null : (enemyImg[kind]||null); 
+  /* "ufo_red" türü için img null olsun, video kullanacağız */
+  const img = (kind==="ufo_red") ? null : (enemyImg[kind]||null); 
   enemies.push({x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul,kind,img,canShoot:(kind==="red"||kind==="green"),shootT:0,shootInt:500}); 
 }
 
@@ -486,13 +486,13 @@ function draw(t){
   if(playerImg)ctx.drawImage(playerImg,player.x,player.y,player.w,player.h); else{ctx.fillStyle="#38bdf8";ctx.fillRect(player.x,player.y,player.w,player.h);}
   ctx.fillStyle="#00ffc8";bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
   
-  /* DÜŞMAN ÇİZİMİ GÜNCELLENDİ (VİDEO DESTEĞİ) */
+  /* DÜŞMAN ÇİZİMİ GÜNCELLENDİ (UFO_RED İÇİN VİDEO DESTEĞİ) */
   enemies.forEach(e=>{
-    if(e.kind === "red") {
+    if(e.kind === "ufo_red") {
       /* Siyah arka planı silmek için Screen Mode */
       ctx.save();
       ctx.globalCompositeOperation = "screen"; 
-      if(redEnemyVid) ctx.drawImage(redEnemyVid, e.x, e.y, e.w, e.h);
+      if(ufoRedVid) ctx.drawImage(ufoRedVid, e.x, e.y, e.w, e.h);
       else { ctx.fillStyle="#ef4444"; ctx.fillRect(e.x,e.y,e.w,e.h); }
       ctx.restore();
     } else if(e.img){
@@ -518,7 +518,7 @@ restartBtn.onclick=()=>{
   overEl.style.display="none";top10Box.style.display="none";uiPause.style.display="none";
   playId=Math.floor(performance.now()+Math.random()*1e9); makeCode();
   
-  if(redEnemyVid) redEnemyVid.play().catch(()=>{}); /* Restart yapınca video durmuş olabilir, garanti olsun */
+  if(ufoRedVid) ufoRedVid.play().catch(()=>{}); /* Restart yapınca video durmuş olabilir, garanti olsun */
   
   started=true; 
   uiBrand.style.display="block"; uiScore.style.display="block"; uiPower.style.display="block"; uiLives.style.display="block"; uiPause.style.display="flex";
