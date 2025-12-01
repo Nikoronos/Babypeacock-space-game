@@ -43,7 +43,7 @@
     margin-bottom: 25px; font-weight: 600; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(34, 211, 238, 0.2);
   }
 
-  /* DİĞER UI */
+  /* GAME OVER */
   #gameOver { background: transparent; justify-content: flex-start; padding-top: 40vh; overflow-y: auto; }
   #mondayChampBox {
     display: none; flex-direction: column; align-items: center; margin-bottom: 10px; padding: 8px 15px;
@@ -232,7 +232,6 @@ const PEACOCK_SRC="yc3ku6.jpg";
 
 /* == SPRITE SHEET TANIMI == */
 const UFO_SPRITE_SRC = "ufo_red_sprite.png";
-/* SENİN DOSYAN 85 KARE OLDUĞU İÇİN BURAYI 85 YAPTIM */
 const UFO_FRAMES = 85; 
 
 let bullets=[], enemies=[], enemyBullets=[], gems=[], mascots=[], particles=[];
@@ -413,16 +412,16 @@ function update(dt){
   
   bullets.forEach(b=>{b.y+=b.vy;b.x+=(b.ang||0)*0.5;}); bullets=bullets.filter(b=>b.y>-20);
   
-  /* --- DÜŞMAN ANIMASYON GÜNCELLEMESİ --- */
+  /* --- DÜŞMAN ANIMASYON GÜNCELLEMESİ (HIZLANDIRILMIŞ) --- */
   enemies.forEach(e=>{
     e.y+=e.vy;
     e.shootT+=dt;
     if(e.canShoot&&e.shootT>=e.shootInt){e.shootT=0;enemyShoot(e);}
     
-    // SPRITE ANIMASYONU
+    // SPRITE ANIMASYONU - HIZ 20ms'ye DÜŞÜRÜLDÜ (Çok daha hızlı)
     if(e.isSprite && ufoSpriteImg) {
       e.frameTimer += dt;
-      if(e.frameTimer > 80) { // 80ms hızı
+      if(e.frameTimer > 20) { // BURASI DEĞİŞTİ: 80 -> 20
         e.frameTimer = 0;
         e.frame = (e.frame + 1) % UFO_FRAMES;
       }
@@ -454,12 +453,10 @@ function draw(t){
   /* --- DÜŞMAN ÇİZİMİ (SPRITE DESTEKLİ) --- */
   enemies.forEach(e=>{
     if(e.isSprite && ufoSpriteImg) {
-      // 85 Kareye göre hesaplama
       const frameW = ufoSpriteImg.width / UFO_FRAMES;
       const frameH = ufoSpriteImg.height; 
       const sx = e.frame * frameW;
       
-      // Çizim
       ctx.drawImage(ufoSpriteImg, sx, 0, frameW, frameH, e.x, e.y, e.w, e.h);
       
     } else if(e.img){
@@ -495,10 +492,10 @@ let playerImg=null,enemyImg={red:null,green:null,ufo_red:null,ufo_gray:null},pea
   for(const k of Object.keys(ENEMY_SRC)){try{const im=await loadImage(ENEMY_SRC[k]);enemyImg[k]=keyOutDark(im,80);}catch{}}
   try{const bird=await loadImage(PEACOCK_SRC);peacockImg=keyOutDark(bird,70);}catch{}
   
-  // SPRITE SHEET YÜKLEME (Ve garanti olsun diye siyah temizleme)
+  // SPRITE SHEET YÜKLEME 
   try{
     const sprite=await loadImage(UFO_SPRITE_SRC); 
-    ufoSpriteImg=keyOutDark(sprite, 50); // Eşik değeri 50'nin altındaki siyahları temizler
+    ufoSpriteImg=keyOutDark(sprite, 50); 
   }catch(e){console.log("Sprite yuklenemedi", e)}
 })();
 </script>
