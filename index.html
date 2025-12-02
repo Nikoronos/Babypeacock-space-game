@@ -82,7 +82,14 @@
   #bpc-top10 .me .rank-num{color:#ff5c5c}
   #globalCounterBox { margin-top:5px;font-size:12px;opacity:.9;text-align:center;color:#cbd5e1;text-shadow:0 2px 4px #000; }
   #globalCounterBox::before { content: "🌍 "; }
-  canvas{display:block;margin:0 auto;background:#020617;touch-action:none;user-select:none;width:100%;height:100%}
+  
+  /* --- YENİ ARKA PLAN (SİYAH KAMUFLAJ) --- */
+  canvas {
+    display: block; margin: 0 auto;
+    /* Ortası hafif gece mavisi, kenarlar tam siyah */
+    background: radial-gradient(circle at bottom, #0f172a 0%, #020617 50%, #000000 90%);
+    touch-action: none; user-select: none; width: 100%; height: 100%
+  }
 </style>
 </head>
 <body>
@@ -204,7 +211,7 @@ function rand(a,b){return a+Math.random()*(b-a);}
 function rectHit(a,b){return !(a.x+a.w<b.x||a.x>b.x+b.w||a.y+a.h<b.y||a.y>b.y+b.h);}
 function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.crossOrigin="anonymous";i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
 
-/* Siyah Silici - GÜÇLENDİRİLMİŞ VERSİYON (TH=90) */
+/* Siyah Silici */
 function keyOutDark(img, TH=90){
   const w=img.width,h=img.height;
   const off=document.createElement('canvas'); off.width=w; off.height=h;
@@ -212,7 +219,6 @@ function keyOutDark(img, TH=90){
   const d=g.getImageData(0,0,w,h), a=d.data;
   for(let i=0;i<a.length;i+=4){
     const r=a[i], g1=a[i+1], b=a[i+2];
-    /* Eşik değerini 90'a çıkardık, koyu grileri de siler */
     if(r<TH && g1<TH && b<TH) a[i+3]=0;
   }
   g.putImageData(d,0,0); return off;
@@ -487,7 +493,9 @@ function update(dt){
 function draw(t){
   ctx.clearRect(0,0,cv.width,cv.height);
   
-  ctx.fillStyle="rgba(190,220,255,.85)";starsA.forEach(s=>ctx.fillRect(s.x,s.y,1,1)); ctx.fillStyle="rgba(255,255,255,.95)";starsB.forEach(s=>ctx.fillRect(s.x,s.y,1.2,1.2));
+  /* Arka plan zaten CSS ile siyah (gradient) */
+  ctx.fillStyle="rgba(255,255,255,0.7)";starsA.forEach(s=>ctx.fillRect(s.x,s.y,1,1)); 
+  ctx.fillStyle="rgba(255,255,255,0.9)";starsB.forEach(s=>ctx.fillRect(s.x,s.y,1.2,1.2));
 
   if(!started) return;
 
