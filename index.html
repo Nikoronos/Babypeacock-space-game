@@ -220,12 +220,11 @@ function keyOutDark(img, TH=50){
 const PLAYER_SRC="img/player/bpc_mini.png";
 const PEACOCK_SRC="yc3ku6.jpg";
 
-/* === SPRITE CONFIG (METEOR 20 KARE OLARAK AYARLANDI) === */
+/* === SPRITE CONFIG === */
 const SPRITE_CONFIG = {
   ufo_red: { src: "ufo_red_sprite.png", frames: 85 },
   green:   { src: "bpc_enemy_green_sprite.png", frames: 60 }, 
   ufo_gray:{ src: "ufo_gray_sprite.png", frames: 60 },
-  // METEOR KARE SAYISI DÜZELTİLDİ: 20
   meteor:  { src: "meteorite_Yellow.png", frames: 20 },
   red:     { src: "bpc_enemy_red.png", frames: 1 }
 };
@@ -320,7 +319,8 @@ function explosion(x,y,count=18){
 }
 
 function allowedKindsByTime(t){
-  if(score > 800) return ["ufo_red","ufo_gray","green","red","meteor"];
+  /* METEOR TESTİ: Skor > 10 (Hemen gelmesi için) */
+  if(score > 10) return ["ufo_red","ufo_gray","green","red","meteor"];
   if(t<10) return ["ufo_red","ufo_gray"]; 
   if(t<40) return ["ufo_red","ufo_gray","green"]; 
   return ["ufo_red","ufo_gray","green","red"];
@@ -333,6 +333,7 @@ function spawnEnemy(k, spMul){
   const size=rand(48,70); 
   const kind=k[Math.floor(Math.random()*k.length)]; 
   
+  // SPRITE SİSTEMİ
   let isSprite = false, img = null, frames = 1;
   
   if (loadedSprites[kind]) {
