@@ -40,7 +40,6 @@
     margin-bottom: 25px; font-weight: 600; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(34, 211, 238, 0.2);
   }
 
-  /* GAME OVER */
   #gameOver { background: transparent; justify-content: flex-start; padding-top: 40vh; overflow-y: auto; }
   #mondayChampBox {
     display: none; flex-direction: column; align-items: center; margin-bottom: 10px; padding: 8px 15px;
@@ -220,12 +219,11 @@ function keyOutDark(img, TH=50){
 const PLAYER_SRC="img/player/bpc_mini.png";
 const PEACOCK_SRC="yc3ku6.jpg";
 
-/* === SPRITE CONFIG === */
+/* === SPRITE CONFIG (METEOR ÇIKARILDI) === */
 const SPRITE_CONFIG = {
   ufo_red: { src: "ufo_red_sprite.png", frames: 85 },
   green:   { src: "bpc_enemy_green_sprite.png", frames: 60 }, 
   ufo_gray:{ src: "ufo_gray_sprite.png", frames: 60 },
-  meteor:  { src: "meteorite_Yellow.png", frames: 20 },
   red:     { src: "bpc_enemy_red.png", frames: 1 }
 };
 
@@ -319,8 +317,7 @@ function explosion(x,y,count=18){
 }
 
 function allowedKindsByTime(t){
-  /* METEOR TESTİ: Skor > 10 (Hemen gelmesi için) */
-  if(score > 10) return ["ufo_red","ufo_gray","green","red","meteor"];
+  // METEOR ÇIKARILDI, ARTIK SADECE GEMİLER VAR
   if(t<10) return ["ufo_red","ufo_gray"]; 
   if(t<40) return ["ufo_red","ufo_gray","green"]; 
   return ["ufo_red","ufo_gray","green","red"];
@@ -426,16 +423,16 @@ function update(dt){
   
   bullets.forEach(b=>{b.y+=b.vy;b.x+=(b.ang||0)*0.5;}); bullets=bullets.filter(b=>b.y>-20);
   
-  /* --- GENEL SPRITE ANIMASYONU --- */
+  /* --- DÜŞMAN ANIMASYON GÜNCELLEMESİ --- */
   enemies.forEach(e=>{
     e.y+=e.vy;
     e.shootT+=dt;
     if(e.canShoot&&e.shootT>=e.shootInt){e.shootT=0;enemyShoot(e);}
     
-    // Eğer sprite ise (Birden fazla karesi varsa)
+    // Eğer sprite ise
     if(e.isSprite && e.img) {
       e.frameTimer += dt;
-      // 20ms'de bir kare değiştir (Hızlı animasyon)
+      // 20ms'de bir kare değiştir
       if(e.frameTimer > 20) { 
         e.frameTimer = 0;
         e.frame = (e.frame + 1) % e.totalFrames;
@@ -447,9 +444,37 @@ function update(dt){
   enemyBullets.forEach(m=>{m.y+=m.vy;}); enemyBullets=enemyBullets.filter(m=>m.y<cv.height+40);
   gems.forEach(g=>g.y+=g.vy); gems=gems.filter(g=>g.y<cv.height+40); mascots.forEach(m=>m.y+=m.vy); mascots=mascots.filter(m=>m.y<cv.height+40);
   
-  for(const e of enemies){if(rectHit(player,e)){explosion(player.x+player.w/2,player.y+player.h/2,22);lives--;updateLives();if(lives<=0)endGame();e.dead=1;}}
-  for(const m of enemyBullets){if(rectHit(player,m)){explosion(player.x+player.w/2,player.y+player.h/2,22);lives--;updateLives();if(lives<=0)endGame();m.dead=1;}}
-  for(const b of bullets){ for(const e of enemies){ if(rectHit(b,e)){ explosion(e.x+e.w/2,e.y+e.h/2,16); b.dead=1; e.dead=1; if(!gameOver){ score++; scEl.textContent=score; } } } }
+  /* --- ÇARPIŞMA (COLLISION) - HITBOX KÜÇÜLTME --- */
+  // Oyuncunun vuruş alanını (Hitbox) kenarlardan 12px daraltıyoruz
+  const pBox = { 
+    x: player.x + 12, 
+    y: player.y + 12, 
+    w: player.w - 24, 
+    h: player.h - 24 
+  };
+
+  for(const e of enemies){
+    if(rectHit(pBox,e)){
+      explosion(player.x+player.w/2,player.y+player.h/2,22);
+      lives--;updateLives();if(lives<=0)endGame();e.dead=1;
+    }
+  }
+  for(const m of enemyBullets){
+    if(rectHit(pBox,m)){
+      explosion(player.x+player.w/2,player.y+player.h/2,22);
+      lives--;updateLives();if(lives<=0)endGame();m.dead=1;
+    }
+  }
+  // Mermiler düşmanı vururken normal hitbox kullanılır (Kolaylık olsun)
+  for(const b of bullets){ 
+    for(const e of enemies){ 
+      if(rectHit(b,e)){ 
+        explosion(e.x+e.w/2,e.y+e.h/2,16); b.dead=1; e.dead=1; 
+        if(!gameOver){ score++; scEl.textContent=score; } 
+      } 
+    } 
+  }
+  // Gem ve Maskot toplarken normal hitbox (Kolay toplansın)
   for(const g of gems){ if(rectHit(player,g)){ playGemSound(); powerTime=15000; g.dead=1; } } 
   for(const m of mascots){ if(rectHit(player,m)){ playLifeSound(); if(lives < 5){ lives++; updateLives(); } else { score += 2; scEl.textContent = score; } m.dead=1; } }
 
@@ -465,7 +490,10 @@ function draw(t){
   if(!started) return;
 
   if(playerImg)ctx.drawImage(playerImg,player.x,player.y,player.w,player.h); else{ctx.fillStyle="#38bdf8";ctx.fillRect(player.x,player.y,player.w,player.h);}
-  ctx.fillStyle="#00ffc8";bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
+  
+  /* MERMİ RENGİ (MAVİ) - GÜNCELLENDİ */
+  ctx.fillStyle="#0099ff"; 
+  bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
   
   enemies.forEach(e=>{
     if(e.isSprite && e.img && e.totalFrames > 0) {
