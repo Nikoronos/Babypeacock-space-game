@@ -86,7 +86,7 @@
   /* KAMUFLAJ ARKA PLAN */
   canvas {
     display: block; margin: 0 auto;
-    background: #000; 
+    background: radial-gradient(circle at bottom, #0f172a 0%, #020617 50%, #000000 90%);
     touch-action: none; user-select: none; width: 100%; height: 100%
   }
 </style>
@@ -336,6 +336,7 @@ function spawnEnemy(k, spMul){
   const enemyCap = (score >= 1500) ? 22 : (score >= 1300) ? 20 : (score >= 800)  ? 18 : (score >= 500)  ? 14 : 12;
   if(enemies.length > enemyCap) return; 
   
+  // KIND'I ÖNCE BELİRLE
   const kind=k[Math.floor(Math.random()*k.length)]; 
   
   // BOYUT (Red daha küçük)
@@ -344,6 +345,7 @@ function spawnEnemy(k, spMul){
 
   // SPRITE SİSTEMİ
   let isSprite = false, img = null, frames = 1;
+  
   if (loadedSprites[kind]) {
     img = loadedSprites[kind].img;
     frames = loadedSprites[kind].frames;
@@ -456,6 +458,7 @@ function update(dt){
   gems.forEach(g=>g.y+=g.vy); gems=gems.filter(g=>g.y<cv.height+40); mascots.forEach(m=>m.y+=m.vy); mascots=mascots.filter(m=>m.y<cv.height+40);
   
   /* --- ÇARPIŞMA (COLLISION) - HITBOX KÜÇÜLTME --- */
+  // Oyuncunun vuruş alanını (Hitbox) kenarlardan 12px daraltıyoruz
   const pBox = { 
     x: player.x + 12, 
     y: player.y + 12, 
@@ -475,6 +478,7 @@ function update(dt){
       lives--;updateLives();if(lives<=0)endGame();m.dead=1;
     }
   }
+  // Mermiler düşmanı vururken normal hitbox kullanılır (Kolaylık olsun)
   for(const b of bullets){ 
     for(const e of enemies){ 
       if(rectHit(b,e)){ 
@@ -483,6 +487,7 @@ function update(dt){
       } 
     } 
   }
+  // Gem ve Maskot toplarken normal hitbox (Kolay toplansın)
   for(const g of gems){ if(rectHit(player,g)){ playGemSound(); powerTime=15000; g.dead=1; } } 
   for(const m of mascots){ if(rectHit(player,m)){ playLifeSound(); if(lives < 5){ lives++; updateLives(); } else { score += 2; scEl.textContent = score; } m.dead=1; } }
 
@@ -493,6 +498,8 @@ function update(dt){
 function draw(t){
   ctx.clearRect(0,0,cv.width,cv.height);
   
+  /* ARKA PLAN SİYAH GRADIENT */
+  // Yıldızlar artık daha soluk beyaz
   ctx.fillStyle="rgba(255,255,255,0.7)";starsA.forEach(s=>ctx.fillRect(s.x,s.y,1,1)); 
   ctx.fillStyle="rgba(255,255,255,0.9)";starsB.forEach(s=>ctx.fillRect(s.x,s.y,1.2,1.2));
 
@@ -500,6 +507,7 @@ function draw(t){
 
   if(playerImg)ctx.drawImage(playerImg,player.x,player.y,player.w,player.h); else{ctx.fillStyle="#38bdf8";ctx.fillRect(player.x,player.y,player.w,player.h);}
   
+  /* MERMİ RENGİ (MAVİ) */
   ctx.fillStyle="#0099ff"; 
   bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
   
@@ -509,13 +517,16 @@ function draw(t){
       const frameH = e.img.height; 
       const sx = e.frame * frameW;
       
-      // SCREEN MODE: SİYAHI YOK EDER, RENKLERİ PARLATIR!
+      // SCREEN MODE: Siyah arka planı yok eder, renkleri parlatır!
       ctx.save();
       ctx.globalCompositeOperation = "screen"; 
+      
+      // Hata koruması
       if(frameW > 0 && sx >= 0) {
         ctx.drawImage(e.img, sx, 0, frameW, frameH, e.x, e.y, e.w, e.h);
       }
       ctx.restore();
+      
     } else if(e.img) {
       ctx.drawImage(e.img, e.x, e.y, e.w, e.h);
     } else {
