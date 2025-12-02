@@ -27,6 +27,9 @@
   #startOverlay{background:rgba(0,0,0,0.7);color:#fff;display:flex;overflow:hidden}
   #pauseOverlay{background:rgba(0,0,0,0.8);color:#fff;backdrop-filter:blur(3px)}
   
+  /* ARKA PLAN VİDEOSU */
+  #bgVideo { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; opacity: 0.8; }
+
   /* LOGO & SLOGAN */
   #startLogo {
     width: 90px; height: 90px; border-radius: 50%; border: 3px solid #22d3ee;
@@ -40,6 +43,7 @@
     margin-bottom: 25px; font-weight: 600; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(34, 211, 238, 0.2);
   }
 
+  /* GAME OVER */
   #gameOver { background: transparent; justify-content: flex-start; padding-top: 40vh; overflow-y: auto; }
   #mondayChampBox {
     display: none; flex-direction: column; align-items: center; margin-bottom: 10px; padding: 8px 15px;
@@ -219,12 +223,15 @@ function keyOutDark(img, TH=50){
 const PLAYER_SRC="img/player/bpc_mini.png";
 const PEACOCK_SRC="yc3ku6.jpg";
 
-/* === SPRITE CONFIG (İSİMLER DÜZELTİLDİ) === */
+/* === SPRITE CONFIG (İSİMLER & KARELER DÜZELTİLDİ) === */
 const SPRITE_CONFIG = {
+  // Sprite olanlar
   ufo_red: { src: "ufo_red_sprite.png", frames: 85 },
-  green:   { src: "bpc_enemy_green_sprite.png", frames: 30 }, /* Küçük harf bpc ile düzeltildi */
-  ufo_gray:{ src: "ufo_gray_sprite.png", frames: 30 },
-  meteor:  { src: "meteorite_Yellow.png", frames: 30 }
+  green:   { src: "bpc_enemy_green_sprite.png", frames: 0 }, // 0 = Otomatik hesapla
+  ufo_gray:{ src: "ufo_gray_sprite.png", frames: 0 }, // 0 = Otomatik hesapla
+  meteor:  { src: "meteorite_Yellow.png", frames: 0 }, // 0 = Otomatik hesapla
+  // Sprite olmayanlar (Statik)
+  red:     { src: "bpc_enemy_red.png", frames: 1 }
 };
 
 let bullets=[], enemies=[], enemyBullets=[], gems=[], mascots=[], particles=[];
@@ -333,12 +340,11 @@ function spawnEnemy(k, spMul){
   // SPRITE SİSTEMİ
   let isSprite = false, img = null, frames = 1;
   
-  if (SPRITE_CONFIG[kind]) {
-    isSprite = true;
-    img = loadedSprites[kind];
-    frames = SPRITE_CONFIG[kind].frames;
-  } else {
-    img = null; 
+  // Eğer loadedSprites içinde varsa al
+  if (loadedSprites[kind]) {
+    img = loadedSprites[kind].img;
+    frames = loadedSprites[kind].frames;
+    isSprite = (frames > 1);
   }
   
   enemies.push({
@@ -431,7 +437,7 @@ function update(dt){
     e.shootT+=dt;
     if(e.canShoot&&e.shootT>=e.shootInt){e.shootT=0;enemyShoot(e);}
     
-    // Eğer sprite ise (Green, Gray, Red UFO, Meteor)
+    // Eğer sprite ise (Birden fazla karesi varsa)
     if(e.isSprite && e.img) {
       e.frameTimer += dt;
       // 20ms'de bir kare değiştir (Hızlı animasyon)
@@ -459,26 +465,29 @@ function update(dt){
 function draw(t){
   ctx.clearRect(0,0,cv.width,cv.height);
   
-  // YILDIZLAR HER ZAMAN ÇİZİLİR (Start ekranında da)
+  // YILDIZLAR
   ctx.fillStyle="rgba(190,220,255,.85)";starsA.forEach(s=>ctx.fillRect(s.x,s.y,1,1)); ctx.fillStyle="rgba(255,255,255,.95)";starsB.forEach(s=>ctx.fillRect(s.x,s.y,1.2,1.2));
 
-  // Eğer oyun başlamadıysa sadece yıldızlar görünsün
   if(!started) return;
 
   if(playerImg)ctx.drawImage(playerImg,player.x,player.y,player.w,player.h); else{ctx.fillStyle="#38bdf8";ctx.fillRect(player.x,player.y,player.w,player.h);}
   ctx.fillStyle="#00ffc8";bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
   
-  /* --- GENEL SPRITE ÇİZİMİ --- */
+  /* --- AKILLI DÜŞMAN ÇİZİMİ --- */
   enemies.forEach(e=>{
     if(e.isSprite && e.img) {
+      // Otomatik Kare Genişliği Hesabı
       const frameW = e.img.width / e.totalFrames;
       const frameH = e.img.height; 
       const sx = e.frame * frameW;
       
       ctx.drawImage(e.img, sx, 0, frameW, frameH, e.x, e.y, e.w, e.h);
       
+    } else if(e.img) {
+      // Tek karelik resim (Red gemisi gibi)
+      ctx.drawImage(e.img, e.x, e.y, e.w, e.h);
     } else {
-      // Sprite olmayanlar (eski Red gemisi gibi)
+      // Hiçbir şey yoksa renkli kutu (Hata durumu)
       ctx.fillStyle=e.kind==="green"?"#22c55e":"#ef4444";
       ctx.fillRect(e.x,e.y,e.w,e.h);
     }
@@ -510,12 +519,23 @@ let loadedSprites = {};
   try{const p=await loadImage(PLAYER_SRC);playerImg=keyOutDark(p,80);}catch{}
   try{const bird=await loadImage(PEACOCK_SRC);peacockImg=keyOutDark(bird,70);}catch{}
   
-  // TÜM SPRITE'LARI YÜKLE
+  // TÜM SPRITE'LARI VE RESİMLERİ YÜKLE
   for(const key in SPRITE_CONFIG){
     try{
       const raw = await loadImage(SPRITE_CONFIG[key].src);
       // Garantili Siyah Temizleme
-      loadedSprites[key] = keyOutDark(raw, 50);
+      const processedImg = keyOutDark(raw, 50);
+      
+      // OTOMATİK KARE SAYISI HESAPLAMA
+      let frames = SPRITE_CONFIG[key].frames;
+      if(frames === 0) {
+        // Genişlik / Yükseklik = Kare Sayısı (Yaklaşık)
+        frames = Math.round(raw.width / raw.height);
+        if(frames < 1) frames = 1;
+      }
+      
+      loadedSprites[key] = { img: processedImg, frames: frames };
+      
     }catch(e){console.log("Sprite yüklenemedi: "+key, e)}
   }
 })();
