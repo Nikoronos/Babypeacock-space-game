@@ -220,15 +220,12 @@ function keyOutDark(img, TH=50){
 const PLAYER_SRC="img/player/bpc_mini.png";
 const PEACOCK_SRC="yc3ku6.jpg";
 
-/* === SPRITE CONFIG (SAYILAR EKLENDİ) === */
+/* === SPRITE CONFIG (DÜZELTİLDİ: SADECE RED ve GREEN ATEŞ EDECEK) === */
 const SPRITE_CONFIG = {
-  // 85 Kare kesin
   ufo_red: { src: "ufo_red_sprite.png", frames: 85 },
-  // Diğerleri için 60 kare ortalama değer veriyoruz (Garanti olsun)
   green:   { src: "bpc_enemy_green_sprite.png", frames: 60 }, 
   ufo_gray:{ src: "ufo_gray_sprite.png", frames: 60 },
   meteor:  { src: "meteorite_Yellow.png", frames: 30 },
-  // Red gemisi tek kare
   red:     { src: "bpc_enemy_red.png", frames: 1 }
 };
 
@@ -335,7 +332,6 @@ function spawnEnemy(k, spMul){
   const size=rand(48,70); 
   const kind=k[Math.floor(Math.random()*k.length)]; 
   
-  // SPRITE SİSTEMİ
   let isSprite = false, img = null, frames = 1;
   
   if (loadedSprites[kind]) {
@@ -348,7 +344,8 @@ function spawnEnemy(k, spMul){
     x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul,
     kind, img, isSprite,
     frame:0, frameTimer:0, totalFrames: frames,
-    canShoot:(kind==="red"||kind==="green"||kind==="ufo_red"||kind==="ufo_gray"), 
+    /* SADECE RED VE GREEN ATEŞ EDEBİLİR */
+    canShoot:(kind==="red"||kind==="green"), 
     shootT:0,shootInt:500
   }); 
 }
@@ -475,14 +472,13 @@ function draw(t){
       const frameH = e.img.height; 
       const sx = e.frame * frameW;
       
-      // Hata koruması: sx negatif veya frameW 0 ise çizme
       if(frameW > 0 && sx >= 0) {
         ctx.drawImage(e.img, sx, 0, frameW, frameH, e.x, e.y, e.w, e.h);
       }
     } else if(e.img) {
       ctx.drawImage(e.img, e.x, e.y, e.w, e.h);
     } else {
-      // YEDEK SİSTEM: Resim yüklenemezse renkli kutu göster
+      // YEDEK SİSTEM
       ctx.fillStyle=e.kind==="green"?"#22c55e":"#ef4444";
       ctx.fillRect(e.x,e.y,e.w,e.h);
     }
@@ -518,7 +514,6 @@ let loadedSprites = {};
   for(const key in SPRITE_CONFIG){
     try{
       const raw = await loadImage(SPRITE_CONFIG[key].src);
-      // Garantili Siyah Temizleme
       const processedImg = keyOutDark(raw, 50);
       
       let frames = SPRITE_CONFIG[key].frames;
