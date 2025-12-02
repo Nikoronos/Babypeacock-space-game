@@ -83,10 +83,9 @@
   #globalCounterBox { margin-top:5px;font-size:12px;opacity:.9;text-align:center;color:#cbd5e1;text-shadow:0 2px 4px #000; }
   #globalCounterBox::before { content: "🌍 "; }
   
-  /* --- YENİ ARKA PLAN (SİYAH KAMUFLAJ) --- */
+  /* ARKA PLAN */
   canvas {
     display: block; margin: 0 auto;
-    /* Ortası hafif gece mavisi, kenarlar tam siyah */
     background: radial-gradient(circle at bottom, #0f172a 0%, #020617 50%, #000000 90%);
     touch-action: none; user-select: none; width: 100%; height: 100%
   }
@@ -211,7 +210,7 @@ function rand(a,b){return a+Math.random()*(b-a);}
 function rectHit(a,b){return !(a.x+a.w<b.x||a.x>b.x+b.w||a.y+a.h<b.y||a.y>b.y+b.h);}
 function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.crossOrigin="anonymous";i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
 
-/* Siyah Silici */
+/* Siyah Silici - GÜÇLENDİRİLMİŞ VERSİYON (TH=90) */
 function keyOutDark(img, TH=90){
   const w=img.width,h=img.height;
   const off=document.createElement('canvas'); off.width=w; off.height=h;
@@ -335,9 +334,16 @@ function spawnEnemy(k, spMul){
   const enemyCap = (score >= 1500) ? 22 : (score >= 1300) ? 20 : (score >= 800)  ? 18 : (score >= 500)  ? 14 : 12;
   if(enemies.length > enemyCap) return; 
   
-  const size=rand(48,70); 
+  // KIND'I ÖNCE BELİRLE
   const kind=k[Math.floor(Math.random()*k.length)]; 
   
+  // BOYUT BELİRLEME
+  let size=rand(48,70); 
+  // EĞER KIRMIZI GEMİ İSE DAHA KÜÇÜK YAP
+  if(kind === "red") {
+     size = rand(38, 52); // Daha kibar boyut
+  }
+
   // SPRITE SİSTEMİ
   let isSprite = false, img = null, frames = 1;
   
