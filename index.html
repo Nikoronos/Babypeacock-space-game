@@ -7,7 +7,7 @@
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   
-  /* UI ELEMENTLERİ - Başlangıçta GİZLİ */
+  /* UI ELEMENTLERİ */
   #brand{display:none; position:fixed;top:max(6px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));z-index:10;font-weight:900;
     background:linear-gradient(90deg,#22d3ee,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent}
   #score{display:none; position:fixed;top:max(8px,env(safe-area-inset-top));left:0;right:0;text-align:center;color:#00ffc8;font-weight:700;z-index:10}
@@ -24,10 +24,7 @@
 
   /* OVERLAYLER */
   #startOverlay,#gameOver,#pauseOverlay,#countdownOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:60}
-  
-  /* Start Overlay - Video kaldırıldı, yerine hafif karartma */
   #startOverlay{background:rgba(0,0,0,0.7);color:#fff;display:flex;overflow:hidden}
-  
   #pauseOverlay{background:rgba(0,0,0,0.8);color:#fff;backdrop-filter:blur(3px)}
   
   /* LOGO & SLOGAN */
@@ -43,9 +40,7 @@
     margin-bottom: 25px; font-weight: 600; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(34, 211, 238, 0.2);
   }
 
-  /* GAME OVER */
   #gameOver { background: transparent; justify-content: flex-start; padding-top: 40vh; overflow-y: auto; }
-  
   #mondayChampBox {
     display: none; flex-direction: column; align-items: center; margin-bottom: 10px; padding: 8px 15px;
     background: rgba(250, 204, 21, 0.15); border: 1px solid #facc15; border-radius: 8px; 
@@ -57,13 +52,11 @@
     display: none; font-family: monospace; color:#00ffc8;font-size:13px;font-weight:bold;
     background:#000;padding:4px 8px;border-radius:4px;border:1px dashed #00ffc8; margin-top:4px;
   }
-
   #countdownOverlay{background:transparent;pointer-events:none;z-index:70}
   #cntText{font-size:90px;font-weight:900;color:#fff;text-shadow:0 0 25px #22d3ee;font-family:monospace}
   @keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
-
   .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer;margin-bottom:5px;box-shadow:0 0 20px rgba(0,255,200,0.4);}
-
+  
   #soundToggle {
     margin-top: 20px; width: 44px; height: 44px; border-radius: 50%;
     border: 1px solid rgba(34, 211, 238, 0.5); background: rgba(15, 23, 42, 0.6);
@@ -86,10 +79,8 @@
   .rank-num { display:inline-block;width:25px;text-align:right;margin-right:8px;color:#94a3b8;font-weight:bold;font-family:monospace; }
   #bpc-top10 .me{color:#ff5c5c;font-weight:bold} 
   #bpc-top10 .me .rank-num{color:#ff5c5c}
-
   #globalCounterBox { margin-top:5px;font-size:12px;opacity:.9;text-align:center;color:#cbd5e1;text-shadow:0 2px 4px #000; }
   #globalCounterBox::before { content: "🌍 "; }
-
   canvas{display:block;margin:0 auto;background:#020617;touch-action:none;user-select:none;width:100%;height:100%}
 </style>
 </head>
@@ -212,7 +203,7 @@ function rand(a,b){return a+Math.random()*(b-a);}
 function rectHit(a,b){return !(a.x+a.w<b.x||a.x>b.x+b.w||a.y+a.h<b.y||a.y>b.y+b.h);}
 function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.crossOrigin="anonymous";i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
 
-/* Siyah Silici (Sprite'lar için) */
+/* Siyah Silici */
 function keyOutDark(img, TH=50){
   const w=img.width,h=img.height;
   const off=document.createElement('canvas'); off.width=w; off.height=h;
@@ -228,12 +219,12 @@ function keyOutDark(img, TH=50){
 const PLAYER_SRC="img/player/bpc_mini.png";
 const PEACOCK_SRC="yc3ku6.jpg";
 
-/* === SPRITE TANIMLARI (DOSYA ADLARI BURADA) === */
+/* === SPRITE CONFIG (İSİMLER DÜZELTİLDİ) === */
 const SPRITE_CONFIG = {
   ufo_red: { src: "ufo_red_sprite.png", frames: 85 },
-  green:   { src: "Bpc_enemy_green_sprite.png", frames: 30 }, // Tahmini 30 kare
-  ufo_gray:{ src: "ufo_gray_sprite.png", frames: 30 }, // Tahmini 30 kare
-  meteor:  { src: "meteorite_Yellow.png", frames: 30 } // Tahmini 30 kare
+  green:   { src: "bpc_enemy_green_sprite.png", frames: 30 }, /* Küçük harf bpc ile düzeltildi */
+  ufo_gray:{ src: "ufo_gray_sprite.png", frames: 30 },
+  meteor:  { src: "meteorite_Yellow.png", frames: 30 }
 };
 
 let bullets=[], enemies=[], enemyBullets=[], gems=[], mascots=[], particles=[];
@@ -326,7 +317,6 @@ function explosion(x,y,count=18){
 }
 
 function allowedKindsByTime(t){
-  // 800 Puandan sonra Meteor eklenir
   if(score > 800) return ["ufo_red","ufo_gray","green","red","meteor"];
   if(t<10) return ["ufo_red","ufo_gray"]; 
   if(t<40) return ["ufo_red","ufo_gray","green"]; 
@@ -348,7 +338,6 @@ function spawnEnemy(k, spMul){
     img = loadedSprites[kind];
     frames = SPRITE_CONFIG[kind].frames;
   } else {
-    // Red gemisi gibi sprite olmayanlar (varsa)
     img = null; 
   }
   
@@ -356,7 +345,7 @@ function spawnEnemy(k, spMul){
     x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul,
     kind, img, isSprite,
     frame:0, frameTimer:0, totalFrames: frames,
-    canShoot:(kind==="red"||kind==="green"||kind==="ufo_red"||kind==="ufo_gray"), // Meteor ateş etmez
+    canShoot:(kind==="red"||kind==="green"||kind==="ufo_red"||kind==="ufo_gray"), 
     shootT:0,shootInt:500
   }); 
 }
@@ -367,7 +356,6 @@ function enemyShoot(e){
   const mul = (score >= 1500) ? 1.78 : (score >= 1300) ? 1.60 : (score >= 800)  ? 1.45 : (score >= 500)  ? 1.20 : (score >= 300)  ? 1.10 : 1.00;
   const finalMul = mul * dyn;
   
-  // Mermi stilleri
   if(e.kind==="red") enemyBullets.push({x:cx-2,y:e.y+e.h,w:4,h:12,vy:6*finalMul,color:"#ef4444"});
   else enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6.5*finalMul,color:"#22c55e"}); 
 }
@@ -408,7 +396,6 @@ async function endGame(){
 }
 
 function update(dt){
-  // Yıldızlar her zaman akar (Start ekranında da)
   starsA.forEach(s=>{s.y+=s.sp;if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);}}); 
   starsB.forEach(s=>{s.y+=s.sp;if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);}});
   
