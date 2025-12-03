@@ -7,38 +7,51 @@
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   
-  /* --- YENİ UI DÜZENİ (TEK SIRA - YAN YANA) --- */
+  /* --- YENİ UI DÜZENİ (DAHA BÜYÜK VE RENKLİ) --- */
   #ui-layer {
     position: fixed; top: 0; left: 0; right: 0;
-    height: 40px; /* Yükseklik */
-    padding: max(5px, env(safe-area-inset-top)) 10px 0 10px;
+    height: 55px; /* Alan genişletildi */
+    padding: max(10px, env(safe-area-inset-top)) 15px 0 15px;
     display: none; /* Başlangıçta gizli */
     flex-direction: row; 
-    justify-content: space-between; /* Sağa sola yasla */
-    align-items: center;
+    justify-content: space-between; 
+    align-items: flex-start; /* Üstten hizala */
     z-index: 20; pointer-events: none;
     background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
-    font-size: 13px; font-weight: 700;
-    white-space: nowrap; /* Asla alt satıra geçme */
+    font-size: 16px; /* Genel font büyüdü */
+    white-space: nowrap; 
   }
 
-  /* Sol Grup: İsim */
+  /* Sol Grup: İsim (BÜYÜDÜ) */
   #brand {
     background:linear-gradient(90deg,#22d3ee,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent;
-    font-weight: 900; text-shadow: 0 0 10px rgba(34, 211, 238, 0.3);
+    font-weight: 900; font-size: 18px; /* Büyütüldü */
+    text-shadow: 0 0 15px rgba(34, 211, 238, 0.4);
   }
 
-  /* Orta Grup: Skor ve Canlar (Yan Yana) */
+  /* Orta Grup: Skor ve Canlar */
   .center-group {
     position: absolute; left: 50%; transform: translateX(-50%);
-    display: flex; gap: 15px; align-items: center;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
   }
   
-  #score { color:#00ffc8; text-shadow: 0 0 5px rgba(0, 255, 200, 0.5); }
-  #lives { color:#f87171; letter-spacing: 1px; font-size: 12px; }
+  #score { 
+    color:#00ffc8; font-weight:800; font-size: 20px; /* Büyütüldü */
+    text-shadow: 0 0 8px rgba(0, 255, 200, 0.6); 
+  }
+  
+  /* KALPLER (RENK DEĞİŞİMİ) */
+  #lives { 
+    font-size: 16px; letter-spacing: 3px; 
+    /* Kırmızı emojileri Mavi/Yeşil tonuna çeviren sihirli filtre */
+    filter: hue-rotate(150deg) brightness(1.2); 
+  }
 
-  /* Sağ Grup: Elmas */
-  #power { color:#a7f3d0; }
+  /* Sağ Grup: Elmas (BÜYÜDÜ) */
+  #power { 
+    color:#a7f3d0; font-weight:800; font-size: 18px; /* Büyütüldü */
+    text-shadow: 0 0 8px rgba(167, 243, 208, 0.5);
+  }
 
   /* PAUSE BUTONU */
   #pauseBtn{
@@ -112,6 +125,7 @@
   #globalCounterBox { margin-top:5px;font-size:12px;opacity:.9;text-align:center;color:#cbd5e1;text-shadow:0 2px 4px #000; }
   #globalCounterBox::before { content: "🌍 "; }
   
+  /* KAMUFLAJ ARKA PLAN */
   canvas {
     display: block; margin: 0 auto;
     background: radial-gradient(circle at center, #0f172a 0%, #020617 60%, #000000 100%);
@@ -270,8 +284,8 @@ let score=0,lives=3,started=false,gameOver=false,paused=false,inCountdown=false;
 let powerTime=0, fireTimer=0, FIRE_MS=170;
 let elapsed=0,enT=0,gemT=0,mascotT=0;
 let scoreSent=false;
-// GEMİ POZİSYONU DÜZELTİLDİ (Butonla çakışmaması için)
-let player={x:cv.width/2-33,y:cv.height-90,w:66,h:66};
+// GEMİ POZİSYONU SIFIRA İNDİRİLDİ (120) - Butonla öpüşüyor
+let player={x:cv.width/2-33,y:cv.height-120,w:66,h:66};
 
 function getPlayerCode(){ let c=localStorage.getItem("playerCode"); if(!c){c="BPC"+Math.floor(100000+Math.random()*899999);localStorage.setItem("playerCode",c);} return c; }
 const myCode=getPlayerCode();
@@ -301,7 +315,7 @@ function startCountdownSequence(callback) {
 function initGame(){
   if(started)return;
   
-  /* TAM EKRAN MODU EKLENDİ */
+  /* TAM EKRAN MODU EKLENDİ (Geri Getirildi) */
   const doc=document.documentElement; 
   try{
     if(doc.requestFullscreen) doc.requestFullscreen();
@@ -315,7 +329,7 @@ function initGame(){
   
   startCountdownSequence(()=>{
     started=true; paused=false; uiPause.style.display="flex";
-    player.y=cv.height-90; /* Gemi pozisyonu */
+    player.y=cv.height-120; /* Start ve Restart aynı konumda */
     player.x=cv.width/2-player.w/2;
   });
 }
@@ -375,6 +389,7 @@ function spawnEnemy(k, spMul){
   
   const kind=k[Math.floor(Math.random()*k.length)]; 
   
+  // BOYUT: Kırmızı gemi büyütüldü
   let size=rand(48,70); 
   if(kind === "red") size = rand(60, 80); 
 
@@ -569,7 +584,8 @@ restartBtn.onclick=()=>{
   playId=Math.floor(performance.now()+Math.random()*1e9); makeCode();
   started=true; 
   uiLayer.style.display="flex"; uiPause.style.display="flex";
-  player.y=cv.height-140; player.x=cv.width/2-player.w/2;
+  player.y=cv.height-120; /* Restart konumunu da 120 yaptık */
+  player.x=cv.width/2-player.w/2;
 };
 
 let playerImg=null, peacockImg=null;
