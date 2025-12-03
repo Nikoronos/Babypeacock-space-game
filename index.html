@@ -7,7 +7,7 @@
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   
-  /* --- UI DÜZENİ (GRID SİSTEMİ - SON HALİ) --- */
+  /* --- UI DÜZENİ (GRID SİSTEMİ) --- */
   #ui-layer {
     position: fixed; top: 0; left: 0; right: 0;
     height: 55px;
@@ -148,14 +148,15 @@
   <canvas id="game"></canvas>
 
 <script>
-/* ====== SES SİSTEMİ (CACHE BUSTER EKLENDİ) ====== */
-// Dosya sonuna rastgele sayı ekleyerek tarayıcıyı yenisini indirmeye zorluyoruz
-const v = "?v=" + Math.floor(Math.random() * 9999); 
+/* ====== YENİ GELİŞMİŞ SES SİSTEMİ ====== */
+const v = "?v=" + Math.floor(Math.random() * 9999); // Önbellek temizleyici
 
 const sounds = {
-  laser: new Audio("laser.mp3" + v), // Zorla yeni dosyayı çek
-  boom: new Audio("boom.mp3" + v),
-  gem: new Audio("gem.mp3" + v)
+  normalShot: new Audio("laser_one.mp3" + v), // NORMAL ATIŞ
+  powerShot:  new Audio("laser.mp3" + v),     // GÜÇLÜ ATIŞ
+  boomUfo:    new Audio("boom.mp3" + v),      // UFO PATLAMASI
+  boomShip:   new Audio("boom_one.mp3" + v),  // GEMİ PATLAMASI
+  gem:        new Audio("gem.mp3" + v)        // ELMAS SESİ
 };
 
 let soundEnabled = localStorage.getItem("bpc_sound") !== "0"; 
@@ -175,17 +176,30 @@ soundBtn.onclick = (e) => {
   updateSoundIcon();
 };
 
-function playLaser() {
+/* SES FONKSİYONLARI */
+function playShootSound(isPower) {
   if (!soundEnabled) return;
-  // Lazer için klonlama taktiği (Seri atışta takılmasın)
-  const s = sounds.laser.cloneNode();
+  // Eğer güç varsa laser.mp3, yoksa laser_one.mp3 çal
+  const sound = isPower ? sounds.powerShot : sounds.normalShot;
+  
+  // Klonlama tekniği (Seri atışta takılmasın)
+  const s = sound.cloneNode();
   s.volume = 0.4; 
   s.play().catch(e => {});
 }
 
-function playBoom() {
+function playExplosionSound(kind) {
   if (!soundEnabled) return;
-  const s = sounds.boom.cloneNode();
+  
+  let s;
+  // Kırmızı veya Yeşil gemi ise boom_one.mp3 çal
+  if (kind === 'red' || kind === 'green') {
+    s = sounds.boomShip.cloneNode();
+  } else {
+    // UFO ise boom.mp3 çal
+    s = sounds.boomUfo.cloneNode();
+  }
+  
   s.volume = 0.8;
   s.play().catch(e => {});
 }
@@ -221,7 +235,6 @@ function rand(a,b){return a+Math.random()*(b-a);}
 function rectHit(a,b){return !(a.x+a.w<b.x||a.x>b.x+b.w||a.y+a.h<b.y||a.y>b.y+b.h);}
 function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.crossOrigin="anonymous";i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
 
-/* Siyah Silici */
 function keyOutDark(img, TH){
   const w=img.width,h=img.height;
   const off=document.createElement('canvas'); off.width=w; off.height=h;
@@ -250,7 +263,6 @@ let score=0,lives=3,started=false,gameOver=false,paused=false,inCountdown=false;
 let powerTime=0, fireTimer=0, FIRE_MS=170;
 let elapsed=0,enT=0,gemT=0,mascotT=0;
 let scoreSent=false;
-// GEMİ POZİSYONU
 let player={x:cv.width/2-33,y:cv.height-120,w:66,h:66};
 
 function getPlayerCode(){ let c=localStorage.getItem("playerCode"); if(!c){c="BPC"+Math.floor(100000+Math.random()*899999);localStorage.setItem("playerCode",c);} return c; }
@@ -280,7 +292,6 @@ function startCountdownSequence(callback) {
 
 function initGame(){
   if(started)return;
-  
   const doc=document.documentElement; 
   try{
     if(doc.requestFullscreen) doc.requestFullscreen();
@@ -310,7 +321,9 @@ cv.addEventListener("pointermove",e=>{if(!holding||paused||inCountdown)return;pl
 cv.addEventListener("pointerup",()=>holding=false); cv.addEventListener("pointercancel",()=>holding=false);
 
 function shoot(){
-  playLaser(); 
+  // ATIŞ SESİNİ BURADA SEÇİYORUZ
+  playShootSound(powerTime > 0);
+
   if(powerTime>0){ bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10}); bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10,ang:3}); bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10,ang:-3}); }
   else { bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10}); }
 }
@@ -334,7 +347,7 @@ function spawnMascot(){
 }
 
 function explosion(x,y,count=18){
-  playBoom(); 
+  // Patlama sesi (Burada çağrılmaz, rectHit içinde çağrılır)
   const left=Math.max(0,120-particles.length);const n=Math.min(12,left);
   for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=1.2+Math.random()*2.8;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:420+Math.random()*280,size:1.6+Math.random()*2.4});}
 }
@@ -350,7 +363,6 @@ function spawnEnemy(k, spMul){
   if(enemies.length > enemyCap) return; 
   
   const kind=k[Math.floor(Math.random()*k.length)]; 
-  
   let size=rand(48,70); 
   if(kind === "red") size = rand(60, 80); 
 
@@ -451,18 +463,7 @@ function update(dt){
   enemies.forEach(e=>{
     e.y+=e.vy;
     e.shootT+=dt;
-    if(e.canShoot&&e.shootT>=e.shootInt){e.shootT=0;enemyShoot(e);}
-    
-    if(e.isSprite && e.img) {
-      e.frameTimer += dt;
-      if(e.frameTimer > e.frameDelay) { 
-        e.frameTimer = 0;
-        e.frame = (e.frame + 1) % e.totalFrames;
-      }
-    }
-  }); 
-  enemies=enemies.filter(e=>e.y<=cv.height+40);
-
+    if(e.canShoot&&e.shootT>=e.shootInt){e.shootT=0;enemyShoot(e);}}); enemies=enemies.filter(e=>e.y<=cv.height+40);
   enemyBullets.forEach(m=>{m.y+=m.vy;}); enemyBullets=enemyBullets.filter(m=>m.y<cv.height+40);
   gems.forEach(g=>g.y+=g.vy); gems=gems.filter(g=>g.y<cv.height+40); mascots.forEach(m=>m.y+=m.vy); mascots=mascots.filter(m=>m.y<cv.height+40);
   
@@ -470,12 +471,16 @@ function update(dt){
 
   for(const e of enemies){
     if(rectHit(pBox,e)){
+      // ÇARPIŞMA SESİ (GEMİ Mİ UFO MU?)
+      playExplosionSound(e.kind);
       explosion(player.x+player.w/2,player.y+player.h/2,22);
       lives--;updateLives();if(lives<=0)endGame();e.dead=1;
     }
   }
   for(const m of enemyBullets){
     if(rectHit(pBox,m)){
+      // Mermiyi yiyince de tok ses gelsin (boom_one gibi)
+      playExplosionSound('red'); 
       explosion(player.x+player.w/2,player.y+player.h/2,22);
       lives--;updateLives();if(lives<=0)endGame();m.dead=1;
     }
@@ -483,6 +488,8 @@ function update(dt){
   for(const b of bullets){ 
     for(const e of enemies){ 
       if(rectHit(b,e)){ 
+        // DÜŞMAN VURULMA SESİ (GEMİ Mİ UFO MU?)
+        playExplosionSound(e.kind);
         explosion(e.x+e.w/2,e.y+e.h/2,16); b.dead=1; e.dead=1; 
         if(!gameOver){ score++; scEl.textContent=score; } 
       } 
@@ -497,7 +504,6 @@ function update(dt){
 
 function draw(t){
   ctx.clearRect(0,0,cv.width,cv.height);
-  
   ctx.fillStyle="rgba(255,255,255,0.7)";starsA.forEach(s=>ctx.fillRect(s.x,s.y,1,1)); 
   ctx.fillStyle="rgba(255,255,255,0.9)";starsB.forEach(s=>ctx.fillRect(s.x,s.y,1.2,1.2));
 
@@ -516,7 +522,6 @@ function draw(t){
       
       ctx.save();
       if(e.blendMode === 'screen') ctx.globalCompositeOperation = "screen";
-      
       if(frameW > 0 && sx >= 0) {
         ctx.drawImage(e.img, sx, 0, frameW, frameH, e.x, e.y, e.w, e.h);
       }
