@@ -7,7 +7,7 @@
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   
-  /* --- UI DÜZENİ --- */
+  /* --- UI DÜZENİ (GRID SİSTEMİ) --- */
   #ui-layer {
     position: fixed; top: 0; left: 0; right: 0;
     height: 55px;
@@ -148,7 +148,7 @@
   <canvas id="game"></canvas>
 
 <script>
-/* ====== SES SİSTEMİ (GAME OVER EKLENDİ) ====== */
+/* ====== SES SİSTEMİ (GÜNCELLENDİ: LOOPSUZ GAME OVER) ====== */
 const v = "?v=" + Math.floor(Math.random() * 9999); 
 
 const sounds = {
@@ -157,8 +157,11 @@ const sounds = {
   boomUfo:    new Audio("boom.mp3" + v),      
   boomShip:   new Audio("boom_one.mp3" + v),  
   gem:        new Audio("gem.mp3" + v),
-  gameOver:   new Audio("space_chords.mp3" + v) /* YENİ EKLENDİ */
+  gameOver:   new Audio("space_chords.mp3" + v)
 };
+
+// Müzik döngüye girsin (Loop)
+sounds.gameOver.loop = true;
 
 let soundEnabled = localStorage.getItem("bpc_sound") !== "0"; 
 const soundBtn = document.getElementById("soundToggle");
@@ -193,12 +196,9 @@ function playShootSound(isPower) {
 
 function playExplosionSound(kind) {
   if (!soundEnabled) return;
-  let s;
-  if (kind === 'red' || kind === 'green') {
-    s = sounds.boomShip.cloneNode();
-  } else {
-    s = sounds.boomUfo.cloneNode();
-  }
+  
+  // ARTIK HEPSİNDE AYNI TOK SES (BOOM_ONE) ÇALACAK
+  const s = sounds.boomShip.cloneNode(); 
   s.volume = 0.8;
   s.play().catch(e => {});
 }
@@ -234,7 +234,6 @@ function rand(a,b){return a+Math.random()*(b-a);}
 function rectHit(a,b){return !(a.x+a.w<b.x||a.x>b.x+b.w||a.y+a.h<b.y||a.y>b.y+b.h);}
 function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.crossOrigin="anonymous";i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
 
-/* Siyah Silici */
 function keyOutDark(img, TH){
   const w=img.width,h=img.height;
   const off=document.createElement('canvas'); off.width=w; off.height=h;
@@ -253,10 +252,7 @@ const PEACOCK_SRC="yc3ku6.jpg";
 /* === SPRITE CONFIG === */
 const SPRITE_CONFIG = {
   green:   { src: "bpc_enemy_green_sprite.png", frames: 60, mode: 'normal', th: 30, delay: 20 }, 
-  
-  /* KIRMIZI UFO: Delay 15ms (Çok hızlı ve akıcı) - 85 kare olduğu için */
-  ufo_red: { src: "ufo_red_sprite.png", frames: 85, mode: 'screen', th: 100, delay: 15 },
-  
+  ufo_red: { src: "ufo_red_sprite.png", frames: 85, mode: 'screen', th: 100, delay: 20 },
   ufo_gray:{ src: "ufo_gray_sprite.png", frames: 60, mode: 'screen', th: 100, delay: 20 },
   red:     { src: "bpc_enemy_red_sprite.png", frames: 60, mode: 'screen', th: 100, delay: 80 } 
 };
@@ -419,7 +415,6 @@ function renderFinalScore(t){
 async function endGame(){
   gameOver=true; uiPause.style.display="none"; overEl.style.display="flex"; 
   
-  // GAME OVER MÜZİĞİNİ ÇAL
   if(soundEnabled) {
      sounds.gameOver.currentTime = 0;
      sounds.gameOver.play().catch(()=>{});
