@@ -7,40 +7,45 @@
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   
-  /* --- YENİ UI DÜZENİ (DÜZELTİLDİ) --- */
+  /* --- YENİ UI DÜZENİ (TEK SIRA - YAN YANA) --- */
   #ui-layer {
     position: fixed; top: 0; left: 0; right: 0;
-    height: 50px; /* Yükseklik sabitlendi */
+    height: 40px; /* Yükseklik */
     padding: max(5px, env(safe-area-inset-top)) 10px 0 10px;
     display: none; /* Başlangıçta gizli */
-    flex-direction: row; justify-content: space-between; align-items: center;
+    flex-direction: row; 
+    justify-content: space-between; /* Sağa sola yasla */
+    align-items: center;
     z-index: 20; pointer-events: none;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent); /* Hafif gölge */
+    background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
+    font-size: 13px; font-weight: 700;
+    white-space: nowrap; /* Asla alt satıra geçme */
   }
 
-  /* Sol: İsim */
+  /* Sol Grup: İsim */
   #brand {
-    font-weight:900; font-size: 14px;
     background:linear-gradient(90deg,#22d3ee,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent;
-    text-shadow: 0 0 10px rgba(34, 211, 238, 0.3);
+    font-weight: 900; text-shadow: 0 0 10px rgba(34, 211, 238, 0.3);
   }
 
-  /* Orta: Skor ve Canlar */
+  /* Orta Grup: Skor ve Canlar (Yan Yana) */
   .center-group {
-    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    position: absolute; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 15px; align-items: center;
   }
-  #score { color:#00ffc8; font-weight:700; font-size: 16px; text-shadow: 0 0 5px rgba(0, 255, 200, 0.5); }
-  #lives { color:#f87171; font-weight:700; font-size: 12px; letter-spacing: 2px; }
+  
+  #score { color:#00ffc8; text-shadow: 0 0 5px rgba(0, 255, 200, 0.5); }
+  #lives { color:#f87171; letter-spacing: 1px; font-size: 12px; }
 
-  /* Sağ: Elmas */
-  #power { color:#a7f3d0; font-weight:700; font-size: 14px; }
+  /* Sağ Grup: Elmas */
+  #power { color:#a7f3d0; }
 
-  /* PAUSE BUTONU (GEMİDEN UZAKLAŞTIRILDI) */
+  /* PAUSE BUTONU */
   #pauseBtn{
     display:none; position:fixed;left:50%;transform:translateX(-50%);
-    bottom:max(15px,env(safe-area-inset-bottom)); 
+    bottom:max(20px,env(safe-area-inset-bottom)); 
     z-index:50;
-    width:42px;height:42px; 
+    width:40px;height:40px; 
     background:rgba(15, 23, 42, 0.8); border:2px solid #38bdf8; color:#38bdf8; border-radius:50%;
     font-size:14px;font-weight:900;align-items:center;justify-content:center;cursor:pointer;
     box-shadow:0 0 10px rgba(56,189,248,0.4); backdrop-filter: blur(4px);
@@ -66,8 +71,6 @@
 
   /* GAME OVER */
   #gameOver { background: transparent; justify-content: flex-start; padding-top: 40vh; overflow-y: auto; }
-  
-  /* ŞAMPİYON KUTUSU */
   #mondayChampBox {
     display: none; flex-direction: column; align-items: center; margin-bottom: 10px; padding: 8px 15px;
     background: rgba(250, 204, 21, 0.15); border: 1px solid #facc15; border-radius: 8px; 
@@ -79,7 +82,6 @@
     display: none; font-family: monospace; color:#00ffc8;font-size:13px;font-weight:bold;
     background:#000;padding:4px 8px;border-radius:4px;border:1px dashed #00ffc8; margin-top:4px;
   }
-  
   #countdownOverlay{background:transparent;pointer-events:none;z-index:70}
   #cntText{font-size:90px;font-weight:900;color:#fff;text-shadow:0 0 25px #22d3ee;font-family:monospace}
   @keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
@@ -110,7 +112,6 @@
   #globalCounterBox { margin-top:5px;font-size:12px;opacity:.9;text-align:center;color:#cbd5e1;text-shadow:0 2px 4px #000; }
   #globalCounterBox::before { content: "🌍 "; }
   
-  /* KAMUFLAJ ARKA PLAN */
   canvas {
     display: block; margin: 0 auto;
     background: radial-gradient(circle at center, #0f172a 0%, #020617 60%, #000000 100%);
@@ -269,8 +270,8 @@ let score=0,lives=3,started=false,gameOver=false,paused=false,inCountdown=false;
 let powerTime=0, fireTimer=0, FIRE_MS=170;
 let elapsed=0,enT=0,gemT=0,mascotT=0;
 let scoreSent=false;
-// GEMİ POZİSYONU YUKARI ALINDI: 140 piksel
-let player={x:cv.width/2-33,y:cv.height-140,w:66,h:66};
+// GEMİ POZİSYONU DÜZELTİLDİ (Butonla çakışmaması için)
+let player={x:cv.width/2-33,y:cv.height-90,w:66,h:66};
 
 function getPlayerCode(){ let c=localStorage.getItem("playerCode"); if(!c){c="BPC"+Math.floor(100000+Math.random()*899999);localStorage.setItem("playerCode",c);} return c; }
 const myCode=getPlayerCode();
@@ -299,8 +300,14 @@ function startCountdownSequence(callback) {
 
 function initGame(){
   if(started)return;
+  
+  /* TAM EKRAN MODU EKLENDİ */
   const doc=document.documentElement; 
-  try{if(doc.requestFullscreen)doc.requestFullscreen();else if(doc.webkitRequestFullscreen)doc.webkitRequestFullscreen();}catch(e){}
+  try{
+    if(doc.requestFullscreen) doc.requestFullscreen();
+    else if(doc.webkitRequestFullscreen) doc.webkitRequestFullscreen();
+  }catch(e){}
+
   if(audioCtx && audioCtx.state === 'suspended') { audioCtx.resume(); }
 
   startOverlay.style.display="none"; 
@@ -308,7 +315,7 @@ function initGame(){
   
   startCountdownSequence(()=>{
     started=true; paused=false; uiPause.style.display="flex";
-    player.y=cv.height-140; 
+    player.y=cv.height-90; /* Gemi pozisyonu */
     player.x=cv.width/2-player.w/2;
   });
 }
@@ -351,6 +358,7 @@ function spawnMascot(){
 
 function explosion(x,y,count=18){
   playBoom(); 
+  // OPTİMİZASYON: Parçacık sayısı azaltıldı (12)
   const left=Math.max(0,120-particles.length);const n=Math.min(12,left);
   for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=1.2+Math.random()*2.8;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:420+Math.random()*280,size:1.6+Math.random()*2.4});}
 }
