@@ -7,7 +7,7 @@
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   
-  /* --- UI DÜZENİ (GRID SİSTEMİ) --- */
+  /* --- UI DÜZENİ --- */
   #ui-layer {
     position: fixed; top: 0; left: 0; right: 0;
     height: 55px;
@@ -48,6 +48,7 @@
     color:#a7f3d0; text-shadow: 0 0 6px rgba(167, 243, 208, 0.5); font-size: 16px;
   }
 
+  /* PAUSE BUTONU */
   #pauseBtn{
     display:none; position:fixed;left:50%;transform:translateX(-50%);
     bottom:max(20px,env(safe-area-inset-bottom)); 
@@ -58,6 +59,7 @@
     box-shadow:0 0 10px rgba(56,189,248,0.4); backdrop-filter: blur(4px);
   }
 
+  /* OVERLAYLER */
   #startOverlay,#gameOver,#pauseOverlay,#countdownOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:60}
   #startOverlay{background:rgba(0,0,0,0.85);color:#fff;display:flex;overflow:hidden}
   #pauseOverlay{background:rgba(0,0,0,0.8);color:#fff;backdrop-filter:blur(3px)}
@@ -148,15 +150,15 @@
   <canvas id="game"></canvas>
 
 <script>
-/* ====== YENİ GELİŞMİŞ SES SİSTEMİ ====== */
-const v = "?v=" + Math.floor(Math.random() * 9999); // Önbellek temizleyici
+/* ====== SES SİSTEMİ (GÜNCELLENDİ) ====== */
+const v = "?v=" + Math.floor(Math.random() * 9999); 
 
 const sounds = {
-  normalShot: new Audio("laser_one.mp3" + v), // NORMAL ATIŞ
-  powerShot:  new Audio("laser.mp3" + v),     // GÜÇLÜ ATIŞ
-  boomUfo:    new Audio("boom.mp3" + v),      // UFO PATLAMASI
-  boomShip:   new Audio("boom_one.mp3" + v),  // GEMİ PATLAMASI
-  gem:        new Audio("gem.mp3" + v)        // ELMAS SESİ
+  normalShot: new Audio("laser_one.mp3" + v), 
+  powerShot:  new Audio("laser.mp3" + v),     
+  boomUfo:    new Audio("boom.mp3" + v),      
+  boomShip:   new Audio("boom_one.mp3" + v),  
+  gem:        new Audio("gem.mp3" + v)        
 };
 
 let soundEnabled = localStorage.getItem("bpc_sound") !== "0"; 
@@ -176,13 +178,9 @@ soundBtn.onclick = (e) => {
   updateSoundIcon();
 };
 
-/* SES FONKSİYONLARI */
 function playShootSound(isPower) {
   if (!soundEnabled) return;
-  // Eğer güç varsa laser.mp3, yoksa laser_one.mp3 çal
   const sound = isPower ? sounds.powerShot : sounds.normalShot;
-  
-  // Klonlama tekniği (Seri atışta takılmasın)
   const s = sound.cloneNode();
   s.volume = 0.4; 
   s.play().catch(e => {});
@@ -192,11 +190,11 @@ function playExplosionSound(kind) {
   if (!soundEnabled) return;
   
   let s;
-  // Kırmızı veya Yeşil gemi ise boom_one.mp3 çal
+  // Kırmızı veya Yeşil gemi ise boom_one.mp3
   if (kind === 'red' || kind === 'green') {
     s = sounds.boomShip.cloneNode();
   } else {
-    // UFO ise boom.mp3 çal
+    // UFO ise boom.mp3
     s = sounds.boomUfo.cloneNode();
   }
   
@@ -250,11 +248,12 @@ function keyOutDark(img, TH){
 const PLAYER_SRC="img/player/bpc_mini.png";
 const PEACOCK_SRC="yc3ku6.jpg";
 
-/* === SPRITE CONFIG === */
+/* === SPRITE CONFIG (DOSYALAR SABİTLENDİ) === */
 const SPRITE_CONFIG = {
   green:   { src: "bpc_enemy_green_sprite.png", frames: 60, mode: 'normal', th: 30, delay: 20 }, 
   ufo_red: { src: "ufo_red_sprite.png", frames: 85, mode: 'screen', th: 100, delay: 20 },
   ufo_gray:{ src: "ufo_gray_sprite.png", frames: 60, mode: 'screen', th: 100, delay: 20 },
+  // KIRMIZI GEMİ ARTIK SPRITE!
   red:     { src: "bpc_enemy_red_sprite.png", frames: 60, mode: 'screen', th: 100, delay: 80 } 
 };
 
@@ -321,9 +320,7 @@ cv.addEventListener("pointermove",e=>{if(!holding||paused||inCountdown)return;pl
 cv.addEventListener("pointerup",()=>holding=false); cv.addEventListener("pointercancel",()=>holding=false);
 
 function shoot(){
-  // ATIŞ SESİNİ BURADA SEÇİYORUZ
   playShootSound(powerTime > 0);
-
   if(powerTime>0){ bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10}); bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10,ang:3}); bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10,ang:-3}); }
   else { bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10}); }
 }
@@ -347,7 +344,7 @@ function spawnMascot(){
 }
 
 function explosion(x,y,count=18){
-  // Patlama sesi (Burada çağrılmaz, rectHit içinde çağrılır)
+  // Ses çalma burada DEĞİL, çarpışma anında
   const left=Math.max(0,120-particles.length);const n=Math.min(12,left);
   for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=1.2+Math.random()*2.8;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:420+Math.random()*280,size:1.6+Math.random()*2.4});}
 }
@@ -363,6 +360,8 @@ function spawnEnemy(k, spMul){
   if(enemies.length > enemyCap) return; 
   
   const kind=k[Math.floor(Math.random()*k.length)]; 
+  
+  // BOYUT
   let size=rand(48,70); 
   if(kind === "red") size = rand(60, 80); 
 
@@ -463,7 +462,18 @@ function update(dt){
   enemies.forEach(e=>{
     e.y+=e.vy;
     e.shootT+=dt;
-    if(e.canShoot&&e.shootT>=e.shootInt){e.shootT=0;enemyShoot(e);}}); enemies=enemies.filter(e=>e.y<=cv.height+40);
+    if(e.canShoot&&e.shootT>=e.shootInt){e.shootT=0;enemyShoot(e);}
+    
+    if(e.isSprite && e.img) {
+      e.frameTimer += dt;
+      if(e.frameTimer > e.frameDelay) { 
+        e.frameTimer = 0;
+        e.frame = (e.frame + 1) % e.totalFrames;
+      }
+    }
+  }); 
+  enemies=enemies.filter(e=>e.y<=cv.height+40);
+
   enemyBullets.forEach(m=>{m.y+=m.vy;}); enemyBullets=enemyBullets.filter(m=>m.y<cv.height+40);
   gems.forEach(g=>g.y+=g.vy); gems=gems.filter(g=>g.y<cv.height+40); mascots.forEach(m=>m.y+=m.vy); mascots=mascots.filter(m=>m.y<cv.height+40);
   
@@ -471,7 +481,6 @@ function update(dt){
 
   for(const e of enemies){
     if(rectHit(pBox,e)){
-      // ÇARPIŞMA SESİ (GEMİ Mİ UFO MU?)
       playExplosionSound(e.kind);
       explosion(player.x+player.w/2,player.y+player.h/2,22);
       lives--;updateLives();if(lives<=0)endGame();e.dead=1;
@@ -479,7 +488,6 @@ function update(dt){
   }
   for(const m of enemyBullets){
     if(rectHit(pBox,m)){
-      // Mermiyi yiyince de tok ses gelsin (boom_one gibi)
       playExplosionSound('red'); 
       explosion(player.x+player.w/2,player.y+player.h/2,22);
       lives--;updateLives();if(lives<=0)endGame();m.dead=1;
@@ -488,7 +496,6 @@ function update(dt){
   for(const b of bullets){ 
     for(const e of enemies){ 
       if(rectHit(b,e)){ 
-        // DÜŞMAN VURULMA SESİ (GEMİ Mİ UFO MU?)
         playExplosionSound(e.kind);
         explosion(e.x+e.w/2,e.y+e.h/2,16); b.dead=1; e.dead=1; 
         if(!gameOver){ score++; scEl.textContent=score; } 
@@ -504,6 +511,7 @@ function update(dt){
 
 function draw(t){
   ctx.clearRect(0,0,cv.width,cv.height);
+  
   ctx.fillStyle="rgba(255,255,255,0.7)";starsA.forEach(s=>ctx.fillRect(s.x,s.y,1,1)); 
   ctx.fillStyle="rgba(255,255,255,0.9)";starsB.forEach(s=>ctx.fillRect(s.x,s.y,1.2,1.2));
 
@@ -522,6 +530,7 @@ function draw(t){
       
       ctx.save();
       if(e.blendMode === 'screen') ctx.globalCompositeOperation = "screen";
+      
       if(frameW > 0 && sx >= 0) {
         ctx.drawImage(e.img, sx, 0, frameW, frameH, e.x, e.y, e.w, e.h);
       }
