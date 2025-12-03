@@ -7,58 +7,54 @@
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   
-  /* --- YENİ UI DÜZENİ (DAHA BÜYÜK VE RENKLİ) --- */
+  /* --- YENİ UI DÜZENİ (YAN YANA & ORTALI) --- */
   #ui-layer {
     position: fixed; top: 0; left: 0; right: 0;
-    height: 55px; /* Alan genişletildi */
-    padding: max(10px, env(safe-area-inset-top)) 15px 0 15px;
+    height: 50px;
+    padding: max(10px, env(safe-area-inset-top)) 12px 0 12px;
     display: none; /* Başlangıçta gizli */
     flex-direction: row; 
     justify-content: space-between; 
-    align-items: flex-start; /* Üstten hizala */
+    align-items: center; /* Dikeyde ortala */
     z-index: 20; pointer-events: none;
     background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
-    font-size: 16px; /* Genel font büyüdü */
+    font-size: 15px; font-weight: 800;
     white-space: nowrap; 
   }
 
-  /* Sol Grup: İsim (BÜYÜDÜ) */
+  /* Sol: İsim */
   #brand {
     background:linear-gradient(90deg,#22d3ee,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent;
-    font-weight: 900; font-size: 18px; /* Büyütüldü */
-    text-shadow: 0 0 15px rgba(34, 211, 238, 0.4);
+    font-weight: 900; text-shadow: 0 0 10px rgba(34, 211, 238, 0.3);
   }
 
-  /* Orta Grup: Skor ve Canlar */
+  /* Orta Grup: Skor ve Kalpler (YAN YANA) */
   .center-group {
     position: absolute; left: 50%; transform: translateX(-50%);
-    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    display: flex; flex-direction: row; /* Yan yana diz */
+    align-items: center; 
+    gap: 10px; /* Aralarındaki boşluk */
   }
   
-  #score { 
-    color:#00ffc8; font-weight:800; font-size: 20px; /* Büyütüldü */
-    text-shadow: 0 0 8px rgba(0, 255, 200, 0.6); 
-  }
+  #score { color:#00ffc8; text-shadow: 0 0 6px rgba(0, 255, 200, 0.5); }
   
-  /* KALPLER (RENK DEĞİŞİMİ) */
+  /* KALPLER (ORİJİNAL PEMBE RENK) */
   #lives { 
-    font-size: 16px; letter-spacing: 3px; 
-    /* Kırmızı emojileri Mavi/Yeşil tonuna çeviren sihirli filtre */
-    filter: hue-rotate(150deg) brightness(1.2); 
+    letter-spacing: 1px; font-size: 14px;
+    filter: none; /* Filtre kaldırıldı, orijinal renk */
+    text-shadow: 0 0 5px rgba(255, 50, 50, 0.4);
   }
 
-  /* Sağ Grup: Elmas (BÜYÜDÜ) */
-  #power { 
-    color:#a7f3d0; font-weight:800; font-size: 18px; /* Büyütüldü */
-    text-shadow: 0 0 8px rgba(167, 243, 208, 0.5);
-  }
+  /* Sağ: Elmas */
+  #power { color:#a7f3d0; text-shadow: 0 0 6px rgba(167, 243, 208, 0.5); }
+
 
   /* PAUSE BUTONU */
   #pauseBtn{
     display:none; position:fixed;left:50%;transform:translateX(-50%);
     bottom:max(20px,env(safe-area-inset-bottom)); 
     z-index:50;
-    width:40px;height:40px; 
+    width:42px;height:42px; 
     background:rgba(15, 23, 42, 0.8); border:2px solid #38bdf8; color:#38bdf8; border-radius:50%;
     font-size:14px;font-weight:900;align-items:center;justify-content:center;cursor:pointer;
     box-shadow:0 0 10px rgba(56,189,248,0.4); backdrop-filter: blur(4px);
@@ -136,10 +132,12 @@
 <body>
   <div id="ui-layer">
     <div id="brand">Babypeacock 🦚</div>
+    
     <div class="center-group">
       <div id="score">Score: <span id="sc">0</span></div>
       <div id="lives">❤️❤️❤️</div>
     </div>
+    
     <div id="power">💎 <span id="px">0</span>s</div>
   </div>
 
@@ -284,7 +282,7 @@ let score=0,lives=3,started=false,gameOver=false,paused=false,inCountdown=false;
 let powerTime=0, fireTimer=0, FIRE_MS=170;
 let elapsed=0,enT=0,gemT=0,mascotT=0;
 let scoreSent=false;
-// GEMİ POZİSYONU SIFIRA İNDİRİLDİ (120) - Butonla öpüşüyor
+// GEMİ POZİSYONU: Pause butonunun tam üstü (120px)
 let player={x:cv.width/2-33,y:cv.height-120,w:66,h:66};
 
 function getPlayerCode(){ let c=localStorage.getItem("playerCode"); if(!c){c="BPC"+Math.floor(100000+Math.random()*899999);localStorage.setItem("playerCode",c);} return c; }
@@ -315,7 +313,7 @@ function startCountdownSequence(callback) {
 function initGame(){
   if(started)return;
   
-  /* TAM EKRAN MODU EKLENDİ (Geri Getirildi) */
+  /* TAM EKRAN MODU (START'A BASINCA) */
   const doc=document.documentElement; 
   try{
     if(doc.requestFullscreen) doc.requestFullscreen();
@@ -329,7 +327,7 @@ function initGame(){
   
   startCountdownSequence(()=>{
     started=true; paused=false; uiPause.style.display="flex";
-    player.y=cv.height-120; /* Start ve Restart aynı konumda */
+    player.y=cv.height-120; /* Restart konumu ile aynı */
     player.x=cv.width/2-player.w/2;
   });
 }
@@ -389,7 +387,7 @@ function spawnEnemy(k, spMul){
   
   const kind=k[Math.floor(Math.random()*k.length)]; 
   
-  // BOYUT: Kırmızı gemi büyütüldü
+  // BOYUT
   let size=rand(48,70); 
   if(kind === "red") size = rand(60, 80); 
 
@@ -584,8 +582,7 @@ restartBtn.onclick=()=>{
   playId=Math.floor(performance.now()+Math.random()*1e9); makeCode();
   started=true; 
   uiLayer.style.display="flex"; uiPause.style.display="flex";
-  player.y=cv.height-120; /* Restart konumunu da 120 yaptık */
-  player.x=cv.width/2-player.w/2;
+  player.y=cv.height-120; player.x=cv.width/2-player.w/2;
 };
 
 let playerImg=null, peacockImg=null;
