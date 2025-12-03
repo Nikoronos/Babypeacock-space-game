@@ -86,7 +86,7 @@
   /* KAMUFLAJ ARKA PLAN */
   canvas {
     display: block; margin: 0 auto;
-    background: radial-gradient(circle at bottom, #0f172a 0%, #020617 50%, #000000 90%);
+    background: radial-gradient(circle at center, #0f172a 0%, #020617 60%, #000000 100%);
     touch-action: none; user-select: none; width: 100%; height: 100%
   }
 </style>
@@ -210,7 +210,7 @@ function rand(a,b){return a+Math.random()*(b-a);}
 function rectHit(a,b){return !(a.x+a.w<b.x||a.x>b.x+b.w||a.y+a.h<b.y||a.y>b.y+b.h);}
 function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.crossOrigin="anonymous";i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
 
-/* Siyah Silici - TH Değeri Parametrik Oldu */
+/* Siyah Silici - TH Parametresi */
 function keyOutDark(img, TH){
   const w=img.width,h=img.height;
   const off=document.createElement('canvas'); off.width=w; off.height=h;
@@ -226,15 +226,15 @@ function keyOutDark(img, TH){
 const PLAYER_SRC="img/player/bpc_mini.png";
 const PEACOCK_SRC="yc3ku6.jpg";
 
-/* === SPRITE CONFIG (ÖZEL 'TH' AYARLARI EKLENDİ) === */
+/* === SPRITE CONFIG (ÖZEL AYARLAR: mode & th) === */
 const SPRITE_CONFIG = {
-  // th: Siyah silme gücü (50=Hafif, 100=Güçlü)
-  // Yeşil gemi için 50, diğerleri için 100
-  green:   { src: "bpc_enemy_green_sprite.png", frames: 60, th: 50 }, 
+  // Green: Normal mod (kanatlar gitmesin) + Hafif temizlik (30)
+  green:   { src: "bpc_enemy_green_sprite.png", frames: 60, mode: 'normal', th: 30 }, 
   
-  ufo_red: { src: "ufo_red_sprite.png", frames: 85, th: 100 },
-  ufo_gray:{ src: "ufo_gray_sprite.png", frames: 60, th: 100 },
-  red:     { src: "bpc_enemy_red_sprite.png", frames: 60, th: 100 } 
+  // Diğerleri: Screen modu (Kutuyu yok et) + Güçlü temizlik (100)
+  ufo_red: { src: "ufo_red_sprite.png", frames: 85, mode: 'screen', th: 100 },
+  ufo_gray:{ src: "ufo_gray_sprite.png", frames: 60, mode: 'screen', th: 100 },
+  red:     { src: "bpc_enemy_red_sprite.png", frames: 60, mode: 'screen', th: 100 } 
 };
 
 let bullets=[], enemies=[], enemyBullets=[], gems=[], mascots=[], particles=[];
@@ -336,25 +336,23 @@ function spawnEnemy(k, spMul){
   const enemyCap = (score >= 1500) ? 22 : (score >= 1300) ? 20 : (score >= 800)  ? 18 : (score >= 500)  ? 14 : 12;
   if(enemies.length > enemyCap) return; 
   
-  // KIND'I ÖNCE BELİRLE
   const kind=k[Math.floor(Math.random()*k.length)]; 
   
-  // BOYUT (Red daha küçük)
   let size=rand(48,70); 
   if(kind === "red") size = rand(38, 52); 
 
-  // SPRITE SİSTEMİ
-  let isSprite = false, img = null, frames = 1;
+  let isSprite = false, img = null, frames = 1, blendMode = 'normal';
   
   if (loadedSprites[kind]) {
     img = loadedSprites[kind].img;
     frames = loadedSprites[kind].frames;
+    blendMode = SPRITE_CONFIG[kind].mode || 'normal';
     isSprite = (frames > 1);
   }
   
   enemies.push({
     x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul,
-    kind, img, isSprite,
+    kind, img, isSprite, blendMode,
     frame:0, frameTimer:0, totalFrames: frames,
     canShoot:(kind==="red"||kind==="green"), 
     shootT:0,shootInt:500
@@ -442,10 +440,8 @@ function update(dt){
     e.shootT+=dt;
     if(e.canShoot&&e.shootT>=e.shootInt){e.shootT=0;enemyShoot(e);}
     
-    // Eğer sprite ise (Birden fazla karesi varsa)
     if(e.isSprite && e.img) {
       e.frameTimer += dt;
-      // 20ms'de bir kare değiştir (Hızlı animasyon)
       if(e.frameTimer > 20) { 
         e.frameTimer = 0;
         e.frame = (e.frame + 1) % e.totalFrames;
@@ -457,14 +453,7 @@ function update(dt){
   enemyBullets.forEach(m=>{m.y+=m.vy;}); enemyBullets=enemyBullets.filter(m=>m.y<cv.height+40);
   gems.forEach(g=>g.y+=g.vy); gems=gems.filter(g=>g.y<cv.height+40); mascots.forEach(m=>m.y+=m.vy); mascots=mascots.filter(m=>m.y<cv.height+40);
   
-  /* --- ÇARPIŞMA (COLLISION) - HITBOX KÜÇÜLTME --- */
-  // Oyuncunun vuruş alanını (Hitbox) kenarlardan 12px daraltıyoruz
-  const pBox = { 
-    x: player.x + 12, 
-    y: player.y + 12, 
-    w: player.w - 24, 
-    h: player.h - 24 
-  };
+  const pBox = { x: player.x + 12, y: player.y + 12, w: player.w - 24, h: player.h - 24 };
 
   for(const e of enemies){
     if(rectHit(pBox,e)){
@@ -478,7 +467,6 @@ function update(dt){
       lives--;updateLives();if(lives<=0)endGame();m.dead=1;
     }
   }
-  // Mermiler düşmanı vururken normal hitbox kullanılır (Kolaylık olsun)
   for(const b of bullets){ 
     for(const e of enemies){ 
       if(rectHit(b,e)){ 
@@ -487,7 +475,6 @@ function update(dt){
       } 
     } 
   }
-  // Gem ve Maskot toplarken normal hitbox (Kolay toplansın)
   for(const g of gems){ if(rectHit(player,g)){ playGemSound(); powerTime=15000; g.dead=1; } } 
   for(const m of mascots){ if(rectHit(player,m)){ playLifeSound(); if(lives < 5){ lives++; updateLives(); } else { score += 2; scEl.textContent = score; } m.dead=1; } }
 
@@ -498,8 +485,6 @@ function update(dt){
 function draw(t){
   ctx.clearRect(0,0,cv.width,cv.height);
   
-  /* ARKA PLAN SİYAH GRADIENT */
-  // Yıldızlar artık daha soluk beyaz
   ctx.fillStyle="rgba(255,255,255,0.7)";starsA.forEach(s=>ctx.fillRect(s.x,s.y,1,1)); 
   ctx.fillStyle="rgba(255,255,255,0.9)";starsB.forEach(s=>ctx.fillRect(s.x,s.y,1.2,1.2));
 
@@ -507,7 +492,6 @@ function draw(t){
 
   if(playerImg)ctx.drawImage(playerImg,player.x,player.y,player.w,player.h); else{ctx.fillStyle="#38bdf8";ctx.fillRect(player.x,player.y,player.w,player.h);}
   
-  /* MERMİ RENGİ (MAVİ) */
   ctx.fillStyle="#0099ff"; 
   bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
   
@@ -517,16 +501,14 @@ function draw(t){
       const frameH = e.img.height; 
       const sx = e.frame * frameW;
       
-      // SCREEN MODE: Siyah arka planı yok eder, renkleri parlatır!
+      /* AKILLI MOD SEÇİMİ */
       ctx.save();
-      ctx.globalCompositeOperation = "screen"; 
+      if(e.blendMode === 'screen') ctx.globalCompositeOperation = "screen";
       
-      // Hata koruması
       if(frameW > 0 && sx >= 0) {
         ctx.drawImage(e.img, sx, 0, frameW, frameH, e.x, e.y, e.w, e.h);
       }
       ctx.restore();
-      
     } else if(e.img) {
       ctx.drawImage(e.img, e.x, e.y, e.w, e.h);
     } else {
@@ -561,12 +543,10 @@ let loadedSprites = {};
   try{const p=await loadImage(PLAYER_SRC);playerImg=keyOutDark(p,80);}catch{}
   try{const bird=await loadImage(PEACOCK_SRC);peacockImg=keyOutDark(bird,70);}catch{}
   
-  // SPRITE YÜKLEME (Özel TH ayarlarıyla)
   for(const key in SPRITE_CONFIG){
     try{
       const raw = await loadImage(SPRITE_CONFIG[key].src);
-      
-      // Config'den özel TH değerini al, yoksa 90 kullan
+      // Config'den özel TH değerini al
       const th = SPRITE_CONFIG[key].th || 90;
       const processedImg = keyOutDark(raw, th); 
       
