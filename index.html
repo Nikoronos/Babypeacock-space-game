@@ -7,7 +7,7 @@
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   
-  /* --- UI DÜZENİ --- */
+  /* --- UI DÜZENİ (GRID SİSTEMİ) --- */
   #ui-layer {
     position: fixed; top: 0; left: 0; right: 0;
     height: 55px;
@@ -148,7 +148,7 @@
   <canvas id="game"></canvas>
 
 <script>
-/* ====== SES SİSTEMİ (MÜZİK LOOP DÜZELTMESİ) ====== */
+/* ====== SES SİSTEMİ (GÜNCELLENDİ: LOOPSUZ GAME OVER) ====== */
 const v = "?v=" + Math.floor(Math.random() * 9999); 
 
 const sounds = {
@@ -160,15 +160,8 @@ const sounds = {
   gameOver:   new Audio("space_chords.mp3" + v)
 };
 
-/* MÜZİĞİ SONA GELMEDEN BAŞA SARMA (Seamless Loop İçin) */
-sounds.gameOver.loop = true; // Standart loop
-sounds.gameOver.addEventListener('timeupdate', function(){
-    var buffer = .25; // Son 0.25 saniye kala başa sar
-    if(this.currentTime > this.duration - buffer){
-        this.currentTime = 0;
-        this.play();
-    }
-});
+// Müzik döngüye girsin (Loop)
+sounds.gameOver.loop = true;
 
 let soundEnabled = localStorage.getItem("bpc_sound") !== "0"; 
 const soundBtn = document.getElementById("soundToggle");
@@ -185,6 +178,7 @@ soundBtn.onclick = (e) => {
   soundEnabled = !soundEnabled;
   localStorage.setItem("bpc_sound", soundEnabled ? "1" : "0");
   updateSoundIcon();
+  // Sesi açarsa ve Game Over ekranındaysa çal
   if(soundEnabled && gameOver) {
      sounds.gameOver.play().catch(()=>{});
   } else if(!soundEnabled) {
@@ -202,6 +196,8 @@ function playShootSound(isPower) {
 
 function playExplosionSound(kind) {
   if (!soundEnabled) return;
+  
+  // ARTIK HEPSİNDE AYNI TOK SES (BOOM_ONE) ÇALACAK
   const s = sounds.boomShip.cloneNode(); 
   s.volume = 0.8;
   s.play().catch(e => {});
@@ -221,8 +217,10 @@ function resize(){ cv.width=window.innerWidth; cv.height=window.innerHeight; }
 window.addEventListener('resize', resize); resize();
 const ctx=cv.getContext("2d"); ctx.imageSmoothingEnabled=false;
 
+/* UI ELEMENTS */
 const uiLayer = document.getElementById("ui-layer");
 const uiPause = document.getElementById("pauseBtn");
+
 const scEl=document.getElementById("sc"),pxEl=document.getElementById("px"),livesEl=document.getElementById("lives");
 const startOverlay=document.getElementById("startOverlay"),startBtn=document.getElementById("startBtn");
 const overEl=document.getElementById("gameOver"),restartBtn=document.getElementById("restart");
@@ -251,13 +249,10 @@ function keyOutDark(img, TH){
 const PLAYER_SRC="img/player/bpc_mini.png";
 const PEACOCK_SRC="yc3ku6.jpg";
 
-/* === SPRITE CONFIG (WOLF EKLENDİ) === */
+/* === SPRITE CONFIG === */
 const SPRITE_CONFIG = {
-  // Wolf: 24 Kare (Tahmini), Normal mod, Hafif temizlik, Orta hız
-  wolf:    { src: "wolf_sprite.png", frames: 24, mode: 'normal', th: 50, delay: 30 },
-  
   green:   { src: "bpc_enemy_green_sprite.png", frames: 60, mode: 'normal', th: 30, delay: 20 }, 
-  ufo_red: { src: "ufo_red_sprite.png", frames: 85, mode: 'screen', th: 100, delay: 15 },
+  ufo_red: { src: "ufo_red_sprite.png", frames: 85, mode: 'screen', th: 100, delay: 20 },
   ufo_gray:{ src: "ufo_gray_sprite.png", frames: 60, mode: 'screen', th: 100, delay: 20 },
   red:     { src: "bpc_enemy_red_sprite.png", frames: 60, mode: 'screen', th: 100, delay: 80 } 
 };
@@ -296,6 +291,7 @@ function startCountdownSequence(callback) {
 
 function initGame(){
   if(started)return;
+  
   const doc=document.documentElement; 
   try{
     if(doc.requestFullscreen) doc.requestFullscreen();
@@ -354,8 +350,7 @@ function explosion(x,y,count=18){
 }
 
 function allowedKindsByTime(t){
-  // WOLF EKLENDİ (Test için hemen geliyor)
-  if(t<10) return ["wolf", "ufo_red","ufo_gray"]; 
+  if(t<10) return ["ufo_red","ufo_gray"]; 
   if(t<40) return ["ufo_red","ufo_gray","green"]; 
   return ["ufo_red","ufo_gray","green","red"];
 }
@@ -367,9 +362,6 @@ function spawnEnemy(k, spMul){
   const kind=k[Math.floor(Math.random()*k.length)]; 
   let size=rand(48,70); 
   if(kind === "red") size = rand(60, 80); 
-  
-  /* WOLF İÇİN DAHA BÜYÜK BOYUT */
-  if(kind === "wolf") size = rand(70, 90);
 
   let isSprite = false, img = null, frames = 1, blendMode = 'normal', frameDelay = 30;
   
@@ -385,8 +377,7 @@ function spawnEnemy(k, spMul){
     x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul,
     kind, img, isSprite, blendMode, frameDelay,
     frame:0, frameTimer:0, totalFrames: frames,
-    canShoot:(kind==="red"||kind==="green"||kind==="wolf"), /* Wolf ateş eder */
-    hp: (kind === "wolf" ? 10 : 1), /* Wolf'un 10 canı var */
+    canShoot:(kind==="red"||kind==="green"), 
     shootT:0,shootInt:500
   }); 
 }
@@ -398,15 +389,7 @@ function enemyShoot(e){
   const finalMul = mul * dyn;
   
   if(e.kind==="red") enemyBullets.push({x:cx-2,y:e.y+e.h,w:4,h:12,vy:6*finalMul,color:"#ef4444"});
-  else if(e.kind==="green") enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6.5*finalMul,color:"#22c55e"});
-  /* WOLF 4 KOLLU ATEŞ SİSTEMİ */
-  else if(e.kind==="wolf") {
-     // 4 farklı noktadan ateş (Offsets)
-     const offsets = [-30, -10, 10, 30];
-     offsets.forEach(off => {
-        enemyBullets.push({x:cx+off, y:e.y+e.h, w:3, h:14, vy:7*finalMul, color:"#fbbf24"}); // Sarı mermi
-     });
-  }
+  else enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6.5*finalMul,color:"#22c55e"}); 
 }
 
 function renderFinalScore(t){
@@ -517,17 +500,9 @@ function update(dt){
   for(const b of bullets){ 
     for(const e of enemies){ 
       if(rectHit(b,e)){ 
-        /* CAN SİSTEMİ LOGİC (HP) */
-        e.hp--;
-        if(e.hp <= 0) {
-           playExplosionSound(e.kind);
-           explosion(e.x+e.w/2,e.y+e.h/2,16); 
-           e.dead=1; 
-           if(!gameOver){ score++; scEl.textContent=score; }
-        } else {
-           // Vurulma efekti (isteğe bağlı, şimdilik sadece can azalsın)
-        }
-        b.dead=1; // Mermi yok olur
+        playExplosionSound(e.kind);
+        explosion(e.x+e.w/2,e.y+e.h/2,16); b.dead=1; e.dead=1; 
+        if(!gameOver){ score++; scEl.textContent=score; } 
       } 
     } 
   }
@@ -586,6 +561,7 @@ restartBtn.onclick=()=>{
   updateLives();gameOver=false;scoreSent=false;paused=false;inCountdown=false;
   overEl.style.display="none";top10Box.style.display="none";uiPause.style.display="none";
   
+  // Restart'a basınca Game Over müziğini durdur
   if(sounds.gameOver) {
      sounds.gameOver.pause();
      sounds.gameOver.currentTime = 0;
@@ -617,6 +593,167 @@ let loadedSprites = {};
     }catch(e){console.log("Sprite yüklenemedi: "+key, e)}
   }
 })();
+</script>
+
+<script type="module">
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, get, set, push, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+const INSTANCE_URL="https://bpc-space-default-rtdb.europe-west1.firebasedatabase.app/";
+const app=getApps().length?getApps()[0]:initializeApp({databaseURL:INSTANCE_URL}); const db=getDatabase(app); window.db=db;
+
+function getLondonNow(d=new Date()){ return new Date(d.toLocaleString("en-US", { timeZone: "Europe/London" })); }
+
+function weekKey(d=new Date()){
+  const now = getLondonNow(d);
+  const day = (now.getDay() + 6) % 7; 
+  const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - day); startOfWeek.setHours(0,0,0,0);
+  const startOfYear = getLondonNow(new Date(now.getFullYear(), 0, 1)); startOfYear.setHours(0,0,0,0);
+  const diff = startOfWeek - startOfYear;
+  const weekNumber = Math.floor(diff / (7*24*60*60*1000)) + 1;
+  return `${now.getFullYear()}-W${String(weekNumber).padStart(2,"0")}`;
+}
+
+function getFlagEmoji(c){if(!c)return"🏳️";const cp=c.toUpperCase().split('').map(char=>127397+char.charCodeAt());return String.fromCodePoint(...cp);}
+
+function getCountryCode(){
+  try{
+    const lang=(navigator.languages&&navigator.languages[0])||navigator.language||"en-US";
+    let country = (lang.split('-')[1] || "").toUpperCase();
+    if (!country || country.length !== 2) {
+        const code = lang.split('-')[0].toLowerCase();
+        const map = {
+            ar:'SA', en:'US', fr:'FR', de:'DE', es:'ES', it:'IT', pt:'BR',
+            ru:'RU', zh:'CN', ja:'JP', ko:'KR', tr:'TR', nl:'NL', hi:'IN',
+            sv:'SE', no:'NO', da:'DK', pl:'PL', cs:'CZ', sk:'SK', ro:'RO',
+            hu:'HU', fi:'FI', el:'GR', id:'ID', th:'TH', vi:'VN', uk:'UA',
+            bg:'BG', sr:'RS', hr:'HR', ms:'MY', he:'IL'
+        };
+        country = map[code] || "TR";
+    }
+    if (country === "UK") country = "GB";
+    return country;
+  }catch{return"TR";}
+}
+
+function getLondonNowCompat(){ return getLondonNow(new Date()); }
+
+function savePendingScore(score){
+  const code = localStorage.getItem("playerCode") || "BPC";
+  const country = getCountryCode();
+  const wk = weekKey(new Date());
+  const item = { code, score, ts: Date.now(), country, week: wk };
+  const old = JSON.parse(localStorage.getItem("pendingScores") || "[]");
+  old.push(item);
+  localStorage.setItem("pendingScores", JSON.stringify(old));
+}
+
+async function flushPendingScores(){
+  try{
+    const pending = JSON.parse(localStorage.getItem("pendingScores") || "[]");
+    if(pending.length === 0) return;
+    for(const p of pending){
+      await push(ref(db, "scores"), { code: p.code, score: p.score, ts: p.ts, country: p.country });
+      await push(ref(db, `scoresWeekly/${p.week}`), { code: p.code, score: p.score, ts: p.ts, country: p.country, week: p.week });
+    }
+    localStorage.removeItem("pendingScores");
+  }catch(e){}
+}
+window.addEventListener("online", flushPendingScores);
+if(navigator.onLine){ flushPendingScores(); }
+window.savePendingScore = savePendingScore;
+window.flushPendingScores = flushPendingScores;
+
+const refCounter=ref(db,"stats/globalPlays"); const elGC=document.getElementById("globalCounter");
+const cached=Number(localStorage.getItem("bpc_global_plays"))||0; if(elGC)elGC.textContent=cached?cached.toLocaleString("en-US"):"…";
+onValue(refCounter,s=>{const v=Number(s.val()??0);if(elGC)elGC.textContent=v.toLocaleString("en-US");localStorage.setItem("bpc_global_plays",String(v));});
+function incrementGlobalPlays(){return runTransaction(refCounter,v=>(v||0)+1);}
+
+async function bumpLocation(){
+  try{ const code = getCountryCode(); const locRef = ref(db, `stats/locations/${code}`); await runTransaction(locRef, v => (v||0) + 1); }catch(e){}
+}
+(async function bumpLocationOncePerDay(){
+  try{ const tk="bpc_loc_day"; const td=new Date().toISOString().slice(0,10); if(localStorage.getItem(tk)===td)return;
+    await bumpLocation(); const tr=ref(db,"stats/totalStarts"); await runTransaction(tr,v=>(v||0)+1); localStorage.setItem(tk,td);
+  }catch(e){}
+})();
+
+async function saveScore(score){
+  const code=localStorage.getItem("playerCode")||"BPC"; const country=getCountryCode(); 
+  const payload={code,score,ts:Date.now(),country, countryName: country}; 
+  await push(ref(db,"scores"),payload);
+  const wk=weekKey(new Date()); await push(ref(db,`scoresWeekly/${wk}`),{...payload,week:wk});
+}
+
+async function getWeeklyTop10(wk=weekKey()){
+  const snap=await get(ref(db,`scoresWeekly/${wk}`)); const bestByCode={};
+  snap.forEach(ch=>{const v=ch.val();if(!v||typeof v.score!=="number")return;if(!bestByCode[v.code]||v.score>bestByCode[v.code].score)bestByCode[v.code]=v;});
+  return Object.values(bestByCode).sort((a,b)=>b.score-a.score).slice(0,20);
+}
+
+async function checkMondayWinner(){
+  const now = getLondonNow(new Date());
+  const londonDay = now.getDay(); 
+
+  const isMondayActive = londonDay === 1;
+  mondayBox.style.display = 'none';
+  if(!isMondayActive) return;
+
+  const d_prev = new Date(now); d_prev.setDate(d_prev.getDate() - 1); const prevWk = weekKey(d_prev);
+  const list = await getWeeklyTop10(prevWk);
+  if(!list || list.length === 0) return;
+
+  const winner = list[0]; const myCode = localStorage.getItem("playerCode");
+  mondayBox.style.display = 'flex';
+  mcWeek.textContent = prevWk.split("-W")[1]; 
+  mcName.textContent = getFlagEmoji(winner.country) + " " + winner.code;
+
+  if(myCode === winner.code){
+    const winRef = ref(db, `weeklyWinners/${prevWk}`);
+    const snapshot = await get(winRef);
+    let secret = "";
+    if(snapshot.exists() && snapshot.val().secretCode){ secret = snapshot.val().secretCode; } 
+    else { secret = "WIN-" + Math.floor(100000 + Math.random() * 900000); await set(winRef, { secretCode: secret, winnerCode: winner.code, country: winner.country, score: winner.score, ts: Date.now() }); }
+    mcSecretBox.style.display = "block"; mcCode.textContent = secret;
+  } else { mcSecretBox.style.display = "none"; }
+}
+window.checkMondayWinner = checkMondayWinner;
+
+async function showWeeklyPanel(){
+  const wk=weekKey(new Date()); const me=localStorage.getItem("playerCode");
+  const ol=document.getElementById("bpc-list"); const box=document.getElementById("bpc-top10");
+  const wnEl=document.getElementById("wk-num"); if(wnEl)wnEl.textContent=wk.split("-W")[1]; 
+  if(window.bpcTimer)clearInterval(window.bpcTimer);
+  function updateTimer(){
+    const now = getLondonNowCompat();
+    const target = new Date(now);
+    const day = target.getDay(); 
+    const daysUntilSunday = (7 - day) % 7; 
+    target.setDate(now.getDate() + daysUntilSunday);
+    target.setHours(23, 59, 59, 999);
+    
+    const diff=target-now; const remEl=document.getElementById("wk-rem"); if(!remEl)return;
+    if(diff<=0){remEl.textContent="Resetting...";return;}
+    const d=Math.floor(diff/(1000*60*60*24)); const h=Math.floor((diff%(1000*60*60*24))/(1000*60*60));
+    const m=Math.floor((diff%(1000*60*60))/(1000*60)); const s=Math.floor((diff%(1000*60))/1000);
+    remEl.textContent=`${d}d ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    remEl.style.color=(d===0)?"#ef4444":"#facc15";
+  }
+  updateTimer(); window.bpcTimer=setInterval(updateTimer,1000);
+
+  const list=await getWeeklyTop10(wk);
+  if(ol){
+    ol.innerHTML=list.length
+      ? list.map((it,i)=>{
+          const mine=it.code===me; const flag=getFlagEmoji(it.country);
+          return `<li class="${mine?'me':''}"><span class="rank-num">${i+1}.</span>${flag} ${it.code} → ${it.score} pts</li>`;
+        }).join("")
+      : `<div style="opacity:.7;text-align:center">No scores this week yet.</div>`;
+  }
+  if(box)box.style.display="block";
+}
+
+window.incrementGlobalPlays=incrementGlobalPlays; window.saveScore=saveScore;
+window.showWeeklyPanel=showWeeklyPanel; window.bumpLocation=bumpLocation;
 </script>
 </body>
 </html>
