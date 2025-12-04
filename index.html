@@ -234,8 +234,16 @@ function playGemSound() { playLifeSound(); }
 
 /* ====== GAME SETUP ====== */
 const cv=document.getElementById("game");
-function resize(){ cv.width=window.innerWidth; cv.height=window.innerHeight; }
-window.addEventListener('resize', resize); resize();
+
+// GÜNCELLEME: Ekran boyutu değişse bile gemiyi alt hizada tut
+function resize(){ 
+  cv.width=window.innerWidth; cv.height=window.innerHeight; 
+  if(player) {
+    player.y = cv.height - 120;
+    player.x = clamp(player.x, 0, cv.width - player.w);
+  }
+}
+window.addEventListener('resize', resize); 
 const ctx=cv.getContext("2d"); ctx.imageSmoothingEnabled=false;
 
 /* UI ELEMENTS */
@@ -284,6 +292,8 @@ let powerTime=0, fireTimer=0, FIRE_MS=170;
 let elapsed=0,enT=0,gemT=0,mascotT=0;
 let scoreSent=false;
 let player={x:cv.width/2-33,y:cv.height-120,w:66,h:66};
+// İlk açılışta resize'ı çağırarak konumu garantiye al
+resize();
 
 function getPlayerCode(){ let c=localStorage.getItem("playerCode"); if(!c){c="BPC"+Math.floor(100000+Math.random()*899999);localStorage.setItem("playerCode",c);} return c; }
 const myCode=getPlayerCode();
@@ -331,7 +341,19 @@ function initGame(){
 startBtn.onclick=initGame;
 
 pauseBtn.onclick=()=>{if(!started||gameOver||inCountdown)return;paused=true;pauseOverlay.style.display="flex";uiPause.style.display="none";};
-resumeBtn.onclick=()=>{pauseOverlay.style.display="none";startCountdownSequence(()=>{paused=false;uiPause.style.display="flex";});};
+
+// GÜNCELLEME: Resume sonrası gemiyi sabitle
+resumeBtn.onclick=()=>{
+  pauseOverlay.style.display="none";
+  startCountdownSequence(()=>{
+    paused=false;
+    uiPause.style.display="flex";
+    
+    // Pause sonrası gemiyi tekrar alt hizaya sabitle
+    player.y = cv.height - 120;
+    player.x = clamp(player.x, 0, cv.width - player.w);
+  });
+};
 
 function updateLives(){livesEl.innerHTML="❤️".repeat(lives);} updateLives();
 
@@ -377,7 +399,15 @@ function allowedKindsByTime(t){
 }
 
 function spawnEnemy(k, spMul){ 
-  const enemyCap = (score >= 1500) ? 22 : (score >= 1300) ? 20 : (score >= 800)  ? 18 : (score >= 500)  ? 14 : 12;
+  // GÜNCELLEME: Düşman limiti (enemyCap) arttırıldı (2000+ ve 2300+)
+  const enemyCap = 
+    (score >= 2300) ? 30 :
+    (score >= 2000) ? 26 :
+    (score >= 1500) ? 22 :
+    (score >= 1300) ? 20 :
+    (score >= 800)  ? 18 :
+    (score >= 500)  ? 14 : 12;
+
   if(enemies.length > enemyCap) return; 
   
   const kind=k[Math.floor(Math.random()*k.length)]; 
@@ -394,8 +424,16 @@ function spawnEnemy(k, spMul){
     isSprite = (frames > 1);
   }
   
+  // GÜNCELLEME: 2300+ puan için yatay hız (vx) belirle
+  let vx = 0;
+  if (score >= 2300) {
+    const dir = Math.random() < 0.5 ? -1 : 1;
+    vx = dir * rand(0.8, 1.6) * spMul;
+  }
+
   enemies.push({
     x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul,
+    vx: vx, // Zigzag için yeni özellik
     kind, img, isSprite, blendMode, frameDelay,
     frame:0, frameTimer:0, totalFrames: frames,
     canShoot:(kind==="red"||kind==="green"), 
@@ -487,6 +525,17 @@ function update(dt){
   
   enemies.forEach(e=>{
     e.y+=e.vy;
+    
+    // GÜNCELLEME: 2300+ puan için zigzag hareketi ve çarpma kontrolü
+    if (score >= 2300 && typeof e.vx === "number") {
+      e.x += e.vx;
+      // Kenara çarpınca yön değiştir
+      if (e.x < 0 || e.x + e.w > cv.width) {
+        e.vx *= -1;
+        e.x = clamp(e.x, 0, cv.width - e.w);
+      }
+    }
+
     e.shootT+=dt;
     if(e.canShoot&&e.shootT>=e.shootInt){e.shootT=0;enemyShoot(e);}
     
@@ -779,3 +828,5 @@ window.showWeeklyPanel=showWeeklyPanel; window.bumpLocation=bumpLocation;
 </script>
 </body>
 </html>
+
+
