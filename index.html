@@ -1,63 +1,259 @@
-<canvas id="cv" style="background:#000;width:100vw;height:100vh;display:block;"></canvas>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>BPC ZigZag Prototype</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+<style>
+  html,body{
+    margin:0;
+    padding:0;
+    height:100%;
+    background:#000;
+    overflow:hidden;
+    font-family:system-ui,Segoe UI,Roboto,Arial;
+  }
+  canvas{
+    display:block;
+    width:100vw;
+    height:100vh;
+    background:radial-gradient(circle at center,#0f172a 0%,#020617 60%,#000 100%);
+    touch-action:none;
+    user-select:none;
+  }
+  #hud{
+    position:fixed;
+    left:0;top:0;right:0;
+    height:42px;
+    padding:8px 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    color:#e2e8f0;
+    font-size:14px;
+    background:linear-gradient(to bottom,rgba(0,0,0,0.7),transparent);
+    pointer-events:none;
+  }
+  #brand{
+    font-weight:900;
+    background:linear-gradient(90deg,#22d3ee,#34d399);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  #scoreBox{font-weight:700;color:#00ffc8;text-shadow:0 0 6px rgba(0,255,200,0.5);}
+  #info{
+    position:fixed;
+    left:50%;top:50%;
+    transform:translate(-50%,-50%);
+    color:#cbd5e1;
+    font-size:13px;
+    text-align:center;
+    pointer-events:none;
+  }
+</style>
+</head>
+<body>
+
+<div id="hud">
+  <div id="brand">Babypeacock 🦚 TEST</div>
+  <div id="scoreBox">Score: <span id="sc">0</span></div>
+</div>
+<div id="info">
+  ZigZag prototip<br>
+  Parmağını basılı tutup yana sürükle <br/>
+  (player.png & enemy.png aynı klasörde olsun)
+</div>
+<canvas id="cv"></canvas>
+
 <script>
+// === KISA YARDIMCI FONKSİYONLAR ===
 const cv = document.getElementById("cv");
 const ctx = cv.getContext("2d");
-cv.width = innerWidth;
-cv.height = innerHeight;
+function resize(){
+  cv.width  = window.innerWidth;
+  cv.height = window.innerHeight;
+}
+resize();
+window.addEventListener("resize", resize);
 
-// --- BPC hız hissi için random speed ---
-function rand(a,b){return Math.random()*(b-a)+a;}
-function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function rand(a,b){ return a + Math.random()*(b-a); }
+function clamp(v,a,b){ return v<a?a : v>b?b : v; }
+function rectHit(a,b){
+  return !(a.x+a.w<b.x || a.x>b.x+b.w || a.y+a.h<b.y || a.y>b.y+b.h);
+}
 
-// --- BPC SPACE DÜŞMAN OBJESİ ---
-let enemyImg = new Image();
-enemyImg.src = "enemy.png"; // <<<< BURAYA BPC düşman PNG’ni koy
+// === ASSETLER (SENİN GEMİLERİN) ===
+const playerImg = new Image();
+playerImg.src = "player.png";   // buraya BPC gemini koy
 
-let enemy = {
-    x: rand(0, innerWidth-70),
-    y: -60,
-    w: 60,
-    h: 60,
-    vx: rand(-1.4,1.4),   // BPC zigzag yatay hız hissi
-    vy: rand(1.8,2.8)     // senin oyundaki enemy düşüş hızı
+const enemyImg = new Image();
+enemyImg.src  = "enemy.png";    // buraya BPC düşmanını koy
+
+// === PLAYER ===
+let player = {
+  x: cv.width/2 - 33,
+  y: cv.height - 100,
+  w: 66,
+  h: 66
 };
 
-// --- BPC UPDATE + ZIGZAG ---
-function update(){
-    enemy.x += enemy.vx;
-    enemy.y += enemy.vy;
-
-    // BPC gibi duvara çarpınca yön değiştir
-    if(enemy.x <= 0 || enemy.x+enemy.w >= innerWidth){
-        enemy.vx *= -1;
-        enemy.x = clamp(enemy.x,0,innerWidth-enemy.w);
-    }
-
-    // ekran altına gelirse resetle
-    if(enemy.y > innerHeight){
-        enemy.y = -enemy.h;
-        enemy.x = rand(0, innerWidth-enemy.w);
-    }
+let holding = false;
+function getXFromEvent(e){
+  const rect = cv.getBoundingClientRect();
+  const cx = (e.clientX ?? (e.touches ? e.touches[0].clientX : 0)) - rect.left;
+  return cx;
 }
 
-// --- BPC RENDER ---
-function render(){
-    ctx.clearRect(0,0,cv.width,cv.height);
+cv.addEventListener("pointerdown", e => {
+  holding = true;
+  player.x = clamp(getXFromEvent(e) - player.w/2, 0, cv.width-player.w);
+});
+cv.addEventListener("pointermove", e => {
+  if(!holding) return;
+  player.x = clamp(getXFromEvent(e) - player.w/2, 0, cv.width-player.w);
+});
+cv.addEventListener("pointerup",   () => holding=false);
+cv.addEventListener("pointercancel",() => holding=false);
 
+// === BULLETS & ENEMIES ===
+let bullets = [];
+let enemies = [];
+let lastSpawn = 0;
+let fireTimer = 0;
+const FIRE_MS = 170; // BPC Space ile aynı ateş hızı
+let score = 0;
+const scEl = document.getElementById("sc");
+
+// BPC hissi: düşman hız aralıkları
+function spawnEnemy(){
+  const size = rand(50,70);
+  const vy   = rand(1.6, 2.8);      // düşme hızı (BPC’ye yakın)
+  const dir  = Math.random()<0.5?-1:1;
+  const vx   = dir * rand(0.8, 1.6); // yatay zigzag hızı
+
+  enemies.push({
+    x: rand(0, cv.width-size),
+    y: -size,
+    w: size,
+    h: size,
+    vx: vx,
+    vy: vy
+  });
+}
+
+function shoot(){
+  bullets.push({
+    x: player.x + player.w/2 - 2,
+    y: player.y,
+    w: 4,
+    h: 12,
+    vy: -10
+  });
+}
+
+// === UPDATE ===
+let lastTime = performance.now();
+function update(dt){
+  // ateş
+  fireTimer += dt;
+  if(holding && fireTimer > FIRE_MS){
+    shoot();
+    fireTimer = 0;
+  }
+
+  // düşman spawn (yaklaşık BPC spawn hissi)
+  lastSpawn += dt;
+  const spawnInterval = 650; // ms
+  if(lastSpawn > spawnInterval){
+    // ekrandaki düşman sayısını sınırlayalım
+    if(enemies.length < 10) spawnEnemy();
+    lastSpawn = 0;
+  }
+
+  // mermiler
+  bullets.forEach(b => { b.y += b.vy; });
+  bullets = bullets.filter(b => b.y > -20);
+
+  // düşmanlar (zigzag + aşağı)
+  enemies.forEach(e => {
+    e.y += e.vy;
+    e.x += e.vx;
+
+    // kenara çarpınca yön değiştir ve clamp et
+    if(e.x <= 0 || e.x + e.w >= cv.width){
+      e.vx *= -1;
+      e.x = clamp(e.x, 0, cv.width - e.w);
+    }
+  });
+  enemies = enemies.filter(e => e.y < cv.height + 80);
+
+  // çarpışmalar
+  const pBox = { x:player.x+10, y:player.y+10, w:player.w-20, h:player.h-20 };
+
+  // düşman-player çarpışması (sadece reset için)
+  enemies.forEach(e => {
+    if(rectHit(pBox,e)){
+      // çarpılırsa sadece skor sıfırla ve sahneyi temizle
+      score = 0;
+      scEl.textContent = score;
+      bullets = [];
+      enemies = [];
+    }
+  });
+
+  // mermi-düşman
+  bullets.forEach(b => {
+    enemies.forEach(e => {
+      if(rectHit(b,e)){
+        b.dead = true;
+        e.dead = true;
+        score++;
+        scEl.textContent = score;
+      }
+    });
+  });
+
+  bullets  = bullets.filter(b => !b.dead);
+  enemies  = enemies.filter(e => !e.dead);
+}
+
+// === DRAW ===
+function draw(){
+  ctx.clearRect(0,0,cv.width,cv.height);
+
+  // oyuncu
+  if(playerImg.complete){
+    ctx.drawImage(playerImg, player.x, player.y, player.w, player.h);
+  }else{
+    ctx.fillStyle="#38bdf8";
+    ctx.fillRect(player.x, player.y, player.w, player.h);
+  }
+
+  // mermiler
+  ctx.fillStyle="#0ea5e9";
+  bullets.forEach(b => ctx.fillRect(b.x,b.y,b.w,b.h));
+
+  // düşmanlar
+  enemies.forEach(e => {
     if(enemyImg.complete){
-        ctx.drawImage(enemyImg, enemy.x, enemy.y, enemy.w, enemy.h);
+      ctx.drawImage(enemyImg, e.x, e.y, e.w, e.h);
     }else{
-        ctx.fillStyle="red";
-        ctx.fillRect(enemy.x, enemy.y, enemy.w, enemy.h);
+      ctx.fillStyle="#ef4444";
+      ctx.fillRect(e.x,e.y,e.w,e.h);
     }
+  });
 }
 
-// --- GAME LOOP ---
-function loop(){
-    update();
-    render();
-    requestAnimationFrame(loop);
+// === LOOP ===
+function loop(now){
+  const dt = Math.min(now - lastTime, 40); // ms
+  lastTime = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
 }
-loop();
-
+requestAnimationFrame(loop);
 </script>
+</body>
+</html>
