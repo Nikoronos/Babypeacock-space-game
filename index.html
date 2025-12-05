@@ -53,14 +53,18 @@
     bottom:max(20px,env(safe-area-inset-bottom)); 
     z-index:50;
     width:42px;height:42px; 
-    background:rgba(15, 23, 42, 0.8); border:2px solid #38bdf8; color:#38bdf8; border-radius:50%;
+    /* Performans için blur kapatıldı, background koyulaştırıldı */
+    background:rgba(15, 23, 42, 0.95); border:2px solid #38bdf8; color:#38bdf8; border-radius:50%;
     font-size:14px;font-weight:900;align-items:center;justify-content:center;cursor:pointer;
-    box-shadow:0 0 10px rgba(56,189,248,0.4); backdrop-filter: blur(4px);
+    box-shadow:0 0 10px rgba(56,189,248,0.4); 
+    /* backdrop-filter: blur(4px); */
   }
 
   #startOverlay,#gameOver,#pauseOverlay,#countdownOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:60}
   #startOverlay{background:rgba(0,0,0,0.85);color:#fff;display:flex;overflow:hidden}
-  #pauseOverlay{background:rgba(0,0,0,0.8);color:#fff;backdrop-filter:blur(3px)}
+  
+  /* Performans için blur kapatıldı */
+  #pauseOverlay{background:rgba(0,0,0,0.9);color:#fff; /* backdrop-filter:blur(3px) */}
   
   #startLogo {
     width: 90px; height: 90px; border-radius: 50%; border: 3px solid #22d3ee;
@@ -73,8 +77,10 @@
   #gameOver { background: transparent; justify-content: flex-start; padding-top: 40vh; overflow-y: auto; }
   #mondayChampBox {
     display: none; flex-direction: column; align-items: center; margin-bottom: 10px; padding: 8px 15px;
-    background: rgba(250, 204, 21, 0.15); border: 1px solid #facc15; border-radius: 8px; 
-    box-shadow: 0 0 15px rgba(250, 204, 21, 0.4); width: min(320px, 80vw); text-align: center; backdrop-filter: blur(5px);
+    /* Performans için blur kapatıldı */
+    background: rgba(20, 20, 10, 0.95); border: 1px solid #facc15; border-radius: 8px; 
+    box-shadow: 0 0 15px rgba(250, 204, 21, 0.4); width: min(320px, 80vw); text-align: center; 
+    /* backdrop-filter: blur(5px); */
   }
   .champ-label { color:#facc15;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px; }
   .champ-name { color:#fff;font-size:15px;font-weight:900;margin-bottom:4px;text-shadow:0 0 5px rgba(255,255,255,0.5); }
@@ -83,7 +89,10 @@
   #cntText{font-size:90px;font-weight:900;color:#fff;text-shadow:0 0 25px #22d3ee;font-family:monospace}
   @keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
   .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer;margin-bottom:5px;box-shadow:0 0 20px rgba(0,255,200,0.4);}
-  #soundToggle { margin-top: 20px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(34, 211, 238, 0.5); background: rgba(15, 23, 42, 0.6); color: #22d3ee; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(4px); transition: all 0.3s ease; z-index: 100; }
+  
+  /* Performans için blur kapatıldı */
+  #soundToggle { margin-top: 20px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(34, 211, 238, 0.5); background: rgba(15, 23, 42, 0.9); color: #22d3ee; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; /* backdrop-filter: blur(4px); */ transition: all 0.3s ease; z-index: 100; }
+  
   #soundToggle:hover { background: rgba(34, 211, 238, 0.15); box-shadow: 0 0 15px rgba(34, 211, 238, 0.4); transform: scale(1.05); }
   #bpc-top10 { width: min(380px, 90vw); background: rgba(5, 5, 5, 0.9); border: 1px solid #333; border-radius: 10px; padding: 10px; color: #fff; font-size: 13px; line-height: 1.4; margin-top: 10px; margin-bottom: 40px; }
   #bpc-top10 h4{margin:0 0 5px 0;font-size:12px;font-weight:800;text-align:center;color:#e2e8f0;letter-spacing:.5px;}
@@ -148,7 +157,7 @@
   <canvas id="game"></canvas>
 
 <script>
-/* ====== SES SİSTEMİ (GÜNCELLENDİ: "ÇIT" ÖNLEYİCİ LOOP) ====== */
+/* ====== SES SİSTEMİ (GÜNCELLENDİ: MANUEL KONTROL) ====== */
 const v = "?v=" + Math.floor(Math.random() * 9999); 
 
 const sounds = {
@@ -162,26 +171,7 @@ const sounds = {
 
 // OTOMATİK LOOP'U KAPATIYORUZ (Manuel kontrol için)
 sounds.gameOver.loop = false;
-
-// YUMUŞAK GEÇİŞ (SEAMLESS LOOP) MANTIĞI
-sounds.gameOver.addEventListener('timeupdate', function(){
-  // Eğer müzik son 0.6 saniyeye geldiyse
-  const buffer = 0.6;
-  if(this.duration && this.currentTime > (this.duration - buffer)){
-    // 1. Çıt sesini önlemek için sesi anlık olarak çok kıs (ama 0 yapma, çok kısık olsun)
-    this.volume = 0.01;
-
-    // 2. Başa sar
-    this.currentTime = 0;
-    this.play();
-
-    // 3. Sesi çok kısa sürede tekrar normal seviyeye çek (Fade-In)
-    // Bu sayede kesinti veya çıt sesi duyulmaz
-    setTimeout(() => { 
-      if(soundEnabled) this.volume = 1.0; 
-    }, 40);
-  }
-});
+let gameOverMusicPlayed = false;
 
 let soundEnabled = localStorage.getItem("bpc_sound") !== "0"; 
 const soundBtn = document.getElementById("soundToggle");
@@ -199,8 +189,9 @@ soundBtn.onclick = (e) => {
   localStorage.setItem("bpc_sound", soundEnabled ? "1" : "0");
   updateSoundIcon();
   // Sesi açarsa ve Game Over ekranındaysa çal
-  if(soundEnabled && gameOver) {
-     sounds.gameOver.volume = 1.0; // Sesi garanti aç
+  if(soundEnabled && gameOver && !gameOverMusicPlayed) {
+     gameOverMusicPlayed = true;
+     sounds.gameOver.volume = 1.0; 
      sounds.gameOver.play().catch(()=>{});
   } else if(!soundEnabled) {
      sounds.gameOver.pause();
@@ -472,9 +463,13 @@ function renderFinalScore(t){
 }
 
 async function endGame(){
-  gameOver=true; uiPause.style.display="none"; overEl.style.display="flex"; 
+  if (gameOver) return; // endGame sadece 1 kere çalışsın
+  gameOver = true; 
+  uiPause.style.display = "none";
+  overEl.style.display = "flex"; 
   
-  if(soundEnabled) {
+  if (soundEnabled && !gameOverMusicPlayed) {
+     gameOverMusicPlayed = true;
      sounds.gameOver.currentTime = 0;
      sounds.gameOver.volume = 1.0; 
      sounds.gameOver.play().catch(()=>{});
@@ -632,8 +627,9 @@ restartBtn.onclick=()=>{
   updateLives();gameOver=false;scoreSent=false;paused=false;inCountdown=false;
   overEl.style.display="none";top10Box.style.display="none";uiPause.style.display="none";
   
-  // Restart'a basınca Game Over müziğini durdur
-  if(sounds.gameOver) {
+  // Restart'a basınca Game Over müziğini durdur ve flag’i sıfırla
+  gameOverMusicPlayed = false;
+  if (sounds.gameOver) {
      sounds.gameOver.pause();
      sounds.gameOver.currentTime = 0;
   }
@@ -828,5 +824,3 @@ window.showWeeklyPanel=showWeeklyPanel; window.bumpLocation=bumpLocation;
 </script>
 </body>
 </html>
-
-
