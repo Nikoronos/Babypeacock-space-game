@@ -157,84 +157,143 @@
   <canvas id="game"></canvas>
 
 <script>
-/* ====== SES SİSTEMİ (GÜNCELLENDİ: PRELOAD VE MANUEL KONTROL) ====== */
-const v = "?v=" + Math.floor(Math.random() * 9999); 
+/* ====== SES SİSTEMİ (ANDROID FIX: SES MOTORUNU ZORLA UYANDIRMA) ====== */
+// APK içinde dosya değişmediği için ?v= random sayısını sildik, bu bazen dosya yolunu bozar.
+const v = "";
 
-const sounds = {
-  normalShot: new Audio("laser_one.mp3" + v), 
-  powerShot:  new Audio("laser.mp3" + v),     
-  boomUfo:    new Audio("boom.mp3" + v),      
-  boomShip:   new Audio("boom_one.mp3" + v),  
-  gem:        new Audio("gem.mp3" + v),
-  gameOver:   new Audio("space_chords.mp3" + v)
-};
+class SoundPool {
+  constructor(src, size, volume = 1.0) {
+    this.pool = [];
+    this.idx = 0;
+    this.size = size;
+    this.volume = volume;
+    for (let i = 0; i < size; i++) {
+      const a = new Audio(src);
+      a.volume = volume;
+      a.preload = "auto";
+      a.load();
+      this.pool.push(a);
+    }
+  }
 
-// OTOMATİK LOOP'U KAPATIYORUZ (Manuel kontrol için)
-sounds.gameOver.loop = false;
-let gameOverMusicPlayed = false;
+  play() {
+    let s = this.pool[this.idx];
 
-// YENİ EKLENDİ: Tüm sesleri preload et
-for (const k in sounds) {
-  if (Object.prototype.hasOwnProperty.call(sounds, k) && sounds[k]) {
-    sounds[k].preload = "auto";
-    try { sounds[k].load(); } catch(e) {}
+    // Eğer seçilen ses şu anda çalıyorsa, havuzda bir sonraki elemana geçerek
+    // mevcut sesi kesmeden yeni sesi başka bir kanaldan çal.
+    if (!s.paused) {
+      this.idx = (this.idx + 1) % this.size;
+      s = this.pool[this.idx];
+    }
+
+    try {
+      s.currentTime = 0;
+      const promise = s.play();
+      if (promise !== undefined) {
+        promise.catch(() => {
+          // Otomatik oynatma engeline takılırsa hatayı yut.
+        });
+      }
+    } catch (e) {}
+
+    this.idx = (this.idx + 1) % this.size;
+  }
+
+  // Motoru uyandırmak için boş çalma fonksiyonu
+  unlock() {
+    try {
+      const s = this.pool[this.idx];
+      const oldVol = s.volume;
+      s.volume = 0;
+      s.play().then(() => {
+        s.pause();
+        s.currentTime = 0;
+        s.volume = oldVol;
+      }).catch(() => {});
+    } catch (e) {}
   }
 }
 
-let soundEnabled = localStorage.getItem("bpc_sound") !== "0"; 
+const sounds = {
+  normalShot: new SoundPool("laser_one.mp3", 10, 0.4),
+  powerShot:  new SoundPool("laser.mp3", 10, 0.4),
+  boomUfo:    new SoundPool("boom.mp3", 5, 0.8),
+  boomShip:   new SoundPool("boom_one.mp3", 5, 0.8),
+  gem:        new SoundPool("gem.mp3", 5, 0.8),
+  gameOver:   new Audio("space_chords.mp3")
+};
+
+sounds.gameOver.loop = false;
+let gameOverMusicPlayed = false;
+
+// === KRİTİK NOKTA: İLK DOKUNUŞTA SESLERİ UYANDIR ===
+let audioUnlocked = false;
+function unlockAudioEngine() {
+  if (audioUnlocked) return;
+
+  sounds.normalShot.unlock();
+  sounds.powerShot.unlock();
+  sounds.boomUfo.unlock();
+
+  try {
+    const oldVol = sounds.gameOver.volume;
+    sounds.gameOver.volume = 0;
+    sounds.gameOver.play().then(() => {
+      sounds.gameOver.pause();
+      sounds.gameOver.currentTime = 0;
+      sounds.gameOver.volume = oldVol;
+    }).catch(() => {});
+  } catch (e) {}
+
+  audioUnlocked = true;
+  document.removeEventListener("touchstart", unlockAudioEngine);
+  document.removeEventListener("click", unlockAudioEngine);
+}
+
+document.addEventListener("touchstart", unlockAudioEngine, { passive: true });
+document.addEventListener("click", unlockAudioEngine);
+
+let soundEnabled = localStorage.getItem("bpc_sound") !== "0";
 const soundBtn = document.getElementById("soundToggle");
 
 function updateSoundIcon() {
   soundBtn.textContent = soundEnabled ? "🔊" : "🔇";
   soundBtn.style.opacity = soundEnabled ? "1" : "0.5";
-  soundBtn.style.boxShadow = soundEnabled ? "0 0 15px rgba(34, 211, 238, 0.4)" : "none";
+  soundBtn.style.boxShadow = soundEnabled
+    ? "0 0 15px rgba(34, 211, 238, 0.4)"
+    : "none";
 }
 updateSoundIcon();
 
 soundBtn.onclick = (e) => {
-  e.stopPropagation(); 
+  e.stopPropagation();
   soundEnabled = !soundEnabled;
   localStorage.setItem("bpc_sound", soundEnabled ? "1" : "0");
   updateSoundIcon();
-  // Sesi açarsa ve Game Over ekranındaysa çal
-  if(soundEnabled && gameOver && !gameOverMusicPlayed) {
-     gameOverMusicPlayed = true;
-     sounds.gameOver.volume = 1.0; 
-     sounds.gameOver.play().catch(()=>{});
-  } else if(!soundEnabled) {
-     sounds.gameOver.pause();
+
+  if (soundEnabled && gameOver && !gameOverMusicPlayed) {
+    gameOverMusicPlayed = true;
+    sounds.gameOver.volume = 1.0;
+    sounds.gameOver.play().catch(() => {});
+  } else if (!soundEnabled) {
+    sounds.gameOver.pause();
   }
 };
 
-/* GÜNCELLENDİ: Sadece atış sesi cloneNode kullanıyor (daha iyi seri atış için) */
 function playShootSound(isPower) {
   if (!soundEnabled) return;
-  const base = isPower ? sounds.powerShot : sounds.normalShot;
-  try {
-    const s = base.cloneNode();
-    s.volume = 0.4;
-    s.play().catch(()=>{});
-  } catch(e) {}
+  if (isPower) sounds.powerShot.play();
+  else sounds.normalShot.play();
 }
 
 function playExplosionSound(kind) {
   if (!soundEnabled) return;
-  const snd = sounds.boomShip;
-  try {
-    snd.currentTime = 0;
-    snd.volume = 0.8;
-    snd.play().catch(()=>{});
-  } catch(e) {}
+  sounds.boomShip.play();
 }
 
 function playLifeSound() {
   if (!soundEnabled) return;
-  const snd = sounds.gem;
-  try {
-    snd.currentTime = 0;
-    snd.volume = 0.8;
-    snd.play().catch(()=>{});
-  } catch(e) {}
+  sounds.gem.play();
 }
 function playGemSound() { playLifeSound(); }
 
@@ -823,11 +882,14 @@ async function showWeeklyPanel(){
   updateTimer(); window.bpcTimer=setInterval(updateTimer,1000);
 
   const list=await getWeeklyTop10(wk);
+  const medals = ["🥇","🥈","🥉"]; // 1-2-3 için madalya dizisi
+
   if(ol){
     ol.innerHTML=list.length
       ? list.map((it,i)=>{
           const mine=it.code===me; const flag=getFlagEmoji(it.country);
-          return `<li class="${mine?'me':''}"><span class="rank-num">${i+1}.</span>${flag} ${it.code} → ${it.score} pts</li>`;
+          const medal = medals[i] || ""; // 1,2,3 ise madalyayı al, yoksa boş
+          return `<li class="${mine?'me':''}"><span class="rank-num">${i+1}.</span><span style="margin-right:4px">${medal}</span>${flag} ${it.code} → ${it.score} pts</li>`;
         }).join("")
       : `<div style="opacity:.7;text-align:center">No scores this week yet.</div>`;
   }
