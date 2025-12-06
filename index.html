@@ -157,7 +157,7 @@
   <canvas id="game"></canvas>
 
 <script>
-/* ====== SES SİSTEMİ (GÜNCELLENDİ: MANUEL KONTROL) ====== */
+/* ====== SES SİSTEMİ (GÜNCELLENDİ: PRELOAD VE MANUEL KONTROL) ====== */
 const v = "?v=" + Math.floor(Math.random() * 9999); 
 
 const sounds = {
@@ -172,6 +172,14 @@ const sounds = {
 // OTOMATİK LOOP'U KAPATIYORUZ (Manuel kontrol için)
 sounds.gameOver.loop = false;
 let gameOverMusicPlayed = false;
+
+// YENİ EKLENDİ: Tüm sesleri preload et
+for (const k in sounds) {
+  if (Object.prototype.hasOwnProperty.call(sounds, k) && sounds[k]) {
+    sounds[k].preload = "auto";
+    try { sounds[k].load(); } catch(e) {}
+  }
+}
 
 let soundEnabled = localStorage.getItem("bpc_sound") !== "0"; 
 const soundBtn = document.getElementById("soundToggle");
@@ -200,26 +208,32 @@ soundBtn.onclick = (e) => {
 
 function playShootSound(isPower) {
   if (!soundEnabled) return;
-  const sound = isPower ? sounds.powerShot : sounds.normalShot;
-  const s = sound.cloneNode();
-  s.volume = 0.4; 
-  s.play().catch(e => {});
+  const snd = isPower ? sounds.powerShot : sounds.normalShot;
+  try {
+    snd.currentTime = 0;
+    snd.volume = 0.4;
+    snd.play().catch(()=>{});
+  } catch(e) {}
 }
 
 function playExplosionSound(kind) {
   if (!soundEnabled) return;
-  
-  // ARTIK HEPSİNDE AYNI TOK SES (BOOM_ONE) ÇALACAK
-  const s = sounds.boomShip.cloneNode(); 
-  s.volume = 0.8;
-  s.play().catch(e => {});
+  const snd = sounds.boomShip;
+  try {
+    snd.currentTime = 0;
+    snd.volume = 0.8;
+    snd.play().catch(()=>{});
+  } catch(e) {}
 }
 
 function playLifeSound() {
   if (!soundEnabled) return;
-  const s = sounds.gem.cloneNode();
-  s.volume = 0.8;
-  s.play().catch(e => {});
+  const snd = sounds.gem;
+  try {
+    snd.currentTime = 0;
+    snd.volume = 0.8;
+    snd.play().catch(()=>{});
+  } catch(e) {}
 }
 function playGemSound() { playLifeSound(); }
 
