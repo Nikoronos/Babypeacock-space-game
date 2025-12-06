@@ -206,13 +206,14 @@ soundBtn.onclick = (e) => {
   }
 };
 
+/* GÜNCELLENDİ: Sadece atış sesi cloneNode kullanıyor (daha iyi seri atış için) */
 function playShootSound(isPower) {
   if (!soundEnabled) return;
-  const snd = isPower ? sounds.powerShot : sounds.normalShot;
+  const base = isPower ? sounds.powerShot : sounds.normalShot;
   try {
-    snd.currentTime = 0;
-    snd.volume = 0.4;
-    snd.play().catch(()=>{});
+    const s = base.cloneNode();
+    s.volume = 0.4;
+    s.play().catch(()=>{});
   } catch(e) {}
 }
 
