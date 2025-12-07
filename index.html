@@ -53,18 +53,15 @@
     bottom:max(20px,env(safe-area-inset-bottom)); 
     z-index:50;
     width:42px;height:42px; 
-    /* Performans için blur kapatıldı, background koyulaştırıldı */
     background:rgba(15, 23, 42, 0.95); border:2px solid #38bdf8; color:#38bdf8; border-radius:50%;
     font-size:14px;font-weight:900;align-items:center;justify-content:center;cursor:pointer;
     box-shadow:0 0 10px rgba(56,189,248,0.4); 
-    /* backdrop-filter: blur(4px); */
   }
 
   #startOverlay,#gameOver,#pauseOverlay,#countdownOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:60}
   #startOverlay{background:rgba(0,0,0,0.85);color:#fff;display:flex;overflow:hidden}
   
-  /* Performans için blur kapatıldı */
-  #pauseOverlay{background:rgba(0,0,0,0.9);color:#fff; /* backdrop-filter:blur(3px) */}
+  #pauseOverlay{background:rgba(0,0,0,0.9);color:#fff;}
   
   #startLogo {
     width: 90px; height: 90px; border-radius: 50%; border: 3px solid #22d3ee;
@@ -77,10 +74,8 @@
   #gameOver { background: transparent; justify-content: flex-start; padding-top: 40vh; overflow-y: auto; }
   #mondayChampBox {
     display: none; flex-direction: column; align-items: center; margin-bottom: 10px; padding: 8px 15px;
-    /* Performans için blur kapatıldı */
     background: rgba(20, 20, 10, 0.95); border: 1px solid #facc15; border-radius: 8px; 
     box-shadow: 0 0 15px rgba(250, 204, 21, 0.4); width: min(320px, 80vw); text-align: center; 
-    /* backdrop-filter: blur(5px); */
   }
   .champ-label { color:#facc15;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px; }
   .champ-name { color:#fff;font-size:15px;font-weight:900;margin-bottom:4px;text-shadow:0 0 5px rgba(255,255,255,0.5); }
@@ -90,8 +85,7 @@
   @keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
   .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer;margin-bottom:5px;box-shadow:0 0 20px rgba(0,255,200,0.4);}
   
-  /* Performans için blur kapatıldı */
-  #soundToggle { margin-top: 20px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(34, 211, 238, 0.5); background: rgba(15, 23, 42, 0.9); color: #22d3ee; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; /* backdrop-filter: blur(4px); */ transition: all 0.3s ease; z-index: 100; }
+  #soundToggle { margin-top: 20px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(34, 211, 238, 0.5); background: rgba(15, 23, 42, 0.9); color: #22d3ee; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; z-index: 100; }
   
   #soundToggle:hover { background: rgba(34, 211, 238, 0.15); box-shadow: 0 0 15px rgba(34, 211, 238, 0.4); transform: scale(1.05); }
   #bpc-top10 { width: min(380px, 90vw); background: rgba(5, 5, 5, 0.9); border: 1px solid #333; border-radius: 10px; padding: 10px; color: #fff; font-size: 13px; line-height: 1.4; margin-top: 10px; margin-bottom: 40px; }
@@ -157,73 +151,73 @@
   <canvas id="game"></canvas>
 
 <script>
-/* ====== SES SİSTEMİ (ANDROID FIX: SES MOTORUNU ZORLA UYANDIRMA) ====== */
-// APK içinde dosya değişmediği için ?v= random sayısını sildik, bu bazen dosya yolunu bozar.
-const v = "";
+/* ====== YENİ SES SİSTEMİ (WEB AUDIO API) - APK İÇİN LAG ÇÖZÜMÜ ====== */
+// Bu yöntem sesi RAM'e yükler ve diskten tekrar tekrar okumaz. APK'da takılmayı önler.
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContext();
 
 class SoundPool {
   constructor(src, size, volume = 1.0) {
-    this.pool = [];
-    this.idx = 0;
-    this.size = size;
+    this.buffer = null;
     this.volume = volume;
-    for (let i = 0; i < size; i++) {
-      const a = new Audio(src);
-      a.volume = volume;
-      a.preload = "auto";
-      a.load();
-      this.pool.push(a);
-    }
+    this.isLoaded = false;
+    
+    // Sesi fetch ile indirip AudioBuffer'a çeviriyoruz (RAM'de duruyor)
+    fetch(src)
+      .then(response => response.arrayBuffer())
+      .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
+      .then(audioBuffer => {
+        this.buffer = audioBuffer;
+        this.isLoaded = true;
+      })
+      .catch(e => console.error("Ses yükleme hatası:", src, e));
   }
 
   play() {
-    let s = this.pool[this.idx];
-
-    // Eğer seçilen ses şu anda çalıyorsa, havuzda bir sonraki elemana geçerek
-    // mevcut sesi kesmeden yeni sesi başka bir kanaldan çal.
-    if (!s.paused) {
-      this.idx = (this.idx + 1) % this.size;
-      s = this.pool[this.idx];
+    // Ses yüklenmediyse veya motor kilitliyse çalma
+    if (!this.isLoaded) return;
+    
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+        return;
     }
 
     try {
-      s.currentTime = 0;
-      const promise = s.play();
-      if (promise !== undefined) {
-        promise.catch(() => {
-          // Otomatik oynatma engeline takılırsa hatayı yut.
-        });
-      }
-    } catch (e) {}
+      const source = audioCtx.createBufferSource();
+      source.buffer = this.buffer;
 
-    this.idx = (this.idx + 1) % this.size;
+      const gainNode = audioCtx.createGain();
+      gainNode.gain.value = this.volume;
+
+      source.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      source.start(0);
+    } catch (e) {
+      console.error("Ses oynatma hatası:", e);
+    }
   }
 
-  // Motoru uyandırmak için boş çalma fonksiyonu
+  // Motoru uyandırmak için tetikleyici
   unlock() {
-    try {
-      const s = this.pool[this.idx];
-      const oldVol = s.volume;
-      s.volume = 0;
-      s.play().then(() => {
-        s.pause();
-        s.currentTime = 0;
-        s.volume = oldVol;
-      }).catch(() => {});
-    } catch (e) {}
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
   }
 }
 
+// Efekt sesleri için Web Audio API kullanıyoruz (Gecikmesiz)
 const sounds = {
-  normalShot: new SoundPool("laser_one.mp3", 30, 0.45),
-  powerShot:  new SoundPool("laser.mp3", 30, 0.45),
-  boomUfo:    new SoundPool("boom.mp3", 15, 0.85),
-  boomShip:   new SoundPool("boom_one.mp3", 15, 0.85),
-  gem:        new SoundPool("gem.mp3", 12, 0.9),   // ← GEM DE GÜÇLENDİRİLDİ
+  normalShot: new SoundPool("laser_one.mp3", 10, 0.4),
+  powerShot:  new SoundPool("laser.mp3", 10, 0.4),
+  boomUfo:    new SoundPool("boom.mp3", 5, 0.8),
+  boomShip:   new SoundPool("boom_one.mp3", 5, 0.8),
+  gem:        new SoundPool("gem.mp3", 5, 0.8),
+  // Müzik dosyası uzun olduğu için HTML5 Audio olarak kalabilir (Loop için daha kolay)
   gameOver:   new Audio("space_chords.mp3")
 };
 
-sounds.gameOver.loop = true;   // ← MÜZİK SONSUZA KADAR ÇALACAK
+sounds.gameOver.loop = false;
 let gameOverMusicPlayed = false;
 
 // === KRİTİK NOKTA: İLK DOKUNUŞTA SESLERİ UYANDIR ===
@@ -231,10 +225,14 @@ let audioUnlocked = false;
 function unlockAudioEngine() {
   if (audioUnlocked) return;
 
-  sounds.normalShot.unlock();
-  sounds.powerShot.unlock();
-  sounds.boomUfo.unlock();
+  // Web Audio Context'i uyandır
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume().then(() => {
+        console.log("AudioContext uyandı!");
+    });
+  }
 
+  // Game Over müziği (HTML5 Audio) için kilit açma
   try {
     const oldVol = sounds.gameOver.volume;
     sounds.gameOver.volume = 0;
@@ -300,7 +298,6 @@ function playGemSound() { playLifeSound(); }
 /* ====== GAME SETUP ====== */
 const cv=document.getElementById("game");
 
-// GÜNCELLEME: Ekran boyutu değişse bile gemiyi alt hizada tut
 function resize(){ 
   cv.width=window.innerWidth; cv.height=window.innerHeight; 
   if(player) {
@@ -357,7 +354,6 @@ let powerTime=0, fireTimer=0, FIRE_MS=170;
 let elapsed=0,enT=0,gemT=0,mascotT=0;
 let scoreSent=false;
 let player={x:cv.width/2-33,y:cv.height-120,w:66,h:66};
-// İlk açılışta resize'ı çağırarak konumu garantiye al
 resize();
 
 function getPlayerCode(){ let c=localStorage.getItem("playerCode"); if(!c){c="BPC"+Math.floor(100000+Math.random()*899999);localStorage.setItem("playerCode",c);} return c; }
@@ -407,14 +403,11 @@ startBtn.onclick=initGame;
 
 pauseBtn.onclick=()=>{if(!started||gameOver||inCountdown)return;paused=true;pauseOverlay.style.display="flex";uiPause.style.display="none";};
 
-// GÜNCELLEME: Resume sonrası gemiyi sabitle
 resumeBtn.onclick=()=>{
   pauseOverlay.style.display="none";
   startCountdownSequence(()=>{
     paused=false;
     uiPause.style.display="flex";
-    
-    // Pause sonrası gemiyi tekrar alt hizaya sabitle
     player.y = cv.height - 120;
     player.x = clamp(player.x, 0, cv.width - player.w);
   });
@@ -464,7 +457,6 @@ function allowedKindsByTime(t){
 }
 
 function spawnEnemy(k, spMul){ 
-  // GÜNCELLEME: Düşman limiti (enemyCap) arttırıldı (2000+ ve 2300+)
   const enemyCap = 
     (score >= 2300) ? 30 :
     (score >= 2000) ? 26 :
@@ -489,7 +481,6 @@ function spawnEnemy(k, spMul){
     isSprite = (frames > 1);
   }
   
-  // GÜNCELLEME: 2300+ puan için yatay hız (vx) belirle
   let vx = 0;
   if (score >= 2300) {
     const dir = Math.random() < 0.5 ? -1 : 1;
@@ -498,7 +489,7 @@ function spawnEnemy(k, spMul){
 
   enemies.push({
     x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul,
-    vx: vx, // Zigzag için yeni özellik
+    vx: vx, 
     kind, img, isSprite, blendMode, frameDelay,
     frame:0, frameTimer:0, totalFrames: frames,
     canShoot:(kind==="red"||kind==="green"), 
@@ -537,7 +528,7 @@ function renderFinalScore(t){
 }
 
 async function endGame(){
-  if (gameOver) return; // endGame sadece 1 kere çalışsın
+  if (gameOver) return;
   gameOver = true; 
   uiPause.style.display = "none";
   overEl.style.display = "flex"; 
@@ -594,20 +585,15 @@ function update(dt){
   
   enemies.forEach(e=>{
     e.y+=e.vy;
-    
-    // GÜNCELLEME: 2300+ puan için zigzag hareketi ve çarpma kontrolü
-    if (score >= 2300 && typeof e.vx === "number") {
+    if(score >= 2300 && typeof e.vx === "number") {
       e.x += e.vx;
-      // Kenara çarpınca yön değiştir
       if (e.x < 0 || e.x + e.w > cv.width) {
         e.vx *= -1;
         e.x = clamp(e.x, 0, cv.width - e.w);
       }
     }
-
     e.shootT+=dt;
     if(e.canShoot&&e.shootT>=e.shootInt){e.shootT=0;enemyShoot(e);}
-    
     if(e.isSprite && e.img) {
       e.frameTimer += dt;
       if(e.frameTimer > e.frameDelay) { 
@@ -701,7 +687,6 @@ restartBtn.onclick=()=>{
   updateLives();gameOver=false;scoreSent=false;paused=false;inCountdown=false;
   overEl.style.display="none";top10Box.style.display="none";uiPause.style.display="none";
   
-  // Restart'a basınca Game Over müziğini durdur ve flag’i sıfırla
   gameOverMusicPlayed = false;
   if (sounds.gameOver) {
      sounds.gameOver.pause();
@@ -820,15 +805,25 @@ async function bumpLocation(){
 
 async function saveScore(score){
   const code=localStorage.getItem("playerCode")||"BPC"; const country=getCountryCode(); 
-  const payload={code,score,ts:Date.now(),country, countryName: country}; 
-  await push(ref(db,"scores"),payload);
-  const wk=weekKey(new Date()); await push(ref(db,`scoresWeekly/${wk}`),{...payload,week:wk});
+  const payload={code,score,ts:Date.now(),country, countryName: country};
+await push(ref(db,"scores"),payload);
+  const wk=weekKey(new Date());
+  await push(ref(db,`scoresWeekly/${wk}`),{...payload,week:wk});
 }
 
 async function getWeeklyTop10(wk=weekKey()){
-  const snap=await get(ref(db,`scoresWeekly/${wk}`)); const bestByCode={};
-  snap.forEach(ch=>{const v=ch.val();if(!v||typeof v.score!=="number")return;if(!bestByCode[v.code]||v.score>bestByCode[v.code].score)bestByCode[v.code]=v;});
-  return Object.values(bestByCode).sort((a,b)=>b.score-a.score).slice(0,20);
+  const snap=await get(ref(db,`scoresWeekly/${wk}`));
+  const bestByCode={};
+  snap.forEach(ch=>{
+    const v=ch.val();
+    if(!v||typeof v.score!=="number") return;
+    if(!bestByCode[v.code] || v.score>bestByCode[v.code].score){
+      bestByCode[v.code]=v;
+    }
+  });
+  return Object.values(bestByCode)
+    .sort((a,b)=>b.score-a.score)
+    .slice(0,20);
 }
 
 async function checkMondayWinner(){
@@ -839,69 +834,103 @@ async function checkMondayWinner(){
   mondayBox.style.display = 'none';
   if(!isMondayActive) return;
 
-  const d_prev = new Date(now); d_prev.setDate(d_prev.getDate() - 1); const prevWk = weekKey(d_prev);
+  const d_prev = new Date(now);
+  d_prev.setDate(d_prev.getDate() - 1);
+  const prevWk = weekKey(d_prev);
+
   const list = await getWeeklyTop10(prevWk);
   if(!list || list.length === 0) return;
 
-  const winner = list[0]; const myCode = localStorage.getItem("playerCode");
+  const winner = list[0];
+  const myCode = localStorage.getItem("playerCode");
+
   mondayBox.style.display = 'flex';
-  mcWeek.textContent = prevWk.split("-W")[1]; 
+  mcWeek.textContent = prevWk.split("-W")[1];
   mcName.textContent = getFlagEmoji(winner.country) + " " + winner.code;
 
   if(myCode === winner.code){
     const winRef = ref(db, `weeklyWinners/${prevWk}`);
     const snapshot = await get(winRef);
     let secret = "";
-    if(snapshot.exists() && snapshot.val().secretCode){ secret = snapshot.val().secretCode; } 
-    else { secret = "WIN-" + Math.floor(100000 + Math.random() * 900000); await set(winRef, { secretCode: secret, winnerCode: winner.code, country: winner.country, score: winner.score, ts: Date.now() }); }
-    mcSecretBox.style.display = "block"; mcCode.textContent = secret;
-  } else { mcSecretBox.style.display = "none"; }
+    if(snapshot.exists() && snapshot.val().secretCode){
+      secret = snapshot.val().secretCode;
+    } else {
+      secret = "WIN-" + Math.floor(100000 + Math.random() * 900000);
+      await set(winRef, {
+        secretCode: secret,
+        winnerCode: winner.code,
+        country: winner.country,
+        score: winner.score,
+        ts: Date.now()
+      });
+    }
+    mcSecretBox.style.display = "block";
+    mcCode.textContent = secret;
+  } else {
+    mcSecretBox.style.display = "none";
+  }
 }
 window.checkMondayWinner = checkMondayWinner;
 
 async function showWeeklyPanel(){
-  const wk=weekKey(new Date()); const me=localStorage.getItem("playerCode");
-  const ol=document.getElementById("bpc-list"); const box=document.getElementById("bpc-top10");
-  const wnEl=document.getElementById("wk-num"); if(wnEl)wnEl.textContent=wk.split("-W")[1]; 
-  if(window.bpcTimer)clearInterval(window.bpcTimer);
+  const wk=weekKey(new Date());
+  const me=localStorage.getItem("playerCode");
+  const ol=document.getElementById("bpc-list");
+  const box=document.getElementById("bpc-top10");
+  const wnEl=document.getElementById("wk-num");
+  if(wnEl) wnEl.textContent=wk.split("-W")[1];
+
+  if(window.bpcTimer) clearInterval(window.bpcTimer);
+
   function updateTimer(){
     const now = getLondonNowCompat();
     const target = new Date(now);
-    const day = target.getDay(); 
-    const daysUntilSunday = (7 - day) % 7; 
+    const day = target.getDay();
+    const daysUntilSunday = (7 - day) % 7;
     target.setDate(now.getDate() + daysUntilSunday);
     target.setHours(23, 59, 59, 999);
     
-    const diff=target-now; const remEl=document.getElementById("wk-rem"); if(!remEl)return;
-    if(diff<=0){remEl.textContent="Resetting...";return;}
-    const d=Math.floor(diff/(1000*60*60*24)); const h=Math.floor((diff%(1000*60*60*24))/(1000*60*60));
-    const m=Math.floor((diff%(1000*60*60))/(1000*60)); const s=Math.floor((diff%(1000*60))/1000);
+    const diff = target - now;
+    const remEl = document.getElementById("wk-rem");
+    if(!remEl) return;
+    if(diff<=0){
+      remEl.textContent="Resetting...";
+      return;
+    }
+    const d=Math.floor(diff/(1000*60*60*24));
+    const h=Math.floor((diff%(1000*60*60*24))/(1000*60*60));
+    const m=Math.floor((diff%(1000*60*60))/(1000*60));
+    const s=Math.floor((diff%(1000*60))/1000);
     remEl.textContent=`${d}d ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
     remEl.style.color=(d===0)?"#ef4444":"#facc15";
   }
-  updateTimer(); window.bpcTimer=setInterval(updateTimer,1000);
+  updateTimer();
+  window.bpcTimer=setInterval(updateTimer,1000);
 
   const list=await getWeeklyTop10(wk);
-  const medals = ["🥇","🥈","🥉"]; // 1-2-3 için madalya dizisi
+  const medals = ["🥇","🥈","🥉"]; // 1, 2, 3 için madalyalar
 
   if(ol){
-    ol.innerHTML=list.length
+    ol.innerHTML = list.length
       ? list.map((it,i)=>{
-          const mine=it.code===me; const flag=getFlagEmoji(it.country);
-          const medal = medals[i] || ""; // 1,2,3 ise madalyayı al, yoksa boş
+          const mine = it.code===me;
+          const flag = getFlagEmoji(it.country);
+          const medal = medals[i] || ""; // 1-3 dışı boş
           return `<li class="${mine?'me':''}">
-    <span class="rank-num">${i+1}.</span>
-    ${flag} ${it.code} → ${it.score} pts
-    <span style="margin-left:4px">${medal}</span>
-</li>`;
+            <span class="rank-num">${i+1}.</span>
+            <span style="margin-right:4px">${medal}</span>
+            ${flag} ${it.code} → ${it.score} pts
+          </li>`;
         }).join("")
       : `<div style="opacity:.7;text-align:center">No scores this week yet.</div>`;
   }
-  if(box)box.style.display="block";
+  if(box) box.style.display="block";
 }
 
-window.incrementGlobalPlays=incrementGlobalPlays; window.saveScore=saveScore;
-window.showWeeklyPanel=showWeeklyPanel; window.bumpLocation=bumpLocation;
+window.incrementGlobalPlays = incrementGlobalPlays;
+window.saveScore          = saveScore;
+window.showWeeklyPanel    = showWeeklyPanel;
+window.bumpLocation       = bumpLocation;
 </script>
 </body>
 </html>
