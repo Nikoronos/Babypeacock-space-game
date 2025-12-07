@@ -3,202 +3,455 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover" />
-<title>BPC - ZIGZAG TEST (FIXED)</title>
+<title>BPC - HARDCORE TEST MODE</title>
 <style>
-  html,body{margin:0;height:100%;background:#000;font-family:system-ui;overflow:hidden}
-  #ui{
-    position:fixed;top:10px;left:10px;
-    color:#00ffc8;font-weight:bold;z-index:10;font-size:16px;
-    text-shadow: 0 0 5px #000; pointer-events:none;
+  html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
+  
+  /* UI ELEMENTLERİ */
+  #ui-layer {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: 55px;
+    padding: max(10px, env(safe-area-inset-top)) 15px 0 15px;
+    display: none; 
+    display: grid;
+    grid-template-columns: 1fr auto 1fr; 
+    align-items: center;
+    z-index: 20; pointer-events: none;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+    font-size: 15px; font-weight: 800;
+    white-space: nowrap; 
   }
-  canvas{display:block;width:100%;height:100%;background:#020617;}
-  .btn{
-    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-    padding:20px 40px; background:#0f172a; border:2px solid #00ffc8;
-    color:#00ffc8; font-size:24px; font-weight:900; border-radius:12px;
-    cursor:pointer; z-index:20; box-shadow: 0 0 20px rgba(0,255,200,0.3);
+
+  #brand {
+    justify-self: start; 
+    background:linear-gradient(90deg,#ff5c5c,#facc15); /* HARDCORE RENGİ: KIRMIZI/SARI */
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight: 900; font-size: 17px; 
+    text-shadow: 0 0 10px rgba(255, 92, 92, 0.3);
   }
+
+  .center-group {
+    justify-self: center; 
+    display: flex; flex-direction: row; align-items: center; 
+    gap: 15px; 
+  }
+  
+  #score { color:#00ffc8; text-shadow: 0 0 6px rgba(0, 255, 200, 0.5); font-size: 18px; }
+  
+  #lives { 
+    letter-spacing: 2px; font-size: 15px;
+    text-shadow: 0 0 5px rgba(255, 50, 50, 0.4);
+    min-width: 60px; text-align: center;
+  }
+
+  #power { 
+    justify-self: end; 
+    color:#a7f3d0; text-shadow: 0 0 6px rgba(167, 243, 208, 0.5); font-size: 16px;
+  }
+
+  #pauseBtn{
+    display:none; position:fixed;left:50%;transform:translateX(-50%);
+    bottom:max(20px,env(safe-area-inset-bottom)); 
+    z-index:50;
+    width:42px;height:42px; 
+    background:rgba(15, 23, 42, 0.95); border:2px solid #38bdf8; color:#38bdf8; border-radius:50%;
+    font-size:14px;font-weight:900;align-items:center;justify-content:center;cursor:pointer;
+    box-shadow:0 0 10px rgba(56,189,248,0.4); 
+  }
+
+  #startOverlay,#gameOver,#pauseOverlay,#countdownOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:60}
+  #startOverlay{background:rgba(0,0,0,0.85);color:#fff;display:flex;overflow:hidden}
+  
+  #pauseOverlay{background:rgba(0,0,0,0.9);color:#fff;}
+  
+  #startLogo {
+    width: 90px; height: 90px; border-radius: 50%; border: 3px solid #ff5c5c;
+    box-shadow: 0 0 25px rgba(255, 92, 92, 0.5), inset 0 0 10px rgba(255, 92, 92, 0.3);
+    object-fit: cover; margin-bottom: 8px; animation: floatLogo 3.5s ease-in-out infinite;
+  }
+  @keyframes floatLogo { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+  .slogan { font-size: 15px; font-style: italic; background: linear-gradient(90deg, #facc15, #ff5c5c); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 25px; font-weight: 600; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(255, 92, 92, 0.2); }
+  
+  #gameOver { background: transparent; justify-content: flex-start; padding-top: 40vh; overflow-y: auto; }
+  
+  #countdownOverlay{background:transparent;pointer-events:none;z-index:70}
+  #cntText{font-size:90px;font-weight:900;color:#fff;text-shadow:0 0 25px #22d3ee;font-family:monospace}
+  @keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
+  .btn{padding:12px 32px;border:1px solid #ff5c5c;background:#0b1220;color:#ff5c5c;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer;margin-bottom:5px;box-shadow:0 0 20px rgba(255,92,92,0.4);}
+  
+  #soundToggle { margin-top: 20px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(34, 211, 238, 0.5); background: rgba(15, 23, 42, 0.9); color: #22d3ee; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; z-index: 100; }
+  
+  canvas { display: block; margin: 0 auto; background: radial-gradient(circle at center, #1a0505 0%, #000000 100%); touch-action: none; user-select: none; width: 100%; height: 100% }
 </style>
 </head>
 <body>
+  <div id="ui-layer">
+    <div id="brand">HARDCORE TEST ☠️</div>
+    <div class="center-group">
+      <div id="score">Score: <span id="sc">0</span></div>
+      <div id="lives">❤️❤️❤️</div>
+    </div>
+    <div id="power">💎 <span id="px">0</span>s</div>
+  </div>
 
-<div id="ui">
-  TEST MODU: 67 ZIG-ZAG<br>
-  DURUM: AKTİF<br>
-  Skor: <span id="sc">0</span>
-</div>
+  <div id="pauseBtn">II</div>
 
-<button id="startBtn" class="btn">BAŞLAT</button>
-<canvas id="game"></canvas>
+  <div id="startOverlay">
+    <img id="startLogo" src="yc3ku6.jpg" alt="BPC" onerror="this.style.display='none'">
+    <div class="slogan">MODE: MAX DIFFICULTY</div>
+    <div style="margin-bottom:12px;font-size:14px;color:#ccc;">(ZigZag ON, Max Enemies ON)</div>
+    <button id="startBtn" class="btn">START CHAOS</button>
+    <div id="playerCode" style="margin-top:15px;font-size:14px;color:#ff5c5c;">TEST MODE</div>
+    <div id="soundToggle">🔊</div>
+  </div>
+
+  <div id="pauseOverlay">
+    <div style="font-size:32px;font-weight:900;margin-bottom:15px;color:#e2e8f0;letter-spacing:2px;">PAUSED</div>
+    <button id="resumeBtn" class="btn">RESUME</button>
+  </div>
+
+  <div id="countdownOverlay"><div id="cntText"></div></div>
+
+  <div id="gameOver">
+    <div style="color:#ff5c5c;font-size:20px;font-weight:900;margin-bottom:10px;">TEST OVER</div>
+    <button id="restart" class="btn">Try Again</button>
+  </div>
+
+  <canvas id="game"></canvas>
 
 <script>
-const cv=document.getElementById("game");
-const ctx=cv.getContext("2d");
-const startBtn=document.getElementById("startBtn");
-const scEl=document.getElementById("sc");
+/* ====== SES SİSTEMİ (Index 67'den Aynen Alındı) ====== */
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContext();
 
-// RESİM DOSYA İSİMLERİ (Seninkilerle aynı)
-const PLAYER_SRC="img/player/bpc_mini.png"; 
-// Düşman resimleri (Varsa yükler)
-const ENEMY_SRC=["bpc_enemy_red.png", "bpc_enemy_green.png", "ufo_red_sprite.png"];
-
-let playerImg=null;
-let enemyImgs=[];
-
-function resize(){ cv.width=window.innerWidth; cv.height=window.innerHeight; }
-window.addEventListener('resize', resize); resize();
-
-// Resim Yükleme Yardımcısı
-const loadImage = (src) => new Promise((resolve) => {
-  const img = new Image();
-  img.onload = () => resolve(img);
-  img.onerror = () => { console.log("Resim bulunamadı:", src); resolve(null); };
-  img.src = src;
-});
-
-// Resimleri Yükle
-(async function initAssets(){
-  playerImg = await loadImage(PLAYER_SRC);
-  for(let src of ENEMY_SRC){
-    const img = await loadImage(src);
-    if(img) enemyImgs.push(img);
+class SoundPool {
+  constructor(src, size, volume = 1.0) {
+    this.buffer = null; this.volume = volume; this.isLoaded = false;
+    fetch(src).then(r=>r.arrayBuffer()).then(b=>audioCtx.decodeAudioData(b)).then(a=>{this.buffer=a;this.isLoaded=true;}).catch(()=>{});
   }
-})();
-
-// OYUN DEĞİŞKENLERİ
-let player={x:cv.width/2-33, y:cv.height-120, w:66, h:66};
-let bullets=[], enemies=[];
-let running=false, score=0, frames=0;
-
-// KONTROLLER
-let holding=false;
-const getX = (e) => (e.clientX || (e.touches && e.touches[0].clientX) || 0);
-
-cv.addEventListener("pointerdown",e=>{holding=true; movePlayer(getX(e));});
-cv.addEventListener("pointermove",e=>{if(holding) movePlayer(getX(e));});
-cv.addEventListener("pointerup",()=>holding=false);
-cv.addEventListener("touchend",()=>holding=false);
-
-function movePlayer(tx){
-  player.x = Math.max(0, Math.min(cv.width-player.w, tx - player.w/2));
+  play() {
+    if (!this.isLoaded) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    try {
+      const s = audioCtx.createBufferSource(); s.buffer = this.buffer;
+      const g = audioCtx.createGain(); g.gain.value = this.volume;
+      s.connect(g); g.connect(audioCtx.destination); s.start(0);
+    } catch (e) {}
+  }
 }
-
-// === BAŞLATMA FONKSİYONU (DÜZELTİLDİ) ===
-startBtn.onclick = () => {
-  startBtn.style.display="none";
-  running=true;
-  enemies=[]; bullets=[]; score=0; frames=0;
-  player.y = cv.height - 120;
-  
-  // Önceki hatayı düzelttim: loop() yerine update() çağırıyoruz
-  update(); 
+const sounds = {
+  normalShot: new SoundPool("laser_one.mp3", 10, 0.4),
+  powerShot:  new SoundPool("laser.mp3", 10, 0.4),
+  boomShip:   new SoundPool("boom_one.mp3", 5, 0.8),
+  gem:        new SoundPool("gem.mp3", 5, 0.8),
 };
 
-function spawnEnemy(){
-  // Index 67'deki MAX KALABALIK (30 Düşman)
-  if(enemies.length >= 30) return;
-  
-  const size = 50 + Math.random()*30;
-  const xStart = Math.random() * (cv.width - size);
-  
-  // === ZIG-ZAG MANTIĞI ===
-  const dir = Math.random() < 0.5 ? -1 : 1;
-  const vx = dir * (1.5 + Math.random() * 2.5); // Yatay Hız
+let audioUnlocked = false;
+function unlockAudioEngine() {
+  if (audioUnlocked) return;
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  audioUnlocked = true;
+  document.removeEventListener("touchstart", unlockAudioEngine);
+  document.removeEventListener("click", unlockAudioEngine);
+}
+document.addEventListener("touchstart", unlockAudioEngine, { passive: true });
+document.addEventListener("click", unlockAudioEngine);
 
-  // Rastgele resim seç
-  let selectedImg = null;
-  if(enemyImgs.length > 0) {
-    selectedImg = enemyImgs[Math.floor(Math.random() * enemyImgs.length)];
+let soundEnabled = true;
+const soundBtn = document.getElementById("soundToggle");
+soundBtn.onclick = (e) => {
+  e.stopPropagation();
+  soundEnabled = !soundEnabled;
+  soundBtn.textContent = soundEnabled ? "🔊" : "🔇";
+  soundBtn.style.opacity = soundEnabled ? "1" : "0.5";
+};
+
+function playShootSound(isPower) { if (soundEnabled) (isPower?sounds.powerShot:sounds.normalShot).play(); }
+function playExplosionSound() { if (soundEnabled) sounds.boomShip.play(); }
+function playGemSound() { if (soundEnabled) sounds.gem.play(); }
+
+
+/* ====== GAME SETUP ====== */
+const cv=document.getElementById("game");
+function resize(){ cv.width=window.innerWidth; cv.height=window.innerHeight; if(player) {player.y=cv.height-120; player.x=clamp(player.x,0,cv.width-player.w);} }
+window.addEventListener('resize', resize); 
+const ctx=cv.getContext("2d"); ctx.imageSmoothingEnabled=false;
+
+const uiLayer = document.getElementById("ui-layer");
+const uiPause = document.getElementById("pauseBtn");
+const scEl=document.getElementById("sc"),pxEl=document.getElementById("px"),livesEl=document.getElementById("lives");
+const startOverlay=document.getElementById("startOverlay"),startBtn=document.getElementById("startBtn");
+const overEl=document.getElementById("gameOver"),restartBtn=document.getElementById("restart");
+const pauseBtn=document.getElementById("pauseBtn"), pauseOverlay=document.getElementById("pauseOverlay"), resumeBtn=document.getElementById("resumeBtn");
+const countOverlay=document.getElementById("countdownOverlay"), cntText=document.getElementById("cntText");
+
+function clamp(v,a,b){return v<a?a:v>b?b:v;}
+function rand(a,b){return a+Math.random()*(b-a);}
+function rectHit(a,b){return !(a.x+a.w<b.x||a.x>b.x+b.w||a.y+a.h<b.y||a.y>b.y+b.h);}
+function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.crossOrigin="anonymous";i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
+
+// ORİJİNAL ARKA PLAN SİLME FONKSİYONU (Resimlerin düzgün görünmesi için şart)
+function keyOutDark(img, TH){
+  const w=img.width,h=img.height;
+  const off=document.createElement('canvas'); off.width=w; off.height=h;
+  const g=off.getContext('2d'); g.drawImage(img,0,0); 
+  const d=g.getImageData(0,0,w,h), a=d.data;
+  for(let i=0;i<a.length;i+=4){
+    const r=a[i], g1=a[i+1], b=a[i+2];
+    if(r<TH && g1<TH && b<TH) a[i+3]=0;
+  }
+  g.putImageData(d,0,0); return off;
+}
+
+const PLAYER_SRC="img/player/bpc_mini.png";
+const PEACOCK_SRC="yc3ku6.jpg";
+
+/* SPRITE CONFIG */
+const SPRITE_CONFIG = {
+  green:   { src: "bpc_enemy_green_sprite.png", frames: 60, mode: 'normal', th: 30, delay: 20 }, 
+  ufo_red: { src: "ufo_red_sprite.png", frames: 85, mode: 'screen', th: 100, delay: 20 },
+  ufo_gray:{ src: "ufo_gray_sprite.png", frames: 60, mode: 'screen', th: 100, delay: 20 },
+  red:     { src: "bpc_enemy_red_sprite.png", frames: 60, mode: 'screen', th: 100, delay: 80 } 
+};
+
+let bullets=[], enemies=[], enemyBullets=[], gems=[], mascots=[], particles=[];
+let score=0,lives=3,started=false,gameOver=false,paused=false,inCountdown=false;
+let powerTime=0, fireTimer=0, FIRE_MS=170;
+let elapsed=0,enT=0,gemT=0,mascotT=0;
+let player={x:cv.width/2-33,y:cv.height-120,w:66,h:66};
+resize();
+
+const starsA=[], starsB=[];
+for(let i=0;i<25;i++) starsA.push({x:rand(0,cv.width),y:rand(0,cv.height), sp:rand(0.2,0.4)});
+for(let i=0;i<15;i++) starsB.push({x:rand(0,cv.width),y:rand(0,cv.height), sp:rand(0.7,1.1)});
+
+function startCountdownSequence(callback) {
+  inCountdown=true; countOverlay.style.display="flex"; let count=3;
+  const showNum=(num)=>{cntText.textContent=num;cntText.style.animation='none';cntText.offsetHeight;cntText.style.animation='popIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275)';};
+  showNum(3);
+  const timer=setInterval(()=>{count--;if(count>0)showNum(count);else if(count===0)showNum("GO!");else{clearInterval(timer);countOverlay.style.display="none";inCountdown=false;if(callback)callback();}},800);
+}
+
+function initGame(){
+  if(started)return;
+  const doc=document.documentElement; try{if(doc.requestFullscreen)doc.requestFullscreen();}catch(e){}
+  startOverlay.style.display="none"; uiLayer.style.display = "grid"; 
+  startCountdownSequence(()=>{started=true; paused=false; uiPause.style.display="flex"; player.y=cv.height-120; player.x=cv.width/2-player.w/2;});
+}
+startBtn.onclick=initGame;
+
+pauseBtn.onclick=()=>{if(!started||gameOver||inCountdown)return;paused=true;pauseOverlay.style.display="flex";uiPause.style.display="none";};
+resumeBtn.onclick=()=>{pauseOverlay.style.display="none";startCountdownSequence(()=>{paused=false;uiPause.style.display="flex";player.y=cv.height-120;});};
+
+function updateLives(){livesEl.innerHTML="❤️".repeat(lives);} updateLives();
+
+let holding=false;
+function getX(e){return (e.clientX??(e.touches?e.touches[0].clientX:0))-cv.getBoundingClientRect().left;}
+cv.addEventListener("pointerdown",e=>{if(!started||paused||inCountdown)return;holding=true;player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w);});
+cv.addEventListener("pointermove",e=>{if(!holding||paused||inCountdown)return;player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w);});
+cv.addEventListener("pointerup",()=>holding=false); cv.addEventListener("pointercancel",()=>holding=false);
+
+function shoot(){
+  playShootSound(powerTime > 0);
+  if(powerTime>0){ bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10}); bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10,ang:3}); bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10,ang:-3}); }
+  else { bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10}); }
+}
+
+function drawDiamondGem(ctx,x,y,w,h,t){ctx.save();ctx.translate(x+w/2,y+h/2);ctx.rotate(Math.sin(t*2)*0.20);
+  const W=w*0.9,H=h*0.9;ctx.shadowColor="rgba(56,189,248,.7)";ctx.shadowBlur=14;
+  const grad=ctx.createLinearGradient(-W/2,0,W/2,0);grad.addColorStop(0,"#baf2ff");grad.addColorStop(0.5,"#60e8ff");grad.addColorStop(1,"#99f6e4");
+  ctx.fillStyle=grad;ctx.beginPath();ctx.moveTo(0,-H*0.5);ctx.lineTo(W*0.48,0);ctx.lineTo(0,H*0.56);ctx.lineTo(-W*0.48,0);ctx.closePath();ctx.fill();
+  ctx.shadowBlur=0;ctx.lineWidth=1.8;ctx.strokeStyle="#0e7490";ctx.stroke();ctx.restore();}
+
+function spawnGem(){ if(powerTime>0) return; const s=22; gems.push({x:rand(0,cv.width-s), y:-s, w:s, h:s, vy:1.5}); }
+function spawnMascot(){ const s=22; mascots.push({x:rand(0,cv.width-s), y:-s, w:s, h:s, vy:1.4}); }
+function explosion(x,y){const n=12; for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=1.2+Math.random()*2.8;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:420+Math.random()*280,size:1.6+Math.random()*2.4});}}
+
+function allowedKindsByTime(t){ return ["ufo_red","ufo_gray","green","red"]; }
+
+/* === KRİTİK HARDCORE DEĞİŞİKLİKLERİ BURADA === */
+function spawnEnemy(k, spMul){ 
+  /* ZORLUK AYARI: 2300 PUAN ÜSTÜ MODU AÇIK */
+  const enemyCap = 30; // HARDCORE: Direkt 30 düşman sınırı
+
+  if(enemies.length > enemyCap) return; 
+  
+  const kind=k[Math.floor(Math.random()*k.length)]; 
+  let size=rand(48,70); 
+  if(kind === "red") size = rand(60, 80); // HARDCORE: Büyük kırmızılar
+
+  let isSprite = false, img = null, frames = 1, blendMode = 'normal', frameDelay = 30;
+  if (loadedSprites[kind]) {
+    img = loadedSprites[kind].img;
+    frames = loadedSprites[kind].frames;
+    blendMode = SPRITE_CONFIG[kind].mode || 'normal';
+    frameDelay = SPRITE_CONFIG[kind].delay || 30; 
+    isSprite = (frames > 1);
+  }
+  
+  /* ZIG-ZAG BAŞLANGIÇ HIZI */
+  let vx = 0;
+  // HARDCORE: Her zaman Zig-Zag açık
+  if (true) { 
+    const dir = Math.random() < 0.5 ? -1 : 1;
+    vx = dir * rand(0.8, 1.6) * spMul;
   }
 
   enemies.push({
-    x: xStart, y: -size, w: size, h: size,
-    vy: 3 + Math.random() * 2.5, // Dikey Hız
-    vx: vx, // <-- Yatay Hareket
-    img: selectedImg,
-    color: Math.random()<0.5 ? "#ef4444" : "#22c55e" // Resim yoksa renk
-  });
+    x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul,
+    vx: vx, // <-- ZigZag
+    kind, img, isSprite, blendMode, frameDelay, frame:0, frameTimer:0, totalFrames: frames,
+    canShoot:(kind==="red"||kind==="green"), shootT:0,shootInt:500
+  }); 
 }
 
-function update(){
-  if(!running) return;
-  frames++;
+function enemyShoot(e){ 
+  if(!e.canShoot) return; const cx=e.x+e.w/2; 
+  const finalMul = 1.72 * 1.5; // HARDCORE: Mermi hızı da yüksek
+  
+  if(e.kind==="red") enemyBullets.push({x:cx-2,y:e.y+e.h,w:4,h:12,vy:6*finalMul,color:"#ef4444"});
+  else enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6.5*finalMul,color:"#22c55e"}); 
+}
 
-  // Otomatik Ateş
-  if(frames % 10 === 0) {
-    bullets.push({x:player.x+player.w/2-2, y:player.y, w:4, h:15, color:"#38bdf8"});
-  }
+async function endGame(){
+  if (gameOver) return;
+  gameOver = true; uiPause.style.display = "none"; overEl.style.display = "flex"; 
+}
 
-  // Düşman Spawn
-  if(frames % 15 === 0) spawnEnemy();
+function update(dt){
+  starsA.forEach(s=>{s.y+=s.sp;if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);}}); 
+  starsB.forEach(s=>{s.y+=s.sp;if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);}});
+  
+  if(!started||gameOver||paused||inCountdown)return;
+  
+  elapsed+=dt/1000;enT+=dt;gemT+=dt;mascotT+=dt;
+  if(powerTime>0){powerTime-=dt;if(powerTime<0)powerTime=0;} pxEl.textContent=powerTime>0?Math.ceil(powerTime/1000):0;
+  fireTimer+=dt;if(holding&&fireTimer>FIRE_MS){shoot();fireTimer=0;}
+  
+  // HARDCORE: Maksimum hız çarpanları sabit
+  let spMul = 1.72; 
+  let spwMul = 2.35;
+  let dyn = 1.2; // Biraz ekstra dinamik zorluk
 
-  // Mermiler
-  bullets.forEach(b => b.y -= 12);
-  bullets = bullets.filter(b => b.y > -20);
-
-  // Düşmanlar
-  enemies.forEach(e => {
-    e.y += e.vy;
-    
-    // === YATAY HAREKET (ZIG-ZAG) ===
-    e.x += e.vx;
-    // Duvara çarpınca geri sek (Bounce)
-    if(e.x <= 0 || e.x + e.w >= cv.width){
-       e.vx *= -1; 
-    }
-  });
-
-  // Çarpışma
-  for(let i=enemies.length-1; i>=0; i--){
-    let e = enemies[i];
-    let hit = false;
-
-    // Mermi vurdu mu?
-    for(let j=bullets.length-1; j>=0; j--){
-      let b = bullets[j];
-      if(b.x < e.x+e.w && b.x+b.w > e.x && b.y < e.y+e.h && b.y+b.h > e.y){
-        bullets.splice(j,1);
-        hit = true;
-        score++; scEl.innerText = score;
-        break;
+  if(enT > 600/(spwMul * dyn)){ spawnEnemy(allowedKindsByTime(elapsed), spMul); enT = 0; }
+  
+  if(gemT > 25000){ if(Math.random() < 0.3) spawnGem(); gemT = 0; }
+  if(mascotT>15000){spawnMascot();mascotT=0;}
+  
+  bullets.forEach(b=>{b.y+=b.vy;b.x+=(b.ang||0)*0.5;}); bullets=bullets.filter(b=>b.y>-20);
+  
+  enemies.forEach(e=>{
+    e.y+=e.vy;
+    /* ZIG-ZAG MANTIĞI: HER ZAMAN AKTİF */
+    if(typeof e.vx === "number") {
+      e.x += e.vx;
+      if (e.x < 0 || e.x + e.w > cv.width) {
+        e.vx *= -1; // Duvarlardan sekme
+        e.x = clamp(e.x, 0, cv.width - e.w);
       }
     }
+    e.shootT+=dt;
+    if(e.canShoot&&e.shootT>=e.shootInt){e.shootT=0;enemyShoot(e);}
+    if(e.isSprite && e.img) {
+      e.frameTimer += dt;
+      if(e.frameTimer > e.frameDelay) { 
+        e.frameTimer = 0;
+        e.frame = (e.frame + 1) % e.totalFrames;
+      }
+    }
+  }); 
+  enemies=enemies.filter(e=>e.y<=cv.height+40);
 
-    if(hit) enemies.splice(i,1);
-    else if(e.y > cv.height) enemies.splice(i,1);
+  enemyBullets.forEach(m=>{m.y+=m.vy;}); enemyBullets=enemyBullets.filter(m=>m.y<cv.height+40);
+  gems.forEach(g=>g.y+=g.vy); gems=gems.filter(g=>g.y<cv.height+40); mascots.forEach(m=>m.y+=m.vy); mascots=mascots.filter(m=>m.y<cv.height+40);
+  
+  const pBox = { x: player.x + 12, y: player.y + 12, w: player.w - 24, h: player.h - 24 };
+
+  for(const e of enemies){
+    if(rectHit(pBox,e)){
+      playExplosionSound(); explosion(player.x+player.w/2,player.y+player.h/2);
+      lives--;updateLives();if(lives<=0)endGame();e.dead=1;
+    }
   }
+  for(const m of enemyBullets){
+    if(rectHit(pBox,m)){
+      playExplosionSound(); explosion(player.x+player.w/2,player.y+player.h/2);
+      lives--;updateLives();if(lives<=0)endGame();m.dead=1;
+    }
+  }
+  for(const b of bullets){ 
+    for(const e of enemies){ 
+      if(rectHit(b,e)){ 
+        playExplosionSound(); explosion(e.x+e.w/2,e.y+e.h/2); b.dead=1; e.dead=1; 
+        if(!gameOver){ score++; scEl.textContent=score; } 
+      } 
+    } 
+  }
+  for(const g of gems){ if(rectHit(player,g)){ playGemSound(); powerTime=15000; g.dead=1; } } 
+  for(const m of mascots){ if(rectHit(player,m)){ playGemSound(); if(lives < 5){ lives++; updateLives(); } else { score += 2; scEl.textContent = score; } m.dead=1; } }
 
-  draw();
-  requestAnimationFrame(update); // Döngü devam eder
+  enemies=enemies.filter(o=>!o.dead);bullets=bullets.filter(o=>!o.dead);enemyBullets=enemyBullets.filter(o=>!o.dead);gems=gems.filter(o=>!o.dead);mascots=mascots.filter(o=>!o.dead);
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;if(p.life<=0){particles.splice(i,1);continue;}p.x+=p.vx;p.y+=p.vy;p.vy+=0.02;}
 }
 
-function draw(){
-  // Arkaplan
+function draw(t){
   ctx.clearRect(0,0,cv.width,cv.height);
-  ctx.fillStyle = "rgba(255,255,255,0.1)"; // Hafif yıldız efekti gibi noktalar için
+  ctx.fillStyle="rgba(255,255,255,0.7)";starsA.forEach(s=>ctx.fillRect(s.x,s.y,1,1)); 
+  ctx.fillStyle="rgba(255,255,255,0.9)";starsB.forEach(s=>ctx.fillRect(s.x,s.y,1.2,1.2));
+
+  if(!started) return;
+
+  if(playerImg)ctx.drawImage(playerImg,player.x,player.y,player.w,player.h); else{ctx.fillStyle="#38bdf8";ctx.fillRect(player.x,player.y,player.w,player.h);}
   
-  // Oyuncu
-  if(playerImg) ctx.drawImage(playerImg, player.x, player.y, player.w, player.h);
-  else {
-    ctx.fillStyle="#38bdf8"; ctx.fillRect(player.x, player.y, player.w, player.h);
-  }
-
-  // Mermiler
-  ctx.fillStyle="#00ffc8";
-  bullets.forEach(b => ctx.fillRect(b.x, b.y, b.w, b.h));
-
-  // Düşmanlar
-  enemies.forEach(e => {
-    if(e.img) {
+  ctx.fillStyle="#0099ff"; bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
+  
+  enemies.forEach(e=>{
+    if(e.isSprite && e.img && e.totalFrames > 0) {
+      const frameW = e.img.width / e.totalFrames;
+      const frameH = e.img.height; 
+      const sx = e.frame * frameW;
+      
+      ctx.save();
+      if(e.blendMode === 'screen') ctx.globalCompositeOperation = "screen";
+      if(frameW > 0 && sx >= 0) ctx.drawImage(e.img, sx, 0, frameW, frameH, e.x, e.y, e.w, e.h);
+      ctx.restore();
+    } else if(e.img) {
       ctx.drawImage(e.img, e.x, e.y, e.w, e.h);
     } else {
-      ctx.fillStyle = e.color;
-      ctx.fillRect(e.x, e.y, e.w, e.h);
-      // Ok işareti (Yönü gösterir)
-      ctx.fillStyle = "white"; ctx.font="20px Arial"; ctx.fillText(e.vx>0?"→":"←", e.x, e.y);
+      ctx.fillStyle=e.kind==="green"?"#22c55e":"#ef4444"; ctx.fillRect(e.x,e.y,e.w,e.h);
     }
   });
+
+  enemyBullets.forEach(m=>{ctx.fillStyle=m.color;ctx.fillRect(m.x,m.y,m.w,m.h);});
+  gems.forEach(g=>drawDiamondGem(ctx,g.x,g.y,g.w,g.h,performance.now()/1000)); if(peacockImg)mascots.forEach(m=>ctx.drawImage(peacockImg,m.x,m.y,m.w,m.h));
+  particles.forEach(p=>{const a=Math.max(0,p.life/500);ctx.globalAlpha=a;ctx.fillStyle="rgba(255,200,80,1)";ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;});
 }
+function loop(t){const dt=Math.min(t-(window._lt||t),32);window._lt=t;update(dt);draw(t);requestAnimationFrame(loop);} requestAnimationFrame(loop);
+
+restartBtn.onclick=()=>{
+  score=0;lives=3;powerTime=0;scEl.textContent=0;pxEl.textContent=0;
+  bullets=[];enemies=[];enemyBullets=[];gems=[];mascots=[];particles=[];
+  updateLives();gameOver=false;paused=false;inCountdown=false;
+  overEl.style.display="none";uiPause.style.display="none";
+  started=true; uiLayer.style.display="grid"; uiPause.style.display="flex"; player.y=cv.height-120; player.x=cv.width/2-player.w/2;
+};
+
+let playerImg=null, peacockImg=null;
+let loadedSprites = {};
+
+(async function(){
+  try{const p=await loadImage(PLAYER_SRC);playerImg=keyOutDark(p,80);}catch{}
+  try{const bird=await loadImage(PEACOCK_SRC);peacockImg=keyOutDark(bird,70);}catch{}
+  for(const key in SPRITE_CONFIG){
+    try{
+      const raw = await loadImage(SPRITE_CONFIG[key].src);
+      const th = SPRITE_CONFIG[key].th || 90;
+      const processedImg = keyOutDark(raw, th); 
+      let frames = SPRITE_CONFIG[key].frames;
+      loadedSprites[key] = { img: processedImg, frames: frames };
+    }catch(e){}
+  }
+})();
 </script>
 </body>
 </html>
