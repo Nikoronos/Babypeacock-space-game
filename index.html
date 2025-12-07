@@ -53,18 +53,15 @@
     bottom:max(20px,env(safe-area-inset-bottom)); 
     z-index:50;
     width:42px;height:42px; 
-    /* Performans için blur kapatıldı, background koyulaştırıldı */
     background:rgba(15, 23, 42, 0.95); border:2px solid #38bdf8; color:#38bdf8; border-radius:50%;
     font-size:14px;font-weight:900;align-items:center;justify-content:center;cursor:pointer;
     box-shadow:0 0 10px rgba(56,189,248,0.4); 
-    /* backdrop-filter: blur(4px); */
   }
 
   #startOverlay,#gameOver,#pauseOverlay,#countdownOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:60}
   #startOverlay{background:rgba(0,0,0,0.85);color:#fff;display:flex;overflow:hidden}
   
-  /* Performans için blur kapatıldı */
-  #pauseOverlay{background:rgba(0,0,0,0.9);color:#fff; /* backdrop-filter:blur(3px) */}
+  #pauseOverlay{background:rgba(0,0,0,0.9);color:#fff;}
   
   #startLogo {
     width: 90px; height: 90px; border-radius: 50%; border: 3px solid #22d3ee;
@@ -77,10 +74,8 @@
   #gameOver { background: transparent; justify-content: flex-start; padding-top: 40vh; overflow-y: auto; }
   #mondayChampBox {
     display: none; flex-direction: column; align-items: center; margin-bottom: 10px; padding: 8px 15px;
-    /* Performans için blur kapatıldı */
     background: rgba(20, 20, 10, 0.95); border: 1px solid #facc15; border-radius: 8px; 
     box-shadow: 0 0 15px rgba(250, 204, 21, 0.4); width: min(320px, 80vw); text-align: center; 
-    /* backdrop-filter: blur(5px); */
   }
   .champ-label { color:#facc15;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px; }
   .champ-name { color:#fff;font-size:15px;font-weight:900;margin-bottom:4px;text-shadow:0 0 5px rgba(255,255,255,0.5); }
@@ -90,8 +85,7 @@
   @keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
   .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer;margin-bottom:5px;box-shadow:0 0 20px rgba(0,255,200,0.4);}
   
-  /* Performans için blur kapatıldı */
-  #soundToggle { margin-top: 20px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(34, 211, 238, 0.5); background: rgba(15, 23, 42, 0.9); color: #22d3ee; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; /* backdrop-filter: blur(4px); */ transition: all 0.3s ease; z-index: 100; }
+  #soundToggle { margin-top: 20px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(34, 211, 238, 0.5); background: rgba(15, 23, 42, 0.9); color: #22d3ee; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; z-index: 100; }
   
   #soundToggle:hover { background: rgba(34, 211, 238, 0.15); box-shadow: 0 0 15px rgba(34, 211, 238, 0.4); transform: scale(1.05); }
   #bpc-top10 { width: min(380px, 90vw); background: rgba(5, 5, 5, 0.9); border: 1px solid #333; border-radius: 10px; padding: 10px; color: #fff; font-size: 13px; line-height: 1.4; margin-top: 10px; margin-bottom: 40px; }
@@ -106,19 +100,19 @@
   #bpc-top10 .me{color:#ff5c5c;font-weight:bold} 
   #bpc-top10 .me .rank-num{color:#ff5c5c}
   #globalCounterBox { margin-top:5px;font-size:12px;opacity:.9;text-align:center;color:#cbd5e1;text-shadow:0 2px 4px #000; }
-  #globalCounterBox::before { content: "🌍 "; }
+  #globalCounterBox::before { content: "Global plays: "; }
   
   canvas { display: block; margin: 0 auto; background: radial-gradient(circle at center, #0f172a 0%, #020617 60%, #000000 100%); touch-action: none; user-select: none; width: 100%; height: 100% }
 </style>
 </head>
 <body>
   <div id="ui-layer">
-    <div id="brand">Babypeacock 🦚</div>
+    <div id="brand">Babypeacock</div>
     <div class="center-group">
       <div id="score">Score: <span id="sc">0</span></div>
       <div id="lives">❤️❤️❤️</div>
     </div>
-    <div id="power">💎 <span id="px">0</span>s</div>
+    <div id="power">Diamond <span id="px">0</span>s</div>
   </div>
 
   <div id="pauseBtn">II</div>
@@ -129,7 +123,7 @@
     <div style="margin-bottom:12px;font-size:14px;color:#ccc;">Hold & drag to move</div>
     <button id="startBtn" class="btn">START GAME</button>
     <div id="playerCode" style="margin-top:15px;font-size:14px;color:#00ffc8;"></div>
-    <div id="soundToggle">🔊</div>
+    <div id="soundToggle">Sound On</div>
   </div>
 
   <div id="pauseOverlay">
@@ -141,14 +135,14 @@
 
   <div id="gameOver">
     <div id="mondayChampBox">
-      <div class="champ-label">👑 Week <span id="mc-week">--</span> Champion</div>
+      <div class="champ-label">Week <span id="mc-week">--</span> Champion</div>
       <div class="champ-name" id="mc-name">Loading...</div>
       <div id="winnerSecret">CODE: <span id="mc-code">---</span></div>
     </div>
     <button id="restart" class="btn">Restart</button>
     <div id="globalCounterBox">Global plays: <span id="globalCounter">…</span></div>
     <div id="bpc-top10" style="display:none">
-      <h4>🏆 Weekly Top 20</h4>
+      <h4>Weekly Top 20</h4>
       <div id="week-timer">Week <span id="wk-num">--</span> • <span id="wk-rem" style="color:#facc15">--:--:--</span></div>
       <ol id="bpc-list"></ol>
     </div>
@@ -158,7 +152,6 @@
 
 <script>
 /* ====== SES SİSTEMİ (ANDROID FIX: SES MOTORUNU ZORLA UYANDIRMA) ====== */
-// APK içinde dosya değişmediği için ?v= random sayısını sildik, bu bazen dosya yolunu bozar.
 const v = "";
 
 class SoundPool {
@@ -178,9 +171,6 @@ class SoundPool {
 
   play() {
     let s = this.pool[this.idx];
-
-    // Eğer seçilen ses şu anda çalıyorsa, havuzda bir sonraki elemana geçerek
-    // mevcut sesi kesmeden yeni sesi başka bir kanaldan çal.
     if (!s.paused) {
       this.idx = (this.idx + 1) % this.size;
       s = this.pool[this.idx];
@@ -190,16 +180,13 @@ class SoundPool {
       s.currentTime = 0;
       const promise = s.play();
       if (promise !== undefined) {
-        promise.catch(() => {
-          // Otomatik oynatma engeline takılırsa hatayı yut.
-        });
+        promise.catch(() => {});
       }
     } catch (e) {}
 
     this.idx = (this.idx + 1) % this.size;
   }
 
-  // Motoru uyandırmak için boş çalma fonksiyonu
   unlock() {
     try {
       const s = this.pool[this.idx];
@@ -214,9 +201,10 @@ class SoundPool {
   }
 }
 
+/* ======== LAZER SESLERİ İÇİN KANAL SAYISINI 30 YAPTIM (BURASI DEĞİŞTİ) ======== */
 const sounds = {
-  normalShot: new SoundPool("laser_one.mp3", 10, 0.4),
-  powerShot:  new SoundPool("laser.mp3", 10, 0.4),
+  normalShot: new SoundPool("laser_one.mp3", 30, 0.45),  // 30 kanal + biraz daha ses
+  powerShot:  new SoundPool("laser.mp3", 30, 0.45),      // 30 kanal + biraz daha ses
   boomUfo:    new SoundPool("boom.mp3", 5, 0.8),
   boomShip:   new SoundPool("boom_one.mp3", 5, 0.8),
   gem:        new SoundPool("gem.mp3", 5, 0.8),
@@ -257,7 +245,7 @@ let soundEnabled = localStorage.getItem("bpc_sound") !== "0";
 const soundBtn = document.getElementById("soundToggle");
 
 function updateSoundIcon() {
-  soundBtn.textContent = soundEnabled ? "🔊" : "🔇";
+  soundBtn.textContent = soundEnabled ? "Sound On" : "Sound Off";
   soundBtn.style.opacity = soundEnabled ? "1" : "0.5";
   soundBtn.style.boxShadow = soundEnabled
     ? "0 0 15px rgba(34, 211, 238, 0.4)"
@@ -300,7 +288,6 @@ function playGemSound() { playLifeSound(); }
 /* ====== GAME SETUP ====== */
 const cv=document.getElementById("game");
 
-// GÜNCELLEME: Ekran boyutu değişse bile gemiyi alt hizada tut
 function resize(){ 
   cv.width=window.innerWidth; cv.height=window.innerHeight; 
   if(player) {
@@ -357,12 +344,11 @@ let powerTime=0, fireTimer=0, FIRE_MS=170;
 let elapsed=0,enT=0,gemT=0,mascotT=0;
 let scoreSent=false;
 let player={x:cv.width/2-33,y:cv.height-120,w:66,h:66};
-// İlk açılışta resize'ı çağırarak konumu garantiye al
 resize();
 
 function getPlayerCode(){ let c=localStorage.getItem("playerCode"); if(!c){c="BPC"+Math.floor(100000+Math.random()*899999);localStorage.setItem("playerCode",c);} return c; }
 const myCode=getPlayerCode();
-(function(){const box=document.getElementById("playerCode");if(box)box.innerHTML=`👤 Player: <b>${myCode}</b>`;})();
+(function(){const box=document.getElementById("playerCode");if(box)box.innerHTML=`Player: <b>${myCode}</b>`;})();
 
 let playId=Math.floor(performance.now()+Math.random()*1e9);
 let verifyCode="--------";
@@ -407,14 +393,11 @@ startBtn.onclick=initGame;
 
 pauseBtn.onclick=()=>{if(!started||gameOver||inCountdown)return;paused=true;pauseOverlay.style.display="flex";uiPause.style.display="none";};
 
-// GÜNCELLEME: Resume sonrası gemiyi sabitle
 resumeBtn.onclick=()=>{
   pauseOverlay.style.display="none";
   startCountdownSequence(()=>{
     paused=false;
     uiPause.style.display="flex";
-    
-    // Pause sonrası gemiyi tekrar alt hizaya sabitle
     player.y = cv.height - 120;
     player.x = clamp(player.x, 0, cv.width - player.w);
   });
@@ -464,7 +447,6 @@ function allowedKindsByTime(t){
 }
 
 function spawnEnemy(k, spMul){ 
-  // GÜNCELLEME: Düşman limiti (enemyCap) arttırıldı (2000+ ve 2300+)
   const enemyCap = 
     (score >= 2300) ? 30 :
     (score >= 2000) ? 26 :
@@ -489,7 +471,6 @@ function spawnEnemy(k, spMul){
     isSprite = (frames > 1);
   }
   
-  // GÜNCELLEME: 2300+ puan için yatay hız (vx) belirle
   let vx = 0;
   if (score >= 2300) {
     const dir = Math.random() < 0.5 ? -1 : 1;
@@ -498,7 +479,7 @@ function spawnEnemy(k, spMul){
 
   enemies.push({
     x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul,
-    vx: vx, // Zigzag için yeni özellik
+    vx: vx,
     kind, img, isSprite, blendMode, frameDelay,
     frame:0, frameTimer:0, totalFrames: frames,
     canShoot:(kind==="red"||kind==="green"), 
@@ -525,7 +506,7 @@ function renderFinalScore(t){
   const pw=Math.min(360,cv.width-40), ph=160, rx=cx-pw/2, ry=cy-ph/2-6;
   ctx.save(); ctx.beginPath(); ctx.rect(rx-50,ry-50,pw+100,ph+100); ctx.clip();
   ctx.translate(cx,cy); ctx.rotate(Math.sin(t / 4000) * 0.15); 
-  ctx.fillStyle="rgba(0,255,200,0.15)"; const line=`Babypeacock • SCORE ${score} • CODE ${verifyCode} • `;
+  ctx.fillStyle="rgba(0,255,200,0.15)"; const line=`Babypeacock • SCORE \( {score} • CODE \){verifyCode} • `;
   ctx.font="700 13px system-ui,Arial"; for(let y=-150;y<=150;y+=22){let x=-300; while(x<300){ctx.fillText(line,x,y); x+=ctx.measureText(line).width+40;}}
   ctx.restore();
   const gradText = ctx.createLinearGradient(cx - 100, 0, cx + 100, 0); gradText.addColorStop(0, "#22d3ee"); gradText.addColorStop(1, "#34d399");
@@ -537,7 +518,7 @@ function renderFinalScore(t){
 }
 
 async function endGame(){
-  if (gameOver) return; // endGame sadece 1 kere çalışsın
+  if (gameOver) return;
   gameOver = true; 
   uiPause.style.display = "none";
   overEl.style.display = "flex"; 
@@ -595,10 +576,8 @@ function update(dt){
   enemies.forEach(e=>{
     e.y+=e.vy;
     
-    // GÜNCELLEME: 2300+ puan için zigzag hareketi ve çarpma kontrolü
     if (score >= 2300 && typeof e.vx === "number") {
       e.x += e.vx;
-      // Kenara çarpınca yön değiştir
       if (e.x < 0 || e.x + e.w > cv.width) {
         e.vx *= -1;
         e.x = clamp(e.x, 0, cv.width - e.w);
@@ -701,7 +680,6 @@ restartBtn.onclick=()=>{
   updateLives();gameOver=false;scoreSent=false;paused=false;inCountdown=false;
   overEl.style.display="none";top10Box.style.display="none";uiPause.style.display="none";
   
-  // Restart'a basınca Game Over müziğini durdur ve flag’i sıfırla
   gameOverMusicPlayed = false;
   if (sounds.gameOver) {
      sounds.gameOver.pause();
@@ -751,10 +729,10 @@ function weekKey(d=new Date()){
   const startOfYear = getLondonNow(new Date(now.getFullYear(), 0, 1)); startOfYear.setHours(0,0,0,0);
   const diff = startOfWeek - startOfYear;
   const weekNumber = Math.floor(diff / (7*24*60*60*1000)) + 1;
-  return `${now.getFullYear()}-W${String(weekNumber).padStart(2,"0")}`;
+  return `\( {now.getFullYear()}-W \){String(weekNumber).padStart(2,"0")}`;
 }
 
-function getFlagEmoji(c){if(!c)return"🏳️";const cp=c.toUpperCase().split('').map(char=>127397+char.charCodeAt());return String.fromCodePoint(...cp);}
+function getFlagEmoji(c){if(!c)return"Flag";const cp=c.toUpperCase().split('').map(char=>127397+char.charCodeAt());return String.fromCodePoint(...cp);}
 
 function getCountryCode(){
   try{
@@ -876,22 +854,22 @@ async function showWeeklyPanel(){
     if(diff<=0){remEl.textContent="Resetting...";return;}
     const d=Math.floor(diff/(1000*60*60*24)); const h=Math.floor((diff%(1000*60*60*24))/(1000*60*60));
     const m=Math.floor((diff%(1000*60*60))/(1000*60)); const s=Math.floor((diff%(1000*60))/1000);
-    remEl.textContent=`${d}d ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    remEl.textContent=`\( {d}d \){String(h).padStart(2,'0')}:\( {String(m).padStart(2,'0')}: \){String(s).padStart(2,'0')}`;
     remEl.style.color=(d===0)?"#ef4444":"#facc15";
   }
   updateTimer(); window.bpcTimer=setInterval(updateTimer,1000);
 
   const list=await getWeeklyTop10(wk);
-  const medals = ["🥇","🥈","🥉"]; // 1-2-3 için madalya dizisi
+  const medals = ["1st","2nd","3rd"];
 
   if(ol){
     ol.innerHTML=list.length
       ? list.map((it,i)=>{
           const mine=it.code===me; const flag=getFlagEmoji(it.country);
-          const medal = medals[i] || ""; // 1,2,3 ise madalyayı al, yoksa boş
+          const medal = medals[i] || "";
           return `<li class="${mine?'me':''}">
     <span class="rank-num">${i+1}.</span>
-    ${flag} ${it.code} → ${it.score} pts
+    \( {flag} \){it.code} → ${it.score} pts
     <span style="margin-left:4px">${medal}</span>
 </li>`;
         }).join("")
