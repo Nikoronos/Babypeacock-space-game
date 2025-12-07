@@ -215,15 +215,15 @@ class SoundPool {
 }
 
 const sounds = {
-  normalShot: new SoundPool("laser_one.mp3", 10, 0.4),
-  powerShot:  new SoundPool("laser.mp3", 10, 0.4),
-  boomUfo:    new SoundPool("boom.mp3", 5, 0.8),
-  boomShip:   new SoundPool("boom_one.mp3", 5, 0.8),
-  gem:        new SoundPool("gem.mp3", 5, 0.8),
+  normalShot: new SoundPool("laser_one.mp3", 30, 0.45),
+  powerShot:  new SoundPool("laser.mp3", 30, 0.45),
+  boomUfo:    new SoundPool("boom.mp3", 15, 0.85),
+  boomShip:   new SoundPool("boom_one.mp3", 15, 0.85),
+  gem:        new SoundPool("gem.mp3", 12, 0.9),   // ← GEM DE GÜÇLENDİRİLDİ
   gameOver:   new Audio("space_chords.mp3")
 };
 
-sounds.gameOver.loop = false;
+sounds.gameOver.loop = true;   // ← MÜZİK SONSUZA KADAR ÇALACAK
 let gameOverMusicPlayed = false;
 
 // === KRİTİK NOKTA: İLK DOKUNUŞTA SESLERİ UYANDIR ===
