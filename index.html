@@ -889,7 +889,11 @@ async function showWeeklyPanel(){
       ? list.map((it,i)=>{
           const mine=it.code===me; const flag=getFlagEmoji(it.country);
           const medal = medals[i] || ""; // 1,2,3 ise madalyayı al, yoksa boş
-          return `<li class="${mine?'me':''}"><span class="rank-num">${i+1}.</span><span style="margin-right:4px">${medal}</span>${flag} ${it.code} → ${it.score} pts</li>`;
+          return return `<li class="${mine?'me':''}">
+    <span class="rank-num">${i+1}.</span>
+    ${flag} ${it.code} → ${it.score} pts
+    <span style="margin-left:4px">${medal}</span>
+</li>`;
         }).join("")
       : `<div style="opacity:.7;text-align:center">No scores this week yet.</div>`;
   }
