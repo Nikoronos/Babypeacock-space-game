@@ -53,15 +53,18 @@
     bottom:max(20px,env(safe-area-inset-bottom)); 
     z-index:50;
     width:42px;height:42px; 
+    /* Performans için blur kapatıldı, background koyulaştırıldı */
     background:rgba(15, 23, 42, 0.95); border:2px solid #38bdf8; color:#38bdf8; border-radius:50%;
     font-size:14px;font-weight:900;align-items:center;justify-content:center;cursor:pointer;
     box-shadow:0 0 10px rgba(56,189,248,0.4); 
+    /* backdrop-filter: blur(4px); */
   }
 
   #startOverlay,#gameOver,#pauseOverlay,#countdownOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:60}
   #startOverlay{background:rgba(0,0,0,0.85);color:#fff;display:flex;overflow:hidden}
   
-  #pauseOverlay{background:rgba(0,0,0,0.9);color:#fff;}
+  /* Performans için blur kapatıldı */
+  #pauseOverlay{background:rgba(0,0,0,0.9);color:#fff; /* backdrop-filter:blur(3px) */}
   
   #startLogo {
     width: 90px; height: 90px; border-radius: 50%; border: 3px solid #22d3ee;
@@ -74,8 +77,10 @@
   #gameOver { background: transparent; justify-content: flex-start; padding-top: 40vh; overflow-y: auto; }
   #mondayChampBox {
     display: none; flex-direction: column; align-items: center; margin-bottom: 10px; padding: 8px 15px;
+    /* Performans için blur kapatıldı */
     background: rgba(20, 20, 10, 0.95); border: 1px solid #facc15; border-radius: 8px; 
     box-shadow: 0 0 15px rgba(250, 204, 21, 0.4); width: min(320px, 80vw); text-align: center; 
+    /* backdrop-filter: blur(5px); */
   }
   .champ-label { color:#facc15;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px; }
   .champ-name { color:#fff;font-size:15px;font-weight:900;margin-bottom:4px;text-shadow:0 0 5px rgba(255,255,255,0.5); }
@@ -85,7 +90,8 @@
   @keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
   .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer;margin-bottom:5px;box-shadow:0 0 20px rgba(0,255,200,0.4);}
   
-  #soundToggle { margin-top: 20px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(34, 211, 238, 0.5); background: rgba(15, 23, 42, 0.9); color: #22d3ee; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; z-index: 100; }
+  /* Performans için blur kapatıldı */
+  #soundToggle { margin-top: 20px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(34, 211, 238, 0.5); background: rgba(15, 23, 42, 0.9); color: #22d3ee; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; /* backdrop-filter: blur(4px); */ transition: all 0.3s ease; z-index: 100; }
   
   #soundToggle:hover { background: rgba(34, 211, 238, 0.15); box-shadow: 0 0 15px rgba(34, 211, 238, 0.4); transform: scale(1.05); }
   #bpc-top10 { width: min(380px, 90vw); background: rgba(5, 5, 5, 0.9); border: 1px solid #333; border-radius: 10px; padding: 10px; color: #fff; font-size: 13px; line-height: 1.4; margin-top: 10px; margin-bottom: 40px; }
@@ -95,37 +101,14 @@
   #bpc-top10 ol::-webkit-scrollbar { width: 4px; }
   #bpc-top10 ol::-webkit-scrollbar-track { background: #111; border-radius: 2px; }
   #bpc-top10 ol::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
-  
-  /* --- YENİ MADALYA DÜZENİ (HİZALAMA) --- */
-  #bpc-top10 li { 
-    margin-bottom:4px;
-    display:flex; justify-content: space-between; /* İki uca yasla */
-    align-items:center;
-    border-bottom:1px solid #222; padding-bottom:2px; color:#fff; 
-  }
-  
-  .li-info { display: flex; align-items: center; } /* Sol taraf (Bayrak, isim, puan) */
-  .li-medal { text-align: right; min-width: 25px; font-size: 14px; } /* Sağ taraf (Madalya) */
+  #bpc-top10 li { margin-bottom:4px;display:flex;align-items:center;border-bottom:1px solid #222;padding-bottom:2px;color:#fff; }
   .rank-num { display:inline-block;width:25px;text-align:right;margin-right:8px;color:#94a3b8;font-weight:bold;font-family:monospace; }
   #bpc-top10 .me{color:#ff5c5c;font-weight:bold} 
   #bpc-top10 .me .rank-num{color:#ff5c5c}
-  
   #globalCounterBox { margin-top:5px;font-size:12px;opacity:.9;text-align:center;color:#cbd5e1;text-shadow:0 2px 4px #000; }
   #globalCounterBox::before { content: "🌍 "; }
   
-  /* --- KIZIL MOD GEÇİŞİ (RED ZONE) --- */
-  canvas { 
-    display: block; margin: 0 auto; 
-    background: radial-gradient(circle at center, #0f172a 0%, #020617 60%, #000000 100%); 
-    touch-action: none; user-select: none; width: 100%; height: 100%;
-    transition: background 3.5s ease-in-out; /* Renk değişimi 3.5 saniyede yavaşça olsun */
-  }
-  
-    /* 1500 puandan sonra eklenecek sınıf (MOR - VOID THEME) */
-  .red-zone {
-    background: radial-gradient(circle at center, #2e1065 0%, #0f172a 60%, #000000 100%) !important;
-  }
-
+  canvas { display: block; margin: 0 auto; background: radial-gradient(circle at center, #0f172a 0%, #020617 60%, #000000 100%); touch-action: none; user-select: none; width: 100%; height: 100% }
 </style>
 </head>
 <body>
@@ -172,74 +155,101 @@
   </div>
 
   <canvas id="game"></canvas>
+
 <script>
-/* ====== YENİ SES SİSTEMİ (WEB AUDIO API) - "ÇIT ÇIT" SESİ GİDERİLDİ ====== */
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-const audioCtx = new AudioContext();
+/* ====== SES SİSTEMİ (ANDROID FIX: SES MOTORUNU ZORLA UYANDIRMA) ====== */
+// APK içinde dosya değişmediği için ?v= random sayısını sildik, bu bazen dosya yolunu bozar.
+const v = "";
 
 class SoundPool {
   constructor(src, size, volume = 1.0) {
-    this.buffer = null;
+    this.pool = [];
+    this.idx = 0;
+    this.size = size;
     this.volume = volume;
-    this.isLoaded = false;
-    
-    fetch(src)
-      .then(response => response.arrayBuffer())
-      .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
-      .then(audioBuffer => {
-        this.buffer = audioBuffer;
-        this.isLoaded = true;
-      })
-      .catch(e => console.error("Ses hatası:", src, e));
+    for (let i = 0; i < size; i++) {
+      const a = new Audio(src);
+      a.volume = volume;
+      a.preload = "auto";
+      a.load();
+      this.pool.push(a);
+    }
   }
 
   play() {
-    if (!this.isLoaded) return;
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    let s = this.pool[this.idx];
+
+    // Eğer seçilen ses şu anda çalıyorsa, havuzda bir sonraki elemana geçerek
+    // mevcut sesi kesmeden yeni sesi başka bir kanaldan çal.
+    if (!s.paused) {
+      this.idx = (this.idx + 1) % this.size;
+      s = this.pool[this.idx];
+    }
 
     try {
-      const source = audioCtx.createBufferSource();
-      source.buffer = this.buffer;
-      const gainNode = audioCtx.createGain();
-      
-      // Ses patlamasını önlemek için volume değerini kullan
-      gainNode.gain.value = this.volume;
+      s.currentTime = 0;
+      const promise = s.play();
+      if (promise !== undefined) {
+        promise.catch(() => {
+          // Otomatik oynatma engeline takılırsa hatayı yut.
+        });
+      }
+    } catch (e) {}
 
-      source.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-      source.start(0);
+    this.idx = (this.idx + 1) % this.size;
+  }
+
+  // Motoru uyandırmak için boş çalma fonksiyonu
+  unlock() {
+    try {
+      const s = this.pool[this.idx];
+      const oldVol = s.volume;
+      s.volume = 0;
+      s.play().then(() => {
+        s.pause();
+        s.currentTime = 0;
+        s.volume = oldVol;
+      }).catch(() => {});
     } catch (e) {}
   }
 }
 
-// SES AYARLARI (Volume düşürüldü: 0.25 - Cızırtıyı önler)
 const sounds = {
-  normalShot: new SoundPool("laser_one.mp3", 10, 0.25), 
-  powerShot:  new SoundPool("laser.mp3", 10, 0.25),   
-  boomUfo:    new SoundPool("boom.mp3", 5, 0.6),
-  boomShip:   new SoundPool("boom_one.mp3", 5, 0.6),
-  gem:        new SoundPool("gem.mp3", 5, 0.7),
+  normalShot: new SoundPool("laser_one.mp3", 10, 0.4),
+  powerShot:  new SoundPool("laser.mp3", 10, 0.4),
+  boomUfo:    new SoundPool("boom.mp3", 5, 0.8),
+  boomShip:   new SoundPool("boom_one.mp3", 5, 0.8),
+  gem:        new SoundPool("gem.mp3", 5, 0.8),
   gameOver:   new Audio("space_chords.mp3")
 };
 
 sounds.gameOver.loop = false;
 let gameOverMusicPlayed = false;
 
+// === KRİTİK NOKTA: İLK DOKUNUŞTA SESLERİ UYANDIR ===
 let audioUnlocked = false;
 function unlockAudioEngine() {
   if (audioUnlocked) return;
-  if (audioCtx.state === 'suspended') audioCtx.resume();
+
+  sounds.normalShot.unlock();
+  sounds.powerShot.unlock();
+  sounds.boomUfo.unlock();
+
   try {
     const oldVol = sounds.gameOver.volume;
     sounds.gameOver.volume = 0;
     sounds.gameOver.play().then(() => {
-      sounds.gameOver.pause(); sounds.gameOver.currentTime = 0; sounds.gameOver.volume = oldVol;
+      sounds.gameOver.pause();
+      sounds.gameOver.currentTime = 0;
+      sounds.gameOver.volume = oldVol;
     }).catch(() => {});
   } catch (e) {}
+
   audioUnlocked = true;
   document.removeEventListener("touchstart", unlockAudioEngine);
   document.removeEventListener("click", unlockAudioEngine);
 }
+
 document.addEventListener("touchstart", unlockAudioEngine, { passive: true });
 document.addEventListener("click", unlockAudioEngine);
 
@@ -249,7 +259,9 @@ const soundBtn = document.getElementById("soundToggle");
 function updateSoundIcon() {
   soundBtn.textContent = soundEnabled ? "🔊" : "🔇";
   soundBtn.style.opacity = soundEnabled ? "1" : "0.5";
-  soundBtn.style.boxShadow = soundEnabled ? "0 0 15px rgba(34, 211, 238, 0.4)" : "none";
+  soundBtn.style.boxShadow = soundEnabled
+    ? "0 0 15px rgba(34, 211, 238, 0.4)"
+    : "none";
 }
 updateSoundIcon();
 
@@ -258,29 +270,51 @@ soundBtn.onclick = (e) => {
   soundEnabled = !soundEnabled;
   localStorage.setItem("bpc_sound", soundEnabled ? "1" : "0");
   updateSoundIcon();
+
   if (soundEnabled && gameOver && !gameOverMusicPlayed) {
-    gameOverMusicPlayed = true; sounds.gameOver.volume = 1.0; sounds.gameOver.play().catch(() => {});
+    gameOverMusicPlayed = true;
+    sounds.gameOver.volume = 1.0;
+    sounds.gameOver.play().catch(() => {});
   } else if (!soundEnabled) {
     sounds.gameOver.pause();
   }
 };
 
-function playShootSound(isPower) { if (!soundEnabled) return; if (isPower) sounds.powerShot.play(); else sounds.normalShot.play(); }
-function playExplosionSound() { if (!soundEnabled) return; sounds.boomShip.play(); }
-function playLifeSound() { if (!soundEnabled) return; sounds.gem.play(); }
+function playShootSound(isPower) {
+  if (!soundEnabled) return;
+  if (isPower) sounds.powerShot.play();
+  else sounds.normalShot.play();
+}
+
+function playExplosionSound(kind) {
+  if (!soundEnabled) return;
+  sounds.boomShip.play();
+}
+
+function playLifeSound() {
+  if (!soundEnabled) return;
+  sounds.gem.play();
+}
 function playGemSound() { playLifeSound(); }
 
 /* ====== GAME SETUP ====== */
 const cv=document.getElementById("game");
+
+// GÜNCELLEME: Ekran boyutu değişse bile gemiyi alt hizada tut
 function resize(){ 
   cv.width=window.innerWidth; cv.height=window.innerHeight; 
-  if(player) { player.y = cv.height - 120; player.x = clamp(player.x, 0, cv.width - player.w); }
+  if(player) {
+    player.y = cv.height - 120;
+    player.x = clamp(player.x, 0, cv.width - player.w);
+  }
 }
 window.addEventListener('resize', resize); 
 const ctx=cv.getContext("2d"); ctx.imageSmoothingEnabled=false;
 
+/* UI ELEMENTS */
 const uiLayer = document.getElementById("ui-layer");
 const uiPause = document.getElementById("pauseBtn");
+
 const scEl=document.getElementById("sc"),pxEl=document.getElementById("px"),livesEl=document.getElementById("lives");
 const startOverlay=document.getElementById("startOverlay"),startBtn=document.getElementById("startBtn");
 const overEl=document.getElementById("gameOver"),restartBtn=document.getElementById("restart");
@@ -308,6 +342,8 @@ function keyOutDark(img, TH){
 
 const PLAYER_SRC="img/player/bpc_mini.png";
 const PEACOCK_SRC="yc3ku6.jpg";
+
+/* === SPRITE CONFIG === */
 const SPRITE_CONFIG = {
   green:   { src: "bpc_enemy_green_sprite.png", frames: 60, mode: 'normal', th: 30, delay: 20 }, 
   ufo_red: { src: "ufo_red_sprite.png", frames: 85, mode: 'screen', th: 100, delay: 20 },
@@ -321,6 +357,7 @@ let powerTime=0, fireTimer=0, FIRE_MS=170;
 let elapsed=0,enT=0,gemT=0,mascotT=0;
 let scoreSent=false;
 let player={x:cv.width/2-33,y:cv.height-120,w:66,h:66};
+// İlk açılışta resize'ı çağırarak konumu garantiye al
 resize();
 
 function getPlayerCode(){ let c=localStorage.getItem("playerCode"); if(!c){c="BPC"+Math.floor(100000+Math.random()*899999);localStorage.setItem("playerCode",c);} return c; }
@@ -350,13 +387,38 @@ function startCountdownSequence(callback) {
 
 function initGame(){
   if(started)return;
-  const doc=document.documentElement; try{if(doc.requestFullscreen) doc.requestFullscreen();else if(doc.webkitRequestFullscreen) doc.webkitRequestFullscreen();}catch(e){}
-  startOverlay.style.display="none"; uiLayer.style.display = "grid"; 
-  startCountdownSequence(()=>{started=true; paused=false; uiPause.style.display="flex"; player.y=cv.height-120; player.x=cv.width/2-player.w/2;});
+  
+  const doc=document.documentElement; 
+  try{
+    if(doc.requestFullscreen) doc.requestFullscreen();
+    else if(doc.webkitRequestFullscreen) doc.webkitRequestFullscreen();
+  }catch(e){}
+
+  startOverlay.style.display="none"; 
+  uiLayer.style.display = "grid"; 
+  
+  startCountdownSequence(()=>{
+    started=true; paused=false; uiPause.style.display="flex";
+    player.y=cv.height-120; 
+    player.x=cv.width/2-player.w/2;
+  });
 }
 startBtn.onclick=initGame;
+
 pauseBtn.onclick=()=>{if(!started||gameOver||inCountdown)return;paused=true;pauseOverlay.style.display="flex";uiPause.style.display="none";};
-resumeBtn.onclick=()=>{pauseOverlay.style.display="none";startCountdownSequence(()=>{paused=false;uiPause.style.display="flex";player.y = cv.height - 120;player.x = clamp(player.x, 0, cv.width - player.w);});};
+
+// GÜNCELLEME: Resume sonrası gemiyi sabitle
+resumeBtn.onclick=()=>{
+  pauseOverlay.style.display="none";
+  startCountdownSequence(()=>{
+    paused=false;
+    uiPause.style.display="flex";
+    
+    // Pause sonrası gemiyi tekrar alt hizaya sabitle
+    player.y = cv.height - 120;
+    player.x = clamp(player.x, 0, cv.width - player.w);
+  });
+};
 
 function updateLives(){livesEl.innerHTML="❤️".repeat(lives);} updateLives();
 
@@ -379,6 +441,7 @@ function drawDiamondGem(ctx,x,y,w,h,t){ctx.save();ctx.translate(x+w/2,y+h/2);ctx
   ctx.shadowBlur=0;ctx.lineWidth=1.8;ctx.strokeStyle="#0e7490";ctx.stroke();ctx.restore();}
 
 function spawnGem(){ if(powerTime>0) return; const s=22; gems.push({x:rand(0,cv.width-s), y:-s, w:s, h:s, vy:1.5}); }
+
 function spawnMascot(){ 
   let dyn = 1; if(score > 2000){ const over = score - 2000; dyn = 1 + over * 0.0006; dyn = Math.min(dyn, 2.0); }
   if(score >= 300 && score < 800 && Math.random() < 0.60) return;
@@ -388,28 +451,58 @@ function spawnMascot(){
   if(score > 2000 && Math.random() < (0.98 * dyn)) return;
   const s=22; mascots.push({x:rand(0,cv.width-s), y:-s, w:s, h:s, vy:1.4}); 
 }
+
 function explosion(x,y,count=18){
   const left=Math.max(0,120-particles.length);const n=Math.min(12,left);
   for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=1.2+Math.random()*2.8;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:420+Math.random()*280,size:1.6+Math.random()*2.4});}
 }
 
-function allowedKindsByTime(t){ if(t<10) return ["ufo_red","ufo_gray"]; if(t<40) return ["ufo_red","ufo_gray","green"]; return ["ufo_red","ufo_gray","green","red"]; }
+function allowedKindsByTime(t){
+  if(t<10) return ["ufo_red","ufo_gray"]; 
+  if(t<40) return ["ufo_red","ufo_gray","green"]; 
+  return ["ufo_red","ufo_gray","green","red"];
+}
 
 function spawnEnemy(k, spMul){ 
-  const enemyCap = (score >= 2300) ? 30 : (score >= 2000) ? 26 : (score >= 1500) ? 22 : (score >= 1300) ? 20 : (score >= 800)  ? 18 : (score >= 500)  ? 14 : 12;
+  // GÜNCELLEME: Düşman limiti (enemyCap) arttırıldı (2000+ ve 2300+)
+  const enemyCap = 
+    (score >= 2300) ? 30 :
+    (score >= 2000) ? 26 :
+    (score >= 1500) ? 22 :
+    (score >= 1300) ? 20 :
+    (score >= 800)  ? 18 :
+    (score >= 500)  ? 14 : 12;
+
   if(enemies.length > enemyCap) return; 
-  const kind=k[Math.floor(Math.random()*k.length)]; 
-  let size=rand(48,70); if(kind === "red") size = rand(60, 80); 
-  let isSprite = false, img = null, frames = 1, blendMode = 'normal', frameDelay = 30;
-  if (loadedSprites[kind]) { img = loadedSprites[kind].img; frames = loadedSprites[kind].frames; blendMode = SPRITE_CONFIG[kind].mode || 'normal'; frameDelay = SPRITE_CONFIG[kind].delay || 30; isSprite = (frames > 1); }
   
+  const kind=k[Math.floor(Math.random()*k.length)]; 
+  let size=rand(48,70); 
+  if(kind === "red") size = rand(60, 80); 
+
+  let isSprite = false, img = null, frames = 1, blendMode = 'normal', frameDelay = 30;
+  
+  if (loadedSprites[kind]) {
+    img = loadedSprites[kind].img;
+    frames = loadedSprites[kind].frames;
+    blendMode = SPRITE_CONFIG[kind].mode || 'normal';
+    frameDelay = SPRITE_CONFIG[kind].delay || 30; 
+    isSprite = (frames > 1);
+  }
+  
+  // GÜNCELLEME: 2300+ puan için yatay hız (vx) belirle
   let vx = 0;
-  if (score >= 2300) { const dir = Math.random() < 0.5 ? -1 : 1; vx = dir * rand(0.8, 1.6) * spMul; }
+  if (score >= 2300) {
+    const dir = Math.random() < 0.5 ? -1 : 1;
+    vx = dir * rand(0.8, 1.6) * spMul;
+  }
 
   enemies.push({
     x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul,
-    vx: vx, kind, img, isSprite, blendMode, frameDelay, frame:0, frameTimer:0, totalFrames: frames,
-    canShoot:(kind==="red"||kind==="green"), shootT:0,shootInt:500
+    vx: vx, // Zigzag için yeni özellik
+    kind, img, isSprite, blendMode, frameDelay,
+    frame:0, frameTimer:0, totalFrames: frames,
+    canShoot:(kind==="red"||kind==="green"), 
+    shootT:0,shootInt:500
   }); 
 }
 
@@ -418,6 +511,7 @@ function enemyShoot(e){
   let dyn = 1; if(score > 2000){ const over = score - 2000; dyn = 1 + over * 0.0006; dyn = Math.min(dyn, 2.0); }
   const mul = (score >= 1500) ? 1.78 : (score >= 1300) ? 1.60 : (score >= 800)  ? 1.45 : (score >= 500)  ? 1.20 : (score >= 300)  ? 1.10 : 1.00;
   const finalMul = mul * dyn;
+  
   if(e.kind==="red") enemyBullets.push({x:cx-2,y:e.y+e.h,w:4,h:12,vy:6*finalMul,color:"#ef4444"});
   else enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6.5*finalMul,color:"#22c55e"}); 
 }
@@ -443,9 +537,18 @@ function renderFinalScore(t){
 }
 
 async function endGame(){
-  if (gameOver) return;
-  gameOver = true; uiPause.style.display = "none"; overEl.style.display = "flex"; 
-  if (soundEnabled && !gameOverMusicPlayed) { gameOverMusicPlayed = true; sounds.gameOver.currentTime = 0; sounds.gameOver.volume = 1.0; sounds.gameOver.play().catch(()=>{}); }
+  if (gameOver) return; // endGame sadece 1 kere çalışsın
+  gameOver = true; 
+  uiPause.style.display = "none";
+  overEl.style.display = "flex"; 
+  
+  if (soundEnabled && !gameOverMusicPlayed) {
+     gameOverMusicPlayed = true;
+     sounds.gameOver.currentTime = 0;
+     sounds.gameOver.volume = 1.0; 
+     sounds.gameOver.play().catch(()=>{});
+  }
+
   if(window.checkMondayWinner) window.checkMondayWinner();
   try{
     if(navigator.onLine){
@@ -462,6 +565,7 @@ async function endGame(){
 function update(dt){
   starsA.forEach(s=>{s.y+=s.sp;if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);}}); 
   starsB.forEach(s=>{s.y+=s.sp;if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);}});
+  
   if(!started||gameOver||paused||inCountdown)return;
   
   elapsed+=dt/1000;enT+=dt;gemT+=dt;mascotT+=dt;
@@ -490,15 +594,26 @@ function update(dt){
   
   enemies.forEach(e=>{
     e.y+=e.vy;
-    if(score >= 2300 && typeof e.vx === "number") {
+    
+    // GÜNCELLEME: 2300+ puan için zigzag hareketi ve çarpma kontrolü
+    if (score >= 2300 && typeof e.vx === "number") {
       e.x += e.vx;
-      if (e.x < 0 || e.x + e.w > cv.width) { e.vx *= -1; e.x = clamp(e.x, 0, cv.width - e.w); }
+      // Kenara çarpınca yön değiştir
+      if (e.x < 0 || e.x + e.w > cv.width) {
+        e.vx *= -1;
+        e.x = clamp(e.x, 0, cv.width - e.w);
+      }
     }
+
     e.shootT+=dt;
     if(e.canShoot&&e.shootT>=e.shootInt){e.shootT=0;enemyShoot(e);}
+    
     if(e.isSprite && e.img) {
       e.frameTimer += dt;
-      if(e.frameTimer > e.frameDelay) { e.frameTimer = 0; e.frame = (e.frame + 1) % e.totalFrames; }
+      if(e.frameTimer > e.frameDelay) { 
+        e.frameTimer = 0;
+        e.frame = (e.frame + 1) % e.totalFrames;
+      }
     }
   }); 
   enemies=enemies.filter(e=>e.y<=cv.height+40);
@@ -510,20 +625,23 @@ function update(dt){
 
   for(const e of enemies){
     if(rectHit(pBox,e)){
-      playExplosionSound(e.kind); explosion(player.x+player.w/2,player.y+player.h/2,22);
+      playExplosionSound(e.kind);
+      explosion(player.x+player.w/2,player.y+player.h/2,22);
       lives--;updateLives();if(lives<=0)endGame();e.dead=1;
     }
   }
   for(const m of enemyBullets){
     if(rectHit(pBox,m)){
-      playExplosionSound('red'); explosion(player.x+player.w/2,player.y+player.h/2,22);
+      playExplosionSound('red'); 
+      explosion(player.x+player.w/2,player.y+player.h/2,22);
       lives--;updateLives();if(lives<=0)endGame();m.dead=1;
     }
   }
   for(const b of bullets){ 
     for(const e of enemies){ 
       if(rectHit(b,e)){ 
-        playExplosionSound(e.kind); explosion(e.x+e.w/2,e.y+e.h/2,16); b.dead=1; e.dead=1; 
+        playExplosionSound(e.kind);
+        explosion(e.x+e.w/2,e.y+e.h/2,16); b.dead=1; e.dead=1; 
         if(!gameOver){ score++; scEl.textContent=score; } 
       } 
     } 
@@ -533,32 +651,42 @@ function update(dt){
 
   enemies=enemies.filter(o=>!o.dead);bullets=bullets.filter(o=>!o.dead);enemyBullets=enemyBullets.filter(o=>!o.dead);gems=gems.filter(o=>!o.dead);mascots=mascots.filter(o=>!o.dead);
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;if(p.life<=0){particles.splice(i,1);continue;}p.x+=p.vx;p.y+=p.vy;p.vy+=0.02;}
-
-  /* === KIZIL MOD (1500 Puan) === */
-  if(score >= 1500){
-    if(!cv.classList.contains("red-zone")) cv.classList.add("red-zone");
-  } else {
-    if(cv.classList.contains("red-zone")) cv.classList.remove("red-zone");
-  }
 }
 
 function draw(t){
   ctx.clearRect(0,0,cv.width,cv.height);
+  
   ctx.fillStyle="rgba(255,255,255,0.7)";starsA.forEach(s=>ctx.fillRect(s.x,s.y,1,1)); 
   ctx.fillStyle="rgba(255,255,255,0.9)";starsB.forEach(s=>ctx.fillRect(s.x,s.y,1.2,1.2));
+
   if(!started) return;
+
   if(playerImg)ctx.drawImage(playerImg,player.x,player.y,player.w,player.h); else{ctx.fillStyle="#38bdf8";ctx.fillRect(player.x,player.y,player.w,player.h);}
-  ctx.fillStyle="#0099ff"; bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
+  
+  ctx.fillStyle="#0099ff"; 
+  bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
+  
   enemies.forEach(e=>{
     if(e.isSprite && e.img && e.totalFrames > 0) {
-      const frameW = e.img.width / e.totalFrames; const frameH = e.img.height; const sx = e.frame * frameW;
+      const frameW = e.img.width / e.totalFrames;
+      const frameH = e.img.height; 
+      const sx = e.frame * frameW;
+      
       ctx.save();
       if(e.blendMode === 'screen') ctx.globalCompositeOperation = "screen";
-      if(frameW > 0 && sx >= 0) ctx.drawImage(e.img, sx, 0, frameW, frameH, e.x, e.y, e.w, e.h);
+      
+      if(frameW > 0 && sx >= 0) {
+        ctx.drawImage(e.img, sx, 0, frameW, frameH, e.x, e.y, e.w, e.h);
+      }
       ctx.restore();
-    } else if(e.img) { ctx.drawImage(e.img, e.x, e.y, e.w, e.h); } 
-    else { ctx.fillStyle=e.kind==="green"?"#22c55e":"#ef4444"; ctx.fillRect(e.x,e.y,e.w,e.h); }
+    } else if(e.img) {
+      ctx.drawImage(e.img, e.x, e.y, e.w, e.h);
+    } else {
+      ctx.fillStyle=e.kind==="green"?"#22c55e":"#ef4444";
+      ctx.fillRect(e.x,e.y,e.w,e.h);
+    }
   });
+
   enemyBullets.forEach(m=>{ctx.fillStyle=m.color;ctx.fillRect(m.x,m.y,m.w,m.h);});
   gems.forEach(g=>drawDiamondGem(ctx,g.x,g.y,g.w,g.h,performance.now()/1000)); if(peacockImg)mascots.forEach(m=>ctx.drawImage(peacockImg,m.x,m.y,m.w,m.h));
   particles.forEach(p=>{const a=Math.max(0,p.life/500);ctx.globalAlpha=a;ctx.fillStyle="rgba(255,200,80,1)";ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;});
@@ -572,37 +700,47 @@ restartBtn.onclick=()=>{
   bullets=[];enemies=[];enemyBullets=[];gems=[];mascots=[];particles=[];
   updateLives();gameOver=false;scoreSent=false;paused=false;inCountdown=false;
   overEl.style.display="none";top10Box.style.display="none";uiPause.style.display="none";
+  
+  // Restart'a basınca Game Over müziğini durdur ve flag’i sıfırla
   gameOverMusicPlayed = false;
-  if (sounds.gameOver) { sounds.gameOver.pause(); sounds.gameOver.currentTime = 0; }
+  if (sounds.gameOver) {
+     sounds.gameOver.pause();
+     sounds.gameOver.currentTime = 0;
+  }
+
   playId=Math.floor(performance.now()+Math.random()*1e9); makeCode();
-  started=true; uiLayer.style.display="grid"; uiPause.style.display="flex"; player.y=cv.height-120; player.x=cv.width/2-player.w/2;
-  // Restart anında Red Zone silinsin
-  if(cv.classList.contains("red-zone")) cv.classList.remove("red-zone");
+  started=true; 
+  uiLayer.style.display="grid"; 
+  uiPause.style.display="flex";
+  player.y=cv.height-120; player.x=cv.width/2-player.w/2;
 };
 
 let playerImg=null, peacockImg=null;
 let loadedSprites = {};
+
 (async function(){
   try{const p=await loadImage(PLAYER_SRC);playerImg=keyOutDark(p,80);}catch{}
   try{const bird=await loadImage(PEACOCK_SRC);peacockImg=keyOutDark(bird,70);}catch{}
+  
   for(const key in SPRITE_CONFIG){
     try{
       const raw = await loadImage(SPRITE_CONFIG[key].src);
       const th = SPRITE_CONFIG[key].th || 90;
       const processedImg = keyOutDark(raw, th); 
+      
       let frames = SPRITE_CONFIG[key].frames;
       loadedSprites[key] = { img: processedImg, frames: frames };
-    }catch(e){}
+      
+    }catch(e){console.log("Sprite yüklenemedi: "+key, e)}
   }
 })();
 </script>
+
 <script type="module">
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, get, set, push, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
 const INSTANCE_URL="https://bpc-space-default-rtdb.europe-west1.firebasedatabase.app/";
-const app=getApps().length?getApps()[0]:initializeApp({databaseURL:INSTANCE_URL}); 
-const db=getDatabase(app); window.db=db;
+const app=getApps().length?getApps()[0]:initializeApp({databaseURL:INSTANCE_URL}); const db=getDatabase(app); window.db=db;
 
 function getLondonNow(d=new Date()){ return new Date(d.toLocaleString("en-US", { timeZone: "Europe/London" })); }
 
@@ -682,43 +820,32 @@ async function bumpLocation(){
 
 async function saveScore(score){
   const code=localStorage.getItem("playerCode")||"BPC"; const country=getCountryCode(); 
-  const payload={code,score,ts:Date.now(),country, countryName: country};
+  const payload={code,score,ts:Date.now(),country, countryName: country}; 
   await push(ref(db,"scores"),payload);
-  const wk=weekKey(new Date());
-  await push(ref(db,`scoresWeekly/${wk}`),{...payload,week:wk});
+  const wk=weekKey(new Date()); await push(ref(db,`scoresWeekly/${wk}`),{...payload,week:wk});
 }
 
 async function getWeeklyTop10(wk=weekKey()){
-  const snap=await get(ref(db,`scoresWeekly/${wk}`));
-  const bestByCode={};
-  snap.forEach(ch=>{
-    const v=ch.val();
-    if(!v||typeof v.score!=="number") return;
-    if(!bestByCode[v.code] || v.score>bestByCode[v.code].score){
-      bestByCode[v.code]=v;
-    }
-  });
-  return Object.values(bestByCode)
-    .sort((a,b)=>b.score-a.score)
-    .slice(0,20);
+  const snap=await get(ref(db,`scoresWeekly/${wk}`)); const bestByCode={};
+  snap.forEach(ch=>{const v=ch.val();if(!v||typeof v.score!=="number")return;if(!bestByCode[v.code]||v.score>bestByCode[v.code].score)bestByCode[v.code]=v;});
+  return Object.values(bestByCode).sort((a,b)=>b.score-a.score).slice(0,20);
 }
 
 async function checkMondayWinner(){
   const now = getLondonNow(new Date());
   const londonDay = now.getDay(); 
+
   const isMondayActive = londonDay === 1;
   mondayBox.style.display = 'none';
   if(!isMondayActive) return;
 
-  const d_prev = new Date(now); d_prev.setDate(d_prev.getDate() - 1);
-  const prevWk = weekKey(d_prev);
+  const d_prev = new Date(now); d_prev.setDate(d_prev.getDate() - 1); const prevWk = weekKey(d_prev);
   const list = await getWeeklyTop10(prevWk);
   if(!list || list.length === 0) return;
 
-  const winner = list[0];
-  const myCode = localStorage.getItem("playerCode");
+  const winner = list[0]; const myCode = localStorage.getItem("playerCode");
   mondayBox.style.display = 'flex';
-  mcWeek.textContent = prevWk.split("-W")[1];
+  mcWeek.textContent = prevWk.split("-W")[1]; 
   mcName.textContent = getFlagEmoji(winner.country) + " " + winner.code;
 
   if(myCode === winner.code){
@@ -726,75 +853,55 @@ async function checkMondayWinner(){
     const snapshot = await get(winRef);
     let secret = "";
     if(snapshot.exists() && snapshot.val().secretCode){ secret = snapshot.val().secretCode; } 
-    else {
-      secret = "WIN-" + Math.floor(100000 + Math.random() * 900000);
-      await set(winRef, { secretCode: secret, winnerCode: winner.code, country: winner.country, score: winner.score, ts: Date.now() });
-    }
+    else { secret = "WIN-" + Math.floor(100000 + Math.random() * 900000); await set(winRef, { secretCode: secret, winnerCode: winner.code, country: winner.country, score: winner.score, ts: Date.now() }); }
     mcSecretBox.style.display = "block"; mcCode.textContent = secret;
   } else { mcSecretBox.style.display = "none"; }
 }
 window.checkMondayWinner = checkMondayWinner;
 
 async function showWeeklyPanel(){
-  const wk=weekKey(new Date());
-  const me=localStorage.getItem("playerCode");
-  const ol=document.getElementById("bpc-list");
-  const box=document.getElementById("bpc-top10");
-  const wnEl=document.getElementById("wk-num");
-  if(wnEl) wnEl.textContent=wk.split("-W")[1];
-
-  if(window.bpcTimer) clearInterval(window.bpcTimer);
-
+  const wk=weekKey(new Date()); const me=localStorage.getItem("playerCode");
+  const ol=document.getElementById("bpc-list"); const box=document.getElementById("bpc-top10");
+  const wnEl=document.getElementById("wk-num"); if(wnEl)wnEl.textContent=wk.split("-W")[1]; 
+  if(window.bpcTimer)clearInterval(window.bpcTimer);
   function updateTimer(){
     const now = getLondonNowCompat();
     const target = new Date(now);
-    const day = target.getDay();
-    const daysUntilSunday = (7 - day) % 7;
+    const day = target.getDay(); 
+    const daysUntilSunday = (7 - day) % 7; 
     target.setDate(now.getDate() + daysUntilSunday);
     target.setHours(23, 59, 59, 999);
     
-    const diff = target - now;
-    const remEl = document.getElementById("wk-rem");
-    if(!remEl) return;
-    if(diff<=0){ remEl.textContent="Resetting..."; return; }
-    const d=Math.floor(diff/(1000*60*60*24));
-    const h=Math.floor((diff%(1000*60*60*24))/(1000*60*60));
-    const m=Math.floor((diff%(1000*60*60))/(1000*60));
-    const s=Math.floor((diff%(1000*60))/1000);
+    const diff=target-now; const remEl=document.getElementById("wk-rem"); if(!remEl)return;
+    if(diff<=0){remEl.textContent="Resetting...";return;}
+    const d=Math.floor(diff/(1000*60*60*24)); const h=Math.floor((diff%(1000*60*60*24))/(1000*60*60));
+    const m=Math.floor((diff%(1000*60*60))/(1000*60)); const s=Math.floor((diff%(1000*60))/1000);
     remEl.textContent=`${d}d ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
     remEl.style.color=(d===0)?"#ef4444":"#facc15";
   }
-  updateTimer();
-  window.bpcTimer=setInterval(updateTimer,1000);
+  updateTimer(); window.bpcTimer=setInterval(updateTimer,1000);
 
   const list=await getWeeklyTop10(wk);
-  const medals = ["🥇","🥈","🥉"]; 
+  const medals = ["🥇","🥈","🥉"]; // 1-2-3 için madalya dizisi
 
   if(ol){
-    ol.innerHTML = list.length
+    ol.innerHTML=list.length
       ? list.map((it,i)=>{
-          const mine = it.code===me;
-          const flag = getFlagEmoji(it.country);
-          const medal = medals[i] || ""; 
-          
-          /* --- HİZALAMA DÜZELTİLDİ: Madalya en sona alındı --- */
+          const mine=it.code===me; const flag=getFlagEmoji(it.country);
+          const medal = medals[i] || ""; // 1,2,3 ise madalyayı al, yoksa boş
           return `<li class="${mine?'me':''}">
-            <div class="li-info">
-              <span class="rank-num">${i+1}.</span>
-              ${flag} ${it.code} → ${it.score} pts
-            </div>
-            <div class="li-medal">${medal}</div>
-          </li>`;
+    <span class="rank-num">${i+1}.</span>
+    ${flag} ${it.code} → ${it.score} pts
+    <span style="margin-left:4px">${medal}</span>
+</li>`;
         }).join("")
       : `<div style="opacity:.7;text-align:center">No scores this week yet.</div>`;
   }
-  if(box) box.style.display="block";
+  if(box)box.style.display="block";
 }
 
-window.incrementGlobalPlays = incrementGlobalPlays;
-window.saveScore          = saveScore;
-window.showWeeklyPanel    = showWeeklyPanel;
-window.bumpLocation       = bumpLocation;
+window.incrementGlobalPlays=incrementGlobalPlays; window.saveScore=saveScore;
+window.showWeeklyPanel=showWeeklyPanel; window.bumpLocation=bumpLocation;
 </script>
 </body>
 </html>
