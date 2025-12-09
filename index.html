@@ -7,70 +7,113 @@
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   
+  /* --- UI DÜZENİ (GRID SİSTEMİ) --- */
   #ui-layer {
     position: fixed; top: 0; left: 0; right: 0;
     height: 55px;
     padding: max(10px, env(safe-area-inset-top)) 15px 0 15px;
-    display: none; display: grid; grid-template-columns: 1fr auto 1fr; 
-    align-items: center; z-index: 20; pointer-events: none;
+    display: none; 
+    display: grid;
+    grid-template-columns: 1fr auto 1fr; 
+    align-items: center;
+    z-index: 20; pointer-events: none;
     background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
-    font-size: 15px; font-weight: 800; white-space: nowrap; 
+    font-size: 15px; font-weight: 800;
+    white-space: nowrap; 
   }
-  #brand { justify-self: start; background:linear-gradient(90deg,#22d3ee,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent; font-weight: 900; font-size: 17px; }
-  .center-group { justify-self: center; display: flex; flex-direction: row; align-items: center; gap: 15px; }
+
+  #brand {
+    justify-self: start; 
+    background:linear-gradient(90deg,#22d3ee,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight: 900; font-size: 17px; 
+    text-shadow: 0 0 10px rgba(34, 211, 238, 0.3);
+  }
+
+  .center-group {
+    justify-self: center; 
+    display: flex; flex-direction: row; align-items: center; 
+    gap: 15px; 
+  }
+  
   #score { color:#00ffc8; text-shadow: 0 0 6px rgba(0, 255, 200, 0.5); font-size: 18px; }
-  #lives { letter-spacing: 2px; font-size: 15px; min-width: 60px; text-align: center; }
-  #power { justify-self: end; color:#a7f3d0; font-size: 16px; }
+  
+  #lives { 
+    letter-spacing: 2px; font-size: 15px;
+    text-shadow: 0 0 5px rgba(255, 50, 50, 0.4);
+    min-width: 60px; text-align: center;
+  }
+
+  #power { 
+    justify-self: end; 
+    color:#a7f3d0; text-shadow: 0 0 6px rgba(167, 243, 208, 0.5); font-size: 16px;
+  }
 
   #pauseBtn{
     display:none; position:fixed;left:50%;transform:translateX(-50%);
-    bottom:max(20px,env(safe-area-inset-bottom)); z-index:50;
-    width:42px;height:42px; background:rgba(15, 23, 42, 0.9); border:2px solid #38bdf8; color:#38bdf8; border-radius:50%;
+    bottom:max(20px,env(safe-area-inset-bottom)); 
+    z-index:50;
+    width:42px;height:42px; 
+    background:rgba(15, 23, 42, 0.8); border:2px solid #38bdf8; color:#38bdf8; border-radius:50%;
     font-size:14px;font-weight:900;align-items:center;justify-content:center;cursor:pointer;
+    box-shadow:0 0 10px rgba(56,189,248,0.4); backdrop-filter: blur(4px);
   }
+
   #startOverlay,#gameOver,#pauseOverlay,#countdownOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:60}
   #startOverlay{background:rgba(0,0,0,0.85);color:#fff;display:flex;overflow:hidden}
-  #pauseOverlay{background:rgba(0,0,0,0.9);color:#fff;}
+  #pauseOverlay{background:rgba(0,0,0,0.8);color:#fff;backdrop-filter:blur(3px)}
   
-  #startLogo { width: 90px; height: 90px; border-radius: 50%; border: 3px solid #22d3ee; object-fit: cover; margin-bottom: 8px; animation: floatLogo 3.5s ease-in-out infinite; }
+  #startLogo {
+    width: 90px; height: 90px; border-radius: 50%; border: 3px solid #22d3ee;
+    box-shadow: 0 0 25px rgba(34, 211, 238, 0.5), inset 0 0 10px rgba(34, 211, 238, 0.3);
+    object-fit: cover; margin-bottom: 8px; animation: floatLogo 3.5s ease-in-out infinite;
+  }
   @keyframes floatLogo { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-  .slogan { font-size: 15px; font-style: italic; background: linear-gradient(90deg, #a7f3d0, #22d3ee); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 25px; font-weight: 600; }
+  .slogan { font-size: 15px; font-style: italic; background: linear-gradient(90deg, #a7f3d0, #22d3ee); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 25px; font-weight: 600; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(34, 211, 238, 0.2); }
   
   #gameOver { background: transparent; justify-content: flex-start; padding-top: 40vh; overflow-y: auto; }
-  #mondayChampBox { display: none; flex-direction: column; align-items: center; margin-bottom: 10px; padding: 8px 15px; background: rgba(20, 20, 10, 0.95); border: 1px solid #facc15; border-radius: 8px; width: min(320px, 80vw); text-align: center; }
+  #mondayChampBox {
+    display: none; flex-direction: column; align-items: center; margin-bottom: 10px; padding: 8px 15px;
+    background: rgba(250, 204, 21, 0.15); border: 1px solid #facc15; border-radius: 8px; 
+    box-shadow: 0 0 15px rgba(250, 204, 21, 0.4); width: min(320px, 80vw); text-align: center; backdrop-filter: blur(5px);
+  }
   .champ-label { color:#facc15;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px; }
-  .champ-name { color:#fff;font-size:15px;font-weight:900;margin-bottom:4px; }
+  .champ-name { color:#fff;font-size:15px;font-weight:900;margin-bottom:4px;text-shadow:0 0 5px rgba(255,255,255,0.5); }
   #winnerSecret { display: none; font-family: monospace; color:#00ffc8;font-size:13px;font-weight:bold; background:#000;padding:4px 8px;border-radius:4px;border:1px dashed #00ffc8; margin-top:4px; }
   #countdownOverlay{background:transparent;pointer-events:none;z-index:70}
   #cntText{font-size:90px;font-weight:900;color:#fff;text-shadow:0 0 25px #22d3ee;font-family:monospace}
   @keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
   .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer;margin-bottom:5px;box-shadow:0 0 20px rgba(0,255,200,0.4);}
-  
-  #soundToggle { margin-top: 20px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(34, 211, 238, 0.5); background: rgba(15, 23, 42, 0.9); color: #22d3ee; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 100; }
-  
+  #soundToggle { margin-top: 20px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(34, 211, 238, 0.5); background: rgba(15, 23, 42, 0.6); color: #22d3ee; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(4px); transition: all 0.3s ease; z-index: 100; }
+  #soundToggle:hover { background: rgba(34, 211, 238, 0.15); box-shadow: 0 0 15px rgba(34, 211, 238, 0.4); transform: scale(1.05); }
   #bpc-top10 { width: min(380px, 90vw); background: rgba(5, 5, 5, 0.9); border: 1px solid #333; border-radius: 10px; padding: 10px; color: #fff; font-size: 13px; line-height: 1.4; margin-top: 10px; margin-bottom: 40px; }
   #bpc-top10 h4{margin:0 0 5px 0;font-size:12px;font-weight:800;text-align:center;color:#e2e8f0;letter-spacing:.5px;}
   #week-timer{text-align:center;font-size:11px;color:#94a3b8;margin-bottom:6px;font-weight:600;border-bottom:1px dashed #333;padding-bottom:4px}
   #bpc-top10 ol { margin:0; padding:0; list-style:none; max-height: 35vh; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-right: 5px; } 
-  #bpc-top10 li { margin-bottom:4px;display:flex; justify-content: space-between; align-items:center; border-bottom:1px solid #222; padding-bottom:2px; color:#fff; }
-  .li-info { display: flex; align-items: center; } .li-medal { text-align: right; min-width: 25px; font-size: 14px; } 
+  #bpc-top10 ol::-webkit-scrollbar { width: 4px; }
+  #bpc-top10 ol::-webkit-scrollbar-track { background: #111; border-radius: 2px; }
+  #bpc-top10 ol::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+  #bpc-top10 li { margin-bottom:4px;display:flex;align-items:center;border-bottom:1px solid #222;padding-bottom:2px;color:#fff; }
   .rank-num { display:inline-block;width:25px;text-align:right;margin-right:8px;color:#94a3b8;font-weight:bold;font-family:monospace; }
-  #bpc-top10 .me{color:#ff5c5c;font-weight:bold} #bpc-top10 .me .rank-num{color:#ff5c5c}
-  #globalCounterBox { margin-top:5px;font-size:12px;opacity:.9;text-align:center;color:#cbd5e1; }
+  #bpc-top10 .me{color:#ff5c5c;font-weight:bold} 
+  #bpc-top10 .me .rank-num{color:#ff5c5c}
+  #globalCounterBox { margin-top:5px;font-size:12px;opacity:.9;text-align:center;color:#cbd5e1;text-shadow:0 2px 4px #000; }
   #globalCounterBox::before { content: "🌍 "; }
   
-  canvas { display: block; margin: 0 auto; background: radial-gradient(circle at center, #0f172a 0%, #020617 60%, #000000 100%); touch-action: none; user-select: none; width: 100%; height: 100%; }
-  .red-zone { background: radial-gradient(circle at center, #2e1065 0%, #0f172a 60%, #000000 100%) !important; }
-
+  canvas { display: block; margin: 0 auto; background: radial-gradient(circle at center, #0f172a 0%, #020617 60%, #000000 100%); touch-action: none; user-select: none; width: 100%; height: 100% }
 </style>
 </head>
 <body>
   <div id="ui-layer">
     <div id="brand">Babypeacock 🦚</div>
-    <div class="center-group"><div id="score">Score: <span id="sc">0</span></div><div id="lives">❤️❤️❤️</div></div>
+    <div class="center-group">
+      <div id="score">Score: <span id="sc">0</span></div>
+      <div id="lives">❤️❤️❤️</div>
+    </div>
     <div id="power">💎 <span id="px">0</span>s</div>
   </div>
+
   <div id="pauseBtn">II</div>
+
   <div id="startOverlay">
     <img id="startLogo" src="yc3ku6.jpg" alt="BPC Logo">
     <div class="slogan">From feather to flight</div>
@@ -79,8 +122,14 @@
     <div id="playerCode" style="margin-top:15px;font-size:14px;color:#00ffc8;"></div>
     <div id="soundToggle">🔊</div>
   </div>
-  <div id="pauseOverlay"><div style="font-size:32px;font-weight:900;margin-bottom:15px;color:#e2e8f0;letter-spacing:2px;">PAUSED</div><button id="resumeBtn" class="btn">RESUME</button></div>
+
+  <div id="pauseOverlay">
+    <div style="font-size:32px;font-weight:900;margin-bottom:15px;color:#e2e8f0;letter-spacing:2px;">PAUSED</div>
+    <button id="resumeBtn" class="btn">RESUME</button>
+  </div>
+
   <div id="countdownOverlay"><div id="cntText"></div></div>
+
   <div id="gameOver">
     <div id="mondayChampBox">
       <div class="champ-label">👑 Week <span id="mc-week">--</span> Champion</div>
@@ -95,107 +144,174 @@
       <ol id="bpc-list"></ol>
     </div>
   </div>
+
   <canvas id="game"></canvas>
+
 <script>
-/* ====== WEB AUDIO API (iOS DOSTU PERFORMANS SES MOTORU) ====== */
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-const audioCtx = new AudioContext();
+/* ====== SES SİSTEMİ (GÜNCELLENDİ: "ÇIT" ÖNLEYİCİ LOOP) ====== */
+const v = "?v=" + Math.floor(Math.random() * 9999); 
 
-class SoundPool {
-  constructor(src, volume = 1.0) {
-    this.buffer = null; this.volume = volume; this.isLoaded = false;
-    fetch(src).then(r=>r.arrayBuffer()).then(b=>audioCtx.decodeAudioData(b)).then(a=>{this.buffer=a;this.isLoaded=true;}).catch(e=>console.log(e));
-  }
-  play() {
-    if (!this.isLoaded) return; if (audioCtx.state === 'suspended') audioCtx.resume();
-    try { 
-      const s=audioCtx.createBufferSource(); s.buffer=this.buffer; 
-      const g=audioCtx.createGain(); g.gain.value=this.volume; 
-      s.connect(g); g.connect(audioCtx.destination); s.start(0); 
-    } catch (e) {}
-  }
-}
-
-// Ses dosyalarını bu sistemle yüklüyoruz (Hafıza şişmez)
-const sounds = { 
-  normalShot: new SoundPool("laser_one.mp3", 0.3), 
-  powerShot: new SoundPool("laser.mp3", 0.3), 
-  boomUfo: new SoundPool("boom.mp3", 0.6), 
-  boomShip: new SoundPool("boom_one.mp3", 0.6), 
-  gem: new SoundPool("gem.mp3", 0.7), 
-  gameOver: new Audio("space_chords.mp3") // Müzik için Audio kalsın (Loop için)
+const sounds = {
+  normalShot: new Audio("laser_one.mp3" + v), 
+  powerShot:  new Audio("laser.mp3" + v),     
+  boomUfo:    new Audio("boom.mp3" + v),      
+  boomShip:   new Audio("boom_one.mp3" + v),  
+  gem:        new Audio("gem.mp3" + v),
+  gameOver:   new Audio("space_chords.mp3" + v)
 };
-sounds.gameOver.loop = false; 
 
-let gameOverMusicPlayed = false;
-let audioUnlocked = false;
-function unlockAudioEngine() {
-  if (audioUnlocked) return; 
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  try { 
-    // Sessiz bir şekilde müziği başlatıp durdurarak iOS ses motorunu uyandır
-    const old=sounds.gameOver.volume; sounds.gameOver.volume=0; 
-    sounds.gameOver.play().then(()=>{sounds.gameOver.pause();sounds.gameOver.currentTime=0;sounds.gameOver.volume=old;}).catch(()=>{}); 
-  } catch (e) {}
-  audioUnlocked=true; 
-  document.removeEventListener("touchstart", unlockAudioEngine); 
-  document.removeEventListener("click", unlockAudioEngine);
-}
-document.addEventListener("touchstart", unlockAudioEngine, { passive: true }); 
-document.addEventListener("click", unlockAudioEngine);
+// OTOMATİK LOOP'U KAPATIYORUZ (Manuel kontrol için)
+sounds.gameOver.loop = false;
+
+// YUMUŞAK GEÇİŞ (SEAMLESS LOOP) MANTIĞI
+sounds.gameOver.addEventListener('timeupdate', function(){
+  // Eğer müzik son 0.6 saniyeye geldiyse
+  const buffer = 0.6;
+  if(this.duration && this.currentTime > (this.duration - buffer)){
+    // 1. Çıt sesini önlemek için sesi anlık olarak çok kıs (ama 0 yapma, çok kısık olsun)
+    this.volume = 0.01;
+
+    // 2. Başa sar
+    this.currentTime = 0;
+    this.play();
+
+    // 3. Sesi çok kısa sürede tekrar normal seviyeye çek (Fade-In)
+    // Bu sayede kesinti veya çıt sesi duyulmaz
+    setTimeout(() => { 
+      if(soundEnabled) this.volume = 1.0; 
+    }, 40);
+  }
+});
 
 let soundEnabled = localStorage.getItem("bpc_sound") !== "0"; 
 const soundBtn = document.getElementById("soundToggle");
-function updateSoundIcon() { soundBtn.textContent = soundEnabled ? "🔊" : "🔇"; soundBtn.style.opacity = soundEnabled ? "1" : "0.5"; }
+
+function updateSoundIcon() {
+  soundBtn.textContent = soundEnabled ? "🔊" : "🔇";
+  soundBtn.style.opacity = soundEnabled ? "1" : "0.5";
+  soundBtn.style.boxShadow = soundEnabled ? "0 0 15px rgba(34, 211, 238, 0.4)" : "none";
+}
 updateSoundIcon();
 
-soundBtn.onclick = (e) => { 
+soundBtn.onclick = (e) => {
   e.stopPropagation(); 
-  soundEnabled = !soundEnabled; 
-  localStorage.setItem("bpc_sound", soundEnabled ? "1" : "0"); 
-  updateSoundIcon(); 
-  if (soundEnabled && gameOver && !gameOverMusicPlayed) { 
-    gameOverMusicPlayed = true; sounds.gameOver.volume = 1.0; sounds.gameOver.play().catch(() => {}); 
-  } else if (!soundEnabled) { 
-    sounds.gameOver.pause(); 
-  } 
+  soundEnabled = !soundEnabled;
+  localStorage.setItem("bpc_sound", soundEnabled ? "1" : "0");
+  updateSoundIcon();
+  // Sesi açarsa ve Game Over ekranındaysa çal
+  if(soundEnabled && gameOver) {
+     sounds.gameOver.volume = 1.0; // Sesi garanti aç
+     sounds.gameOver.play().catch(()=>{});
+  } else if(!soundEnabled) {
+     sounds.gameOver.pause();
+  }
 };
+
+function playShootSound(isPower) {
+  if (!soundEnabled) return;
+  const sound = isPower ? sounds.powerShot : sounds.normalShot;
+  const s = sound.cloneNode();
+  s.volume = 0.4; 
+  s.play().catch(e => {});
+}
+
+function playExplosionSound(kind) {
+  if (!soundEnabled) return;
+  
+  // ARTIK HEPSİNDE AYNI TOK SES (BOOM_ONE) ÇALACAK
+  const s = sounds.boomShip.cloneNode(); 
+  s.volume = 0.8;
+  s.play().catch(e => {});
+}
+
+function playLifeSound() {
+  if (!soundEnabled) return;
+  const s = sounds.gem.cloneNode();
+  s.volume = 0.8;
+  s.play().catch(e => {});
+}
+function playGemSound() { playLifeSound(); }
 
 /* ====== GAME SETUP ====== */
 const cv=document.getElementById("game");
+
+// GÜNCELLEME: Ekran boyutu değişse bile gemiyi alt hizada tut
+function resize(){ 
+  cv.width=window.innerWidth; cv.height=window.innerHeight; 
+  if(player) {
+    player.y = cv.height - 120;
+    player.x = clamp(player.x, 0, cv.width - player.w);
+  }
+}
+window.addEventListener('resize', resize); 
 const ctx=cv.getContext("2d"); ctx.imageSmoothingEnabled=false;
-const uiLayer=document.getElementById("ui-layer"), uiPause=document.getElementById("pauseBtn"), scEl=document.getElementById("sc"), pxEl=document.getElementById("px"), livesEl=document.getElementById("lives"), startOverlay=document.getElementById("startOverlay"), startBtn=document.getElementById("startBtn"), overEl=document.getElementById("gameOver"), restartBtn=document.getElementById("restart"), top10Box=document.getElementById("bpc-top10"), pauseBtn=document.getElementById("pauseBtn"), pauseOverlay=document.getElementById("pauseOverlay"), resumeBtn=document.getElementById("resumeBtn"), countOverlay=document.getElementById("countdownOverlay"), cntText=document.getElementById("cntText"), mondayBox=document.getElementById("mondayChampBox"), mcWeek=document.getElementById("mc-week"), mcName=document.getElementById("mc-name"), mcSecretBox=document.getElementById("winnerSecret"), mcCode=document.getElementById("mc-code");
+
+/* UI ELEMENTS */
+const uiLayer = document.getElementById("ui-layer");
+const uiPause = document.getElementById("pauseBtn");
+
+const scEl=document.getElementById("sc"),pxEl=document.getElementById("px"),livesEl=document.getElementById("lives");
+const startOverlay=document.getElementById("startOverlay"),startBtn=document.getElementById("startBtn");
+const overEl=document.getElementById("gameOver"),restartBtn=document.getElementById("restart");
+const top10Box=document.getElementById("bpc-top10");
+const pauseBtn=document.getElementById("pauseBtn"), pauseOverlay=document.getElementById("pauseOverlay"), resumeBtn=document.getElementById("resumeBtn");
+const countOverlay=document.getElementById("countdownOverlay"), cntText=document.getElementById("cntText");
+const mondayBox = document.getElementById("mondayChampBox"), mcWeek = document.getElementById("mc-week"), mcName = document.getElementById("mc-name"), mcSecretBox = document.getElementById("winnerSecret"), mcCode = document.getElementById("mc-code");
+
+function clamp(v,a,b){return v<a?a:v>b?b:v;}
+function rand(a,b){return a+Math.random()*(b-a);}
+function rectHit(a,b){return !(a.x+a.w<b.x||a.x>b.x+b.w||a.y+a.h<b.y||a.y>b.y+b.h);}
+function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.crossOrigin="anonymous";i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
+
+function keyOutDark(img, TH){
+  const w=img.width,h=img.height;
+  const off=document.createElement('canvas'); off.width=w; off.height=h;
+  const g=off.getContext('2d'); g.drawImage(img,0,0); 
+  const d=g.getImageData(0,0,w,h), a=d.data;
+  for(let i=0;i<a.length;i+=4){
+    const r=a[i], g1=a[i+1], b=a[i+2];
+    if(r<TH && g1<TH && b<TH) a[i+3]=0;
+  }
+  g.putImageData(d,0,0); return off;
+}
+
+const PLAYER_SRC="img/player/bpc_mini.png";
+const PEACOCK_SRC="yc3ku6.jpg";
+
+/* === SPRITE CONFIG === */
+const SPRITE_CONFIG = {
+  green:   { src: "bpc_enemy_green_sprite.png", frames: 60, mode: 'normal', th: 30, delay: 20 }, 
+  ufo_red: { src: "ufo_red_sprite.png", frames: 85, mode: 'screen', th: 100, delay: 20 },
+  ufo_gray:{ src: "ufo_gray_sprite.png", frames: 60, mode: 'screen', th: 100, delay: 20 },
+  red:     { src: "bpc_enemy_red_sprite.png", frames: 60, mode: 'screen', th: 100, delay: 80 } 
+};
 
 let bullets=[], enemies=[], enemyBullets=[], gems=[], mascots=[], particles=[];
-let score=0, lives=3, started=false, gameOver=false, paused=false, inCountdown=false;
-let powerTime=0, fireTimer=0, FIRE_MS=170, elapsed=0, enT=0, gemT=0, mascotT=0;
+let score=0,lives=3,started=false,gameOver=false,paused=false,inCountdown=false;
+let powerTime=0, fireTimer=0, FIRE_MS=170;
+let elapsed=0,enT=0,gemT=0,mascotT=0;
 let scoreSent=false;
-let player={x:0,y:0,w:66,h:66};
+let player={x:cv.width/2-33,y:cv.height-120,w:66,h:66};
+// İlk açılışta resize'ı çağırarak konumu garantiye al
+resize();
 
-const PLAYER_SRC="img/player/bpc_mini.png"; const PEACOCK_SRC="yc3ku6.jpg";
-const SPRITE_CONFIG={green:{src:"bpc_enemy_green_sprite.png",frames:60,mode:'normal',th:30,delay:20},ufo_red:{src:"ufo_red_sprite.png",frames:85,mode:'screen',th:100,delay:20},ufo_gray:{src:"ufo_gray_sprite.png",frames:60,mode:'screen',th:100,delay:20},red:{src:"bpc_enemy_red_sprite.png",frames:60,mode:'screen',th:100,delay:80}};
-let playerImg=null, peacockImg=null, loadedSprites={};
-
-function resize(){ cv.width=window.innerWidth; cv.height=window.innerHeight; if(player){player.y=cv.height-120;player.x=clamp(player.x,0,cv.width-player.w);} }
-window.addEventListener('resize', resize); resize();
-function clamp(v,a,b){return v<a?a:v>b?b:v;} function rand(a,b){return a+Math.random()*(b-a);} function rectHit(a,b){return !(a.x+a.w<b.x||a.x>b.x+b.w||a.y+a.h<b.y||a.y>b.y+b.h);}
-function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.crossOrigin="anonymous";i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
-function keyOutDark(img,TH){const w=img.width,h=img.height,off=document.createElement('canvas');off.width=w;off.height=h;const g=off.getContext('2d');g.drawImage(img,0,0);const d=g.getImageData(0,0,w,h),a=d.data;for(let i=0;i<a.length;i+=4){if(a[i]<TH&&a[i+1]<TH&&a[i+2]<TH)a[i+3]=0;}g.putImageData(d,0,0);return off;}
-
-(async function(){
-  try{const p=await loadImage(PLAYER_SRC);playerImg=keyOutDark(p,80);}catch{}
-  try{const bird=await loadImage(PEACOCK_SRC);peacockImg=keyOutDark(bird,70);}catch{}
-  for(const key in SPRITE_CONFIG){ try{const raw=await loadImage(SPRITE_CONFIG[key].src);const th=SPRITE_CONFIG[key].th||90,img=keyOutDark(raw,th);loadedSprites[key]={img,frames:SPRITE_CONFIG[key].frames};}catch{} }
-})();
 function getPlayerCode(){ let c=localStorage.getItem("playerCode"); if(!c){c="BPC"+Math.floor(100000+Math.random()*899999);localStorage.setItem("playerCode",c);} return c; }
-const myCode=getPlayerCode(); (function(){const box=document.getElementById("playerCode");if(box)box.innerHTML=`👤 Player: <b>${myCode}</b>`;})();
-let playId=Math.floor(performance.now()+Math.random()*1e9); let verifyCode="--------";
-async function makeCode(){ const t=Math.floor(Date.now()/1000); const msg=new TextEncoder().encode(playId+"|"+t+"|babypeacock"); const buf=await crypto.subtle.digest("SHA-256",msg); verifyCode=[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("").slice(0,8).toUpperCase(); }
+const myCode=getPlayerCode();
+(function(){const box=document.getElementById("playerCode");if(box)box.innerHTML=`👤 Player: <b>${myCode}</b>`;})();
+
+let playId=Math.floor(performance.now()+Math.random()*1e9);
+let verifyCode="--------";
+async function makeCode(){
+  const t=Math.floor(Date.now()/1000);
+  const msg=new TextEncoder().encode(playId+"|"+t+"|babypeacock");
+  const buf=await crypto.subtle.digest("SHA-256",msg);
+  verifyCode=[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("").slice(0,8).toUpperCase();
+}
 makeCode();
 
 const starsA=[], starsB=[];
-for(let i=0;i<20;i++) starsA.push({x:rand(0,cv.width),y:rand(0,cv.height), sp:rand(0.2,0.4)});
-for(let i=0;i<10;i++) starsB.push({x:rand(0,cv.width),y:rand(0,cv.height), sp:rand(0.7,1.1)});
+for(let i=0;i<25;i++) starsA.push({x:rand(0,cv.width),y:rand(0,cv.height), sp:rand(0.2,0.4)});
+for(let i=0;i<15;i++) starsB.push({x:rand(0,cv.width),y:rand(0,cv.height), sp:rand(0.7,1.1)});
 
 function startCountdownSequence(callback) {
   inCountdown=true; countOverlay.style.display="flex"; let count=3;
@@ -206,35 +322,45 @@ function startCountdownSequence(callback) {
 
 function initGame(){
   if(started)return;
-  // iOS FIX: Fullscreen zorlamayı kaldırdık (Donma sebebi #2)
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  if(!isIOS) { try{const doc=document.documentElement; if(doc.requestFullscreen)doc.requestFullscreen();else if(doc.webkitRequestFullscreen)doc.webkitRequestFullscreen();}catch(e){} }
-  startOverlay.style.display="none"; uiLayer.style.display = "grid"; 
-  startCountdownSequence(()=>{started=true; paused=false; uiPause.style.display="flex"; player.y=cv.height-120; player.x=cv.width/2-player.w/2;});
+  
+  const doc=document.documentElement; 
+  try{
+    if(doc.requestFullscreen) doc.requestFullscreen();
+    else if(doc.webkitRequestFullscreen) doc.webkitRequestFullscreen();
+  }catch(e){}
+
+  startOverlay.style.display="none"; 
+  uiLayer.style.display = "grid"; 
+  
+  startCountdownSequence(()=>{
+    started=true; paused=false; uiPause.style.display="flex";
+    player.y=cv.height-120; 
+    player.x=cv.width/2-player.w/2;
+  });
 }
 startBtn.onclick=initGame;
 pauseBtn.onclick=()=>{if(!started||gameOver||inCountdown)return;paused=true;pauseOverlay.style.display="flex";uiPause.style.display="none";};
-resumeBtn.onclick=()=>{pauseOverlay.style.display="none";startCountdownSequence(()=>{paused=false;uiPause.style.display="flex";player.y = cv.height - 120;player.x = clamp(player.x, 0, cv.width - player.w);});};
+
+// GÜNCELLEME: Resume sonrası gemiyi sabitle
+resumeBtn.onclick=()=>{
+  pauseOverlay.style.display="none";
+  startCountdownSequence(()=>{
+    paused=false;
+    uiPause.style.display="flex";
+    
+    // Pause sonrası gemiyi tekrar alt hizaya sabitle
+    player.y = cv.height - 120;
+    player.x = clamp(player.x, 0, cv.width - player.w);
+  });
+};
 
 function updateLives(){livesEl.innerHTML="❤️".repeat(lives);} updateLives();
+
 let holding=false;
 function getX(e){return (e.clientX??(e.touches?e.touches[0].clientX:0))-cv.getBoundingClientRect().left;}
 cv.addEventListener("pointerdown",e=>{if(!started||paused||inCountdown)return;holding=true;player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w);});
 cv.addEventListener("pointermove",e=>{if(!holding||paused||inCountdown)return;player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w);});
 cv.addEventListener("pointerup",()=>holding=false); cv.addEventListener("pointercancel",()=>holding=false);
-
-// SES FONKSİYONLARI (Part 1'deki SoundPool'u kullanır)
-// Throttle ekledik: Çok hızlı üst üste ses çalmayı engeller (iOS için kritik)
-let lastShotTime=0;
-function playShootSound(isPower) { 
-  if (!soundEnabled) return; 
-  const now=Date.now(); if(now-lastShotTime<80) return; 
-  lastShotTime=now;
-  if (isPower) sounds.powerShot.play(); else sounds.normalShot.play(); 
-}
-function playExplosionSound() { if (!soundEnabled) return; sounds.boomShip.play(); }
-function playLifeSound() { if (!soundEnabled) return; sounds.gem.play(); }
-function playGemSound() { playLifeSound(); }
 
 function shoot(){
   playShootSound(powerTime > 0);
@@ -242,178 +368,259 @@ function shoot(){
   else { bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10}); }
 }
 
-function drawDiamondGem(ctx,x,y,w,h,t){
-  ctx.save(); ctx.translate(x+w/2,y+h/2); ctx.rotate(Math.sin(t*2)*0.20);
-  const W=w*0.9,H=h*0.9;
-  // PERFORMANS FIX: Gölge (ShadowBlur) kaldırıldı. Düz parlak renk verildi.
-  // Eski kodda burası shadowBlur=14 idi, bu iPhone'u öldürüyordu.
-  ctx.shadowBlur=0; 
-  const grad=ctx.createLinearGradient(-W/2,0,W/2,0); grad.addColorStop(0,"#baf2ff");grad.addColorStop(0.5,"#60e8ff");grad.addColorStop(1,"#99f6e4");
-  ctx.fillStyle=grad; ctx.beginPath();ctx.moveTo(0,-H*0.5);ctx.lineTo(W*0.48,0);ctx.lineTo(0,H*0.56);ctx.lineTo(-W*0.48,0);ctx.closePath();ctx.fill();
-  ctx.lineWidth=1.8;ctx.strokeStyle="#0e7490";ctx.stroke();ctx.restore();
-}
+function drawDiamondGem(ctx,x,y,w,h,t){ctx.save();ctx.translate(x+w/2,y+h/2);ctx.rotate(Math.sin(t*2)*0.20);
+  const W=w*0.9,H=h*0.9;ctx.shadowColor="rgba(56,189,248,.7)";ctx.shadowBlur=14;
+  const grad=ctx.createLinearGradient(-W/2,0,W/2,0);grad.addColorStop(0,"#baf2ff");grad.addColorStop(0.5,"#60e8ff");grad.addColorStop(1,"#99f6e4");
+  ctx.fillStyle=grad;ctx.beginPath();ctx.moveTo(0,-H*0.5);ctx.lineTo(W*0.48,0);ctx.lineTo(0,H*0.56);ctx.lineTo(-W*0.48,0);ctx.closePath();ctx.fill();
+  ctx.shadowBlur=0;ctx.lineWidth=1.8;ctx.strokeStyle="#0e7490";ctx.stroke();ctx.restore();}
 
 function spawnGem(){ if(powerTime>0) return; const s=22; gems.push({x:rand(0,cv.width-s), y:-s, w:s, h:s, vy:1.5}); }
+
 function spawnMascot(){ 
-  let dyn=1; if(score>2000){const over=score-2000;dyn=1+over*0.0006;dyn=Math.min(dyn,2.0);}
-  if(score>=300&&score<800&&Math.random()<0.60)return; if(score>=800&&score<1300&&Math.random()<0.90)return; if(score>=1300&&score<1500&&Math.random()<0.95)return; if(score>=1500&&Math.random()<0.98)return; if(score>2000&&Math.random()<(0.98*dyn))return;
+  let dyn = 1; if(score > 2000){ const over = score - 2000; dyn = 1 + over * 0.0006; dyn = Math.min(dyn, 2.0); }
+  if(score >= 300 && score < 800 && Math.random() < 0.60) return;
+  if(score >= 800 && score < 1300 && Math.random() < 0.90) return;
+  if(score >= 1300 && score < 1500 && Math.random() < 0.95) return;
+  if(score >= 1500 && Math.random() < 0.98) return;
+  if(score > 2000 && Math.random() < (0.98 * dyn)) return;
   const s=22; mascots.push({x:rand(0,cv.width-s), y:-s, w:s, h:s, vy:1.4}); 
 }
-function explosion(x,y){
-  // PERFORMANS FIX: Parçacık sayısı düşürüldü (18 -> 8)
-  const left=Math.max(0,60-particles.length); const n=Math.min(8,left);
-  for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=1.5+Math.random()*2.0;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:350+Math.random()*200,size:1.5+Math.random()*1.5});}
+
+function explosion(x,y,count=18){
+  const left=Math.max(0,120-particles.length);const n=Math.min(12,left);
+  for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=1.2+Math.random()*2.8;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:420+Math.random()*280,size:1.6+Math.random()*2.4});}
 }
-function allowedKindsByTime(t){ if(t<10) return ["ufo_red","ufo_gray"]; if(t<40) return ["ufo_red","ufo_gray","green"]; return ["ufo_red","ufo_gray","green","red"]; }
+
+function allowedKindsByTime(t){
+  if(t<10) return ["ufo_red","ufo_gray"]; 
+  if(t<40) return ["ufo_red","ufo_gray","green"]; 
+  return ["ufo_red","ufo_gray","green","red"];
+}
+
 function spawnEnemy(k, spMul){ 
-  const enemyCap=(score>=2300)?25:(score>=2000)?22:(score>=1500)?20:(score>=1300)?18:(score>=800)?16:12; 
-  if(enemies.length>enemyCap)return; 
+  // GÜNCELLEME: Düşman limiti (enemyCap) arttırıldı (2000+ ve 2300+)
+  const enemyCap = 
+    (score >= 2300) ? 30 :
+    (score >= 2000) ? 26 :
+    (score >= 1500) ? 22 :
+    (score >= 1300) ? 20 :
+    (score >= 800)  ? 18 :
+    (score >= 500)  ? 14 : 12;
+
+  if(enemies.length > enemyCap) return; 
+  
   const kind=k[Math.floor(Math.random()*k.length)]; 
-  let size=rand(48,70); if(kind==="red")size=rand(60,80); 
-  let isSprite=false,img=null,frames=1,blendMode='normal',frameDelay=30;
-  if(loadedSprites[kind]){img=loadedSprites[kind].img;frames=loadedSprites[kind].frames;blendMode=SPRITE_CONFIG[kind].mode||'normal';frameDelay=SPRITE_CONFIG[kind].delay||30;isSprite=(frames>1);}
-  let vx=0; if(score>=2300){const dir=Math.random()<0.5?-1:1;vx=dir*rand(0.8,1.6)*spMul;}
-  enemies.push({x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3)*spMul,vx,kind,img,isSprite,blendMode,frameDelay,frame:0,frameTimer:0,totalFrames:frames,canShoot:(kind==="red"||kind==="green"),shootT:0,shootInt:500}); 
+  let size=rand(48,70); 
+  if(kind === "red") size = rand(60, 80); 
+
+  let isSprite = false, img = null, frames = 1, blendMode = 'normal', frameDelay = 30;
+  
+  if (loadedSprites[kind]) {
+    img = loadedSprites[kind].img;
+    frames = loadedSprites[kind].frames;
+    blendMode = SPRITE_CONFIG[kind].mode || 'normal';
+    frameDelay = SPRITE_CONFIG[kind].delay || 30; 
+    isSprite = (frames > 1);
+  }
+  
+  // GÜNCELLEME: 2300+ puan için yatay hız (vx) belirle
+  let vx = 0;
+  if (score >= 2300) {
+    const dir = Math.random() < 0.5 ? -1 : 1;
+    vx = dir * rand(0.8, 1.6) * spMul;
+  }
+
+  enemies.push({
+    x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul,
+    vx: vx, // Zigzag için yeni özellik
+    kind, img, isSprite, blendMode, frameDelay,
+    frame:0, frameTimer:0, totalFrames: frames,
+    canShoot:(kind==="red"||kind==="green"), 
+    shootT:0,shootInt:500
+  }); 
 }
+
 function enemyShoot(e){ 
-  if(!e.canShoot)return; const cx=e.x+e.w/2; 
-  let dyn=1; if(score>2000){const over=score-2000;dyn=1+over*0.0006;dyn=Math.min(dyn,2.0);}
-  const mul=(score>=1500)?1.78:(score>=1300)?1.60:(score>=800)?1.45:(score>=500)?1.20:(score>=300)?1.10:1.00; const finalMul=mul*dyn;
-  if(e.kind==="red") enemyBullets.push({x:cx-2,y:e.y+e.h,w:4,h:12,vy:6*finalMul,color:"#ef4444"}); else enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6.5*finalMul,color:"#22c55e"}); 
+  if(!e.canShoot) return; const cx=e.x+e.w/2; 
+  let dyn = 1; if(score > 2000){ const over = score - 2000; dyn = 1 + over * 0.0006; dyn = Math.min(dyn, 2.0); }
+  const mul = (score >= 1500) ? 1.78 : (score >= 1300) ? 1.60 : (score >= 800)  ? 1.45 : (score >= 500)  ? 1.20 : (score >= 300)  ? 1.10 : 1.00;
+  const finalMul = mul * dyn;
+  
+  if(e.kind==="red") enemyBullets.push({x:cx-2,y:e.y+e.h,w:4,h:12,vy:6*finalMul,color:"#ef4444"});
+  else enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6.5*finalMul,color:"#22c55e"}); 
 }
 
-/* === MOTOR GÜNCELLEMESİ: REVERSE LOOP (Donmayı Çözen Kısım) === */
-function update(dt){
-  starsA.forEach(s=>{s.y+=s.sp;if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);}}); 
-  starsB.forEach(s=>{s.y+=s.sp;if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);}});
-  if(!started||gameOver||paused||inCountdown)return;
-  
-  elapsed+=dt/1000;enT+=dt;gemT+=dt;mascotT+=dt;
-  if(powerTime>0){powerTime-=dt;if(powerTime<0)powerTime=0;} pxEl.textContent=powerTime>0?Math.ceil(powerTime/1000):0;
-  fireTimer+=dt;if(holding&&fireTimer>FIRE_MS){shoot();fireTimer=0;}
-  
-  let spMul=1.0, spwMul=1.0;
-  if(score>=300){spMul=1.15;spwMul=1.10;} if(score>=500){spMul=1.25;spwMul=1.25;} if(score>=800){spMul=1.45;spwMul=1.75;} if(score>=1300){spMul=1.58;spwMul=2.00;} if(score>=1500){spMul=1.72;spwMul=2.35;}
-  let dyn=1; if(score>2000){const over=score-2000;dyn=1+over*0.0006;dyn=Math.min(dyn,2.0);}
-  if(enT>600/(spwMul*dyn)){spawnEnemy(allowedKindsByTime(elapsed),spMul);enT=0;}
-
-  const gemInterval=(score>=1500)?25000:(score>=1300)?21000:(score>=800)?18000:(score>=500)?11000:(score>=300)?9500:9000;
-  const gemChance=(score>=1500)?0.28:(score>=1300)?0.35:(score>=800)?0.40:0.55;
-  let intervalFinal=gemInterval, chanceFinal=gemChance; if(score>2000){intervalFinal=gemInterval*dyn;chanceFinal=gemChance/dyn;}
-  if(gemT>intervalFinal){if(Math.random()<chanceFinal)spawnGem();gemT=0;}
-  if(mascotT>12000){spawnMascot();mascotT=0;}
-
-  const pBox={x:player.x+12,y:player.y+12,w:player.w-24,h:player.h-24};
-
-  // REVERSE LOOP İLE UPDATE (En hızlı yöntem)
-  for(let i=bullets.length-1; i>=0; i--){
-    let b=bullets[i]; b.y+=b.vy; b.x+=(b.ang||0)*0.5;
-    if(b.y<-20 || b.dead){ bullets.splice(i,1); }
-  }
-  for(let i=enemies.length-1; i>=0; i--){
-    let e=enemies[i]; e.y+=e.vy;
-    // ZigZag hareketi (61. dosyadaki özellik)
-    if(score>=2300 && typeof e.vx==="number"){ e.x+=e.vx; if(e.x<0||e.x+e.w>cv.width){e.vx*=-1;e.x=clamp(e.x,0,cv.width-e.w);} }
-    e.shootT+=dt; if(e.canShoot&&e.shootT>=e.shootInt){e.shootT=0;enemyShoot(e);}
-    if(e.isSprite && e.img) { e.frameTimer+=dt; if(e.frameTimer>e.frameDelay){e.frameTimer=0;e.frame=(e.frame+1)%e.totalFrames;} }
-
-    if(rectHit(pBox,e)){ playExplosionSound(); explosion(player.x+player.w/2,player.y+player.h/2); lives--; updateLives(); if(lives<=0)endGame(); e.dead=true; }
-    if(!e.dead){
-        for(let j=bullets.length-1; j>=0; j--){
-            let b=bullets[j];
-            if(rectHit(b,e)){
-                playExplosionSound(); explosion(e.x+e.w/2,e.y+e.h/2);
-                b.dead=true; e.dead=true; if(!gameOver){score++;scEl.textContent=score;} break;
-            }
-        }
-    }
-    if(e.y>cv.height+40 || e.dead){ enemies.splice(i,1); }
-  }
-  for(let i=enemyBullets.length-1; i>=0; i--){
-    let m=enemyBullets[i]; m.y+=m.vy;
-    if(rectHit(pBox,m)){ playExplosionSound(); explosion(player.x+player.w/2,player.y+player.h/2); lives--; updateLives(); if(lives<=0)endGame(); m.dead=true; }
-    if(m.y>cv.height+40 || m.dead){ enemyBullets.splice(i,1); }
-  }
-  for(let i=gems.length-1; i>=0; i--){
-    let g=gems[i]; g.y+=g.vy;
-    if(rectHit(player,g)){ playGemSound(); powerTime=15000; g.dead=true; }
-    if(g.y>cv.height+40 || g.dead){ gems.splice(i,1); }
-  }
-  for(let i=mascots.length-1; i>=0; i--){
-    let m=mascots[i]; m.y+=m.vy;
-    if(rectHit(player,m)){ playLifeSound(); if(lives<5){lives++;updateLives();}else{score+=2;scEl.textContent=score;} m.dead=true; }
-    if(m.y>cv.height+40 || m.dead){ mascots.splice(i,1); }
-  }
-  for(let i=particles.length-1; i>=0; i--){
-    let p=particles[i]; p.life-=dt; p.x+=p.vx; p.y+=p.vy; p.vy+=0.02;
-    if(p.life<=0){ particles.splice(i,1); }
-  }
-  if(score>=1500){ if(!cv.classList.contains("red-zone"))cv.classList.add("red-zone"); }
-  else { if(cv.classList.contains("red-zone"))cv.classList.remove("red-zone"); }
-}
 function renderFinalScore(t){
   const cx=cv.width/2; const cy=cv.height * 0.35; 
   ctx.save();
   const grd=ctx.createRadialGradient(cx,cy,20,cx,cy,Math.max(cv.width,cv.height)/1.2);
   grd.addColorStop(0,"rgba(0,0,0,0.55)"); grd.addColorStop(1,"rgba(0,0,0,0.95)");
   ctx.fillStyle=grd; ctx.fillRect(0,0,cv.width,cv.height);
-  
   const pw=Math.min(360,cv.width-40), ph=160, rx=cx-pw/2, ry=cy-ph/2-6;
   ctx.save(); ctx.beginPath(); ctx.rect(rx-50,ry-50,pw+100,ph+100); ctx.clip();
   ctx.translate(cx,cy); ctx.rotate(Math.sin(t / 4000) * 0.15); 
   ctx.fillStyle="rgba(0,255,200,0.15)"; const line=`Babypeacock • SCORE ${score} • CODE ${verifyCode} • `;
   ctx.font="700 13px system-ui,Arial"; for(let y=-150;y<=150;y+=22){let x=-300; while(x<300){ctx.fillText(line,x,y); x+=ctx.measureText(line).width+40;}}
   ctx.restore();
-  
   const gradText = ctx.createLinearGradient(cx - 100, 0, cx + 100, 0); gradText.addColorStop(0, "#22d3ee"); gradText.addColorStop(1, "#34d399");
-  ctx.fillStyle = gradText; ctx.font="900 26px system-ui,Arial"; ctx.textAlign="center"; 
-  // PERFORMANS: ShadowBlur kapatıldı
-  ctx.shadowBlur=0;
-  ctx.fillText("Babypeacock",cx,cy-30); 
-  
+  ctx.fillStyle = gradText; ctx.font="900 26px system-ui,Arial"; ctx.textAlign="center"; ctx.shadowColor="rgba(34,211,238,0.8)"; ctx.shadowBlur=15;
+  ctx.fillText("Babypeacock",cx,cy-30); ctx.shadowBlur=0;
   ctx.fillStyle="rgba(0,255,200,0.18)"; ctx.font="900 80px system-ui,Arial"; ctx.fillText(String(score),cx,cy+40);
   ctx.fillStyle="#00ffc8"; ctx.font="900 48px system-ui,Arial"; ctx.fillText(score,cx,cy+20);
   ctx.restore();
 }
 
+async function endGame(){
+  gameOver=true; uiPause.style.display="none"; overEl.style.display="flex"; 
+  
+  if(soundEnabled) {
+     sounds.gameOver.currentTime = 0;
+     sounds.gameOver.volume = 1.0; 
+     sounds.gameOver.play().catch(()=>{});
+  }
+
+  if(window.checkMondayWinner) window.checkMondayWinner();
+  try{
+    if(navigator.onLine){
+      if (window.saveScore) await window.saveScore(score);
+      if (window.incrementGlobalPlays) await window.incrementGlobalPlays();
+      if (window.bumpLocation) await window.bumpLocation();
+      if (window.flushPendingScores) window.flushPendingScores();
+    } else { if (window.savePendingScore) window.savePendingScore(score); }
+    if (window.showWeeklyPanel) window.showWeeklyPanel();
+  }catch(e){ if (window.savePendingScore) window.savePendingScore(score); }
+  top10Box.style.display="block";
+}
+
+function update(dt){
+  starsA.forEach(s=>{s.y+=s.sp;if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);}}); 
+  starsB.forEach(s=>{s.y+=s.sp;if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);}});
+  
+  if(!started||gameOver||paused||inCountdown)return;
+  
+  elapsed+=dt/1000;enT+=dt;gemT+=dt;mascotT+=dt;
+  if(powerTime>0){powerTime-=dt;if(powerTime<0)powerTime=0;} pxEl.textContent=powerTime>0?Math.ceil(powerTime/1000):0;
+  fireTimer+=dt;if(holding&&fireTimer>FIRE_MS){shoot();fireTimer=0;}
+  
+  let spMul = 1.0; let spwMul = 1.0;
+  if(score >= 300 && score < 500){ spMul = 1.15; spwMul = 1.10; }
+  if(score >= 500 && score < 800){ spMul = 1.25; spwMul = 1.25; }
+  if(score >= 800 && score < 1300){ spMul = 1.45; spwMul = 1.75; }
+  if(score >= 1300 && score < 1500){ spMul = 1.58; spwMul = 2.00; }
+  if(score >= 1500){ spMul = 1.72; spwMul = 2.35; }
+  let dyn = 1; if(score > 2000){ const over = score - 2000; dyn = 1 + over * 0.0006; dyn = Math.min(dyn, 2.0); }
+
+  if(enT > 600/(spwMul * dyn)){ spawnEnemy(allowedKindsByTime(elapsed), spMul); enT = 0; }
+  
+  const gemInterval = (score >= 1500) ? 25000 : (score >= 1300) ? 21000 : (score >= 800)  ? 18000 : (score >= 500)  ? 11000 : (score >= 300)  ? 9500  : 9000;
+  const gemChance = (score >= 1500) ? 0.28 : (score >= 1300) ? 0.35 : (score >= 800)  ? 0.40 : 0.55;
+  let intervalFinal = gemInterval; let chanceFinal = gemChance;
+  if(score > 2000){ intervalFinal = gemInterval * dyn; chanceFinal = gemChance / dyn; }
+
+  if(gemT > intervalFinal){ if(Math.random() < chanceFinal) spawnGem(); gemT = 0; }
+  if(mascotT>12000){spawnMascot();mascotT=0;}
+  
+  bullets.forEach(b=>{b.y+=b.vy;b.x+=(b.ang||0)*0.5;}); bullets=bullets.filter(b=>b.y>-20);
+  
+  enemies.forEach(e=>{
+    e.y+=e.vy;
+    
+    // GÜNCELLEME: 2300+ puan için zigzag hareketi ve çarpma kontrolü
+    if (score >= 2300 && typeof e.vx === "number") {
+      e.x += e.vx;
+      // Kenara çarpınca yön değiştir
+      if (e.x < 0 || e.x + e.w > cv.width) {
+        e.vx *= -1;
+        e.x = clamp(e.x, 0, cv.width - e.w);
+      }
+    }
+
+    e.shootT+=dt;
+    if(e.canShoot&&e.shootT>=e.shootInt){e.shootT=0;enemyShoot(e);}
+    
+    if(e.isSprite && e.img) {
+      e.frameTimer += dt;
+      if(e.frameTimer > e.frameDelay) { 
+        e.frameTimer = 0;
+        e.frame = (e.frame + 1) % e.totalFrames;
+      }
+    }
+  }); 
+  enemies=enemies.filter(e=>e.y<=cv.height+40);
+
+  enemyBullets.forEach(m=>{m.y+=m.vy;}); enemyBullets=enemyBullets.filter(m=>m.y<cv.height+40);
+  gems.forEach(g=>g.y+=g.vy); gems=gems.filter(g=>g.y<cv.height+40); mascots.forEach(m=>m.y+=m.vy); mascots=mascots.filter(m=>m.y<cv.height+40);
+  
+  const pBox = { x: player.x + 12, y: player.y + 12, w: player.w - 24, h: player.h - 24 };
+
+  for(const e of enemies){
+    if(rectHit(pBox,e)){
+      playExplosionSound(e.kind);
+      explosion(player.x+player.w/2,player.y+player.h/2,22);
+      lives--;updateLives();if(lives<=0)endGame();e.dead=1;
+    }
+  }
+  for(const m of enemyBullets){
+    if(rectHit(pBox,m)){
+      playExplosionSound('red'); 
+      explosion(player.x+player.w/2,player.y+player.h/2,22);
+      lives--;updateLives();if(lives<=0)endGame();m.dead=1;
+    }
+  }
+  for(const b of bullets){ 
+    for(const e of enemies){ 
+      if(rectHit(b,e)){ 
+        playExplosionSound(e.kind);
+        explosion(e.x+e.w/2,e.y+e.h/2,16); b.dead=1; e.dead=1; 
+        if(!gameOver){ score++; scEl.textContent=score; } 
+      } 
+    } 
+  }
+  for(const g of gems){ if(rectHit(player,g)){ playGemSound(); powerTime=15000; g.dead=1; } } 
+  for(const m of mascots){ if(rectHit(player,m)){ playLifeSound(); if(lives < 5){ lives++; updateLives(); } else { score += 2; scEl.textContent = score; } m.dead=1; } }
+
+  enemies=enemies.filter(o=>!o.dead);bullets=bullets.filter(o=>!o.dead);enemyBullets=enemyBullets.filter(o=>!o.dead);gems=gems.filter(o=>!o.dead);mascots=mascots.filter(o=>!o.dead);
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;if(p.life<=0){particles.splice(i,1);continue;}p.x+=p.vx;p.y+=p.vy;p.vy+=0.02;}
+}
 function draw(t){
   ctx.clearRect(0,0,cv.width,cv.height);
   
-  ctx.fillStyle="rgba(255,255,255,0.7)"; starsA.forEach(s=>ctx.fillRect(s.x,s.y,1,1)); 
-  ctx.fillStyle="rgba(255,255,255,0.9)"; starsB.forEach(s=>ctx.fillRect(s.x,s.y,1.5,1.5));
-  
+  ctx.fillStyle="rgba(255,255,255,0.7)";starsA.forEach(s=>ctx.fillRect(s.x,s.y,1,1)); 
+  ctx.fillStyle="rgba(255,255,255,0.9)";starsB.forEach(s=>ctx.fillRect(s.x,s.y,1.2,1.2));
+
   if(!started) return;
-  
+
   if(playerImg)ctx.drawImage(playerImg,player.x,player.y,player.w,player.h); else{ctx.fillStyle="#38bdf8";ctx.fillRect(player.x,player.y,player.w,player.h);}
   
-  ctx.fillStyle="#0099ff"; bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
+  ctx.fillStyle="#0099ff"; 
+  bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
   
   enemies.forEach(e=>{
     if(e.isSprite && e.img && e.totalFrames > 0) {
-      const frameW = e.img.width / e.totalFrames; const frameH = e.img.height; const sx = e.frame * frameW;
+      const frameW = e.img.width / e.totalFrames;
+      const frameH = e.img.height; 
+      const sx = e.frame * frameW;
+      
       ctx.save();
       if(e.blendMode === 'screen') ctx.globalCompositeOperation = "screen";
-      if(frameW > 0 && sx >= 0) ctx.drawImage(e.img, sx, 0, frameW, frameH, e.x, e.y, e.w, e.h);
+      
+      if(frameW > 0 && sx >= 0) {
+        ctx.drawImage(e.img, sx, 0, frameW, frameH, e.x, e.y, e.w, e.h);
+      }
       ctx.restore();
-    } else if(e.img) { ctx.drawImage(e.img, e.x, e.y, e.w, e.h); } 
-    else { ctx.fillStyle=e.kind==="green"?"#22c55e":"#ef4444"; ctx.fillRect(e.x,e.y,e.w,e.h); }
+    } else if(e.img) {
+      ctx.drawImage(e.img, e.x, e.y, e.w, e.h);
+    } else {
+      ctx.fillStyle=e.kind==="green"?"#22c55e":"#ef4444";
+      ctx.fillRect(e.x,e.y,e.w,e.h);
+    }
   });
-  
+
   enemyBullets.forEach(m=>{ctx.fillStyle=m.color;ctx.fillRect(m.x,m.y,m.w,m.h);});
-  
-  gems.forEach(g=>drawDiamondGem(ctx,g.x,g.y,g.w,g.h,performance.now()/1000)); 
-  if(peacockImg)mascots.forEach(m=>ctx.drawImage(peacockImg,m.x,m.y,m.w,m.h));
-  
-  particles.forEach(p=>{
-      const a=Math.max(0,p.life/350); 
-      ctx.globalAlpha=a; ctx.fillStyle="rgba(255,200,80,1)";
-      ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill(); 
-      ctx.globalAlpha=1;
-  });
-  
+  gems.forEach(g=>drawDiamondGem(ctx,g.x,g.y,g.w,g.h,performance.now()/1000)); if(peacockImg)mascots.forEach(m=>ctx.drawImage(peacockImg,m.x,m.y,m.w,m.h));
+  particles.forEach(p=>{const a=Math.max(0,p.life/500);ctx.globalAlpha=a;ctx.fillStyle="rgba(255,200,80,1)";ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;});
   if(gameOver){ renderFinalScore(t); if(!scoreSent){ scoreSent=true; } }
 }
-
 function loop(t){const dt=Math.min(t-(window._lt||t),32);window._lt=t;update(dt);draw(t);requestAnimationFrame(loop);} requestAnimationFrame(loop);
 
 restartBtn.onclick=()=>{
@@ -422,110 +629,200 @@ restartBtn.onclick=()=>{
   bullets=[];enemies=[];enemyBullets=[];gems=[];mascots=[];particles=[];
   updateLives();gameOver=false;scoreSent=false;paused=false;inCountdown=false;
   overEl.style.display="none";top10Box.style.display="none";uiPause.style.display="none";
-  gameOverMusicPlayed = false;
-  if (sounds.gameOver) { sounds.gameOver.pause(); sounds.gameOver.currentTime = 0; }
+  
+  // Restart'a basınca Game Over müziğini durdur
+  if(sounds.gameOver) {
+     sounds.gameOver.pause();
+     sounds.gameOver.currentTime = 0;
+  }
+
   playId=Math.floor(performance.now()+Math.random()*1e9); makeCode();
-  started=true; uiLayer.style.display="grid"; uiPause.style.display="flex"; player.y=cv.height-120; player.x=cv.width/2-player.w/2;
-  if(cv.classList.contains("red-zone")) cv.classList.remove("red-zone");
+  started=true; 
+  uiLayer.style.display="grid"; 
+  uiPause.style.display="flex";
+  player.y=cv.height-120; player.x=cv.width/2-player.w/2;
 };
+
+let playerImg=null, peacockImg=null;
+let loadedSprites = {};
+
+(async function(){
+  try{const p=await loadImage(PLAYER_SRC);playerImg=keyOutDark(p,80);}catch{}
+  try{const bird=await loadImage(PEACOCK_SRC);peacockImg=keyOutDark(bird,70);}catch{}
+  
+  for(const key in SPRITE_CONFIG){
+    try{
+      const raw = await loadImage(SPRITE_CONFIG[key].src);
+      const th = SPRITE_CONFIG[key].th || 90;
+      const processedImg = keyOutDark(raw, th); 
+      
+      let frames = SPRITE_CONFIG[key].frames;
+      loadedSprites[key] = { img: processedImg, frames: frames };
+      
+    }catch(e){console.log("Sprite yüklenemedi: "+key, e)}
+  }
+})();
 </script>
+
 <script type="module">
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, get, set, push, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 const INSTANCE_URL="https://bpc-space-default-rtdb.europe-west1.firebasedatabase.app/";
-const app=getApps().length?getApps()[0]:initializeApp({databaseURL:INSTANCE_URL}); 
-const db=getDatabase(app); window.db=db;
+const app=getApps().length?getApps()[0]:initializeApp({databaseURL:INSTANCE_URL}); const db=getDatabase(app); window.db=db;
 
 function getLondonNow(d=new Date()){ return new Date(d.toLocaleString("en-US", { timeZone: "Europe/London" })); }
+
 function weekKey(d=new Date()){
-  const now = getLondonNow(d); const day = (now.getDay() + 6) % 7; 
+  const now = getLondonNow(d);
+  const day = (now.getDay() + 6) % 7; 
   const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - day); startOfWeek.setHours(0,0,0,0);
   const startOfYear = getLondonNow(new Date(now.getFullYear(), 0, 1)); startOfYear.setHours(0,0,0,0);
-  const diff = startOfWeek - startOfYear; const weekNumber = Math.floor(diff / (7*24*60*60*1000)) + 1;
+  const diff = startOfWeek - startOfYear;
+  const weekNumber = Math.floor(diff / (7*24*60*60*1000)) + 1;
   return `${now.getFullYear()}-W${String(weekNumber).padStart(2,"0")}`;
 }
+
 function getFlagEmoji(c){if(!c)return"🏳️";const cp=c.toUpperCase().split('').map(char=>127397+char.charCodeAt());return String.fromCodePoint(...cp);}
+
 function getCountryCode(){
   try{
     const lang=(navigator.languages&&navigator.languages[0])||navigator.language||"en-US";
     let country = (lang.split('-')[1] || "").toUpperCase();
     if (!country || country.length !== 2) {
         const code = lang.split('-')[0].toLowerCase();
-        const map = {ar:'SA', en:'US', fr:'FR', de:'DE', es:'ES', it:'IT', pt:'BR', ru:'RU', zh:'CN', ja:'JP', ko:'KR', tr:'TR', nl:'NL', hi:'IN', sv:'SE', no:'NO', da:'DK', pl:'PL', cs:'CZ', sk:'SK', ro:'RO', hu:'HU', fi:'FI', el:'GR', id:'ID', th:'TH', vi:'VN', uk:'UA', bg:'BG', sr:'RS', hr:'HR', ms:'MY', he:'IL'};
+        const map = {
+            ar:'SA', en:'US', fr:'FR', de:'DE', es:'ES', it:'IT', pt:'BR',
+            ru:'RU', zh:'CN', ja:'JP', ko:'KR', tr:'TR', nl:'NL', hi:'IN',
+            sv:'SE', no:'NO', da:'DK', pl:'PL', cs:'CZ', sk:'SK', ro:'RO',
+            hu:'HU', fi:'FI', el:'GR', id:'ID', th:'TH', vi:'VN', uk:'UA',
+            bg:'BG', sr:'RS', hr:'HR', ms:'MY', he:'IL'
+        };
         country = map[code] || "TR";
     }
-    if (country === "UK") country = "GB"; return country;
+    if (country === "UK") country = "GB";
+    return country;
   }catch{return"TR";}
 }
+
 function getLondonNowCompat(){ return getLondonNow(new Date()); }
 
 function savePendingScore(score){
-  const code=localStorage.getItem("playerCode")||"BPC", country=getCountryCode(), wk=weekKey(new Date());
-  const item={code,score,ts:Date.now(),country,week:wk}, old=JSON.parse(localStorage.getItem("pendingScores")||"[]");
-  old.push(item); localStorage.setItem("pendingScores",JSON.stringify(old));
+  const code = localStorage.getItem("playerCode") || "BPC";
+  const country = getCountryCode();
+  const wk = weekKey(new Date());
+  const item = { code, score, ts: Date.now(), country, week: wk };
+  const old = JSON.parse(localStorage.getItem("pendingScores") || "[]");
+  old.push(item);
+  localStorage.setItem("pendingScores", JSON.stringify(old));
 }
+
 async function flushPendingScores(){
   try{
-    const pending=JSON.parse(localStorage.getItem("pendingScores")||"[]"); if(pending.length===0)return;
-    for(const p of pending){ await push(ref(db,"scores"),{code:p.code,score:p.score,ts:p.ts,country:p.country}); await push(ref(db,`scoresWeekly/${p.week}`),{code:p.code,score:p.score,ts:p.ts,country:p.country,week:p.week}); }
+    const pending = JSON.parse(localStorage.getItem("pendingScores") || "[]");
+    if(pending.length === 0) return;
+    for(const p of pending){
+      await push(ref(db, "scores"), { code: p.code, score: p.score, ts: p.ts, country: p.country });
+      await push(ref(db, `scoresWeekly/${p.week}`), { code: p.code, score: p.score, ts: p.ts, country: p.country, week: p.week });
+    }
     localStorage.removeItem("pendingScores");
   }catch(e){}
 }
-window.addEventListener("online", flushPendingScores); if(navigator.onLine){ flushPendingScores(); }
-window.savePendingScore = savePendingScore; window.flushPendingScores = flushPendingScores;
+window.addEventListener("online", flushPendingScores);
+if(navigator.onLine){ flushPendingScores(); }
+window.savePendingScore = savePendingScore;
+window.flushPendingScores = flushPendingScores;
 
 const refCounter=ref(db,"stats/globalPlays"); const elGC=document.getElementById("globalCounter");
 const cached=Number(localStorage.getItem("bpc_global_plays"))||0; if(elGC)elGC.textContent=cached?cached.toLocaleString("en-US"):"…";
 onValue(refCounter,s=>{const v=Number(s.val()??0);if(elGC)elGC.textContent=v.toLocaleString("en-US");localStorage.setItem("bpc_global_plays",String(v));});
 function incrementGlobalPlays(){return runTransaction(refCounter,v=>(v||0)+1);}
 
-async function bumpLocation(){ try{const c=getCountryCode();await runTransaction(ref(db,`stats/locations/${c}`),v=>(v||0)+1);}catch(e){} }
-(async function bumpLocationOncePerDay(){ try{const tk="bpc_loc_day",td=new Date().toISOString().slice(0,10);if(localStorage.getItem(tk)===td)return; await bumpLocation(); await runTransaction(ref(db,"stats/totalStarts"),v=>(v||0)+1); localStorage.setItem(tk,td); }catch(e){} })();
+async function bumpLocation(){
+  try{ const code = getCountryCode(); const locRef = ref(db, `stats/locations/${code}`); await runTransaction(locRef, v => (v||0) + 1); }catch(e){}
+}
+(async function bumpLocationOncePerDay(){
+  try{ const tk="bpc_loc_day"; const td=new Date().toISOString().slice(0,10); if(localStorage.getItem(tk)===td)return;
+    await bumpLocation(); const tr=ref(db,"stats/totalStarts"); await runTransaction(tr,v=>(v||0)+1); localStorage.setItem(tk,td);
+  }catch(e){}
+})();
 
 async function saveScore(score){
-  const code=localStorage.getItem("playerCode")||"BPC", country=getCountryCode(); 
-  const payload={code,score,ts:Date.now(),country,countryName:country};
-  await push(ref(db,"scores"),payload); const wk=weekKey(new Date()); await push(ref(db,`scoresWeekly/${wk}`),{...payload,week:wk});
+  const code=localStorage.getItem("playerCode")||"BPC"; const country=getCountryCode(); 
+  const payload={code,score,ts:Date.now(),country, countryName: country}; 
+  await push(ref(db,"scores"),payload);
+  const wk=weekKey(new Date()); await push(ref(db,`scoresWeekly/${wk}`),{...payload,week:wk});
 }
 
 async function getWeeklyTop10(wk=weekKey()){
   const snap=await get(ref(db,`scoresWeekly/${wk}`)); const bestByCode={};
-  snap.forEach(ch=>{ const v=ch.val(); if(!v||typeof v.score!=="number")return; if(!bestByCode[v.code]||v.score>bestByCode[v.code].score){bestByCode[v.code]=v;} });
+  snap.forEach(ch=>{const v=ch.val();if(!v||typeof v.score!=="number")return;if(!bestByCode[v.code]||v.score>bestByCode[v.code].score)bestByCode[v.code]=v;});
   return Object.values(bestByCode).sort((a,b)=>b.score-a.score).slice(0,20);
 }
 
 async function checkMondayWinner(){
-  const now=getLondonNow(new Date()); if(now.getDay()!==1){mondayBox.style.display='none';return;}
-  const d_prev=new Date(now);d_prev.setDate(d_prev.getDate()-1); const prevWk=weekKey(d_prev);
-  const list=await getWeeklyTop10(prevWk); if(!list||list.length===0)return;
-  const winner=list[0], myCode=localStorage.getItem("playerCode");
-  mondayBox.style.display='flex'; mcWeek.textContent=prevWk.split("-W")[1]; mcName.textContent=getFlagEmoji(winner.country)+" "+winner.code;
-  if(myCode===winner.code){
-    const winRef=ref(db,`weeklyWinners/${prevWk}`), s=await get(winRef);
-    let secret=""; if(s.exists()&&s.val().secretCode){secret=s.val().secretCode;}else{secret="WIN-"+Math.floor(100000+Math.random()*900000);await set(winRef,{secretCode:secret,winnerCode:winner.code,country:winner.country,score:winner.score,ts:Date.now()});}
-    mcSecretBox.style.display="block"; mcCode.textContent=secret;
-  } else { mcSecretBox.style.display="none"; }
+  const now = getLondonNow(new Date());
+  const londonDay = now.getDay(); 
+
+  const isMondayActive = londonDay === 1;
+  mondayBox.style.display = 'none';
+  if(!isMondayActive) return;
+
+  const d_prev = new Date(now); d_prev.setDate(d_prev.getDate() - 1); const prevWk = weekKey(d_prev);
+  const list = await getWeeklyTop10(prevWk);
+  if(!list || list.length === 0) return;
+
+  const winner = list[0]; const myCode = localStorage.getItem("playerCode");
+  mondayBox.style.display = 'flex';
+  mcWeek.textContent = prevWk.split("-W")[1]; 
+  mcName.textContent = getFlagEmoji(winner.country) + " " + winner.code;
+
+  if(myCode === winner.code){
+    const winRef = ref(db, `weeklyWinners/${prevWk}`);
+    const snapshot = await get(winRef);
+    let secret = "";
+    if(snapshot.exists() && snapshot.val().secretCode){ secret = snapshot.val().secretCode; } 
+    else { secret = "WIN-" + Math.floor(100000 + Math.random() * 900000); await set(winRef, { secretCode: secret, winnerCode: winner.code, country: winner.country, score: winner.score, ts: Date.now() }); }
+    mcSecretBox.style.display = "block"; mcCode.textContent = secret;
+  } else { mcSecretBox.style.display = "none"; }
 }
 window.checkMondayWinner = checkMondayWinner;
 
 async function showWeeklyPanel(){
-  const wk=weekKey(new Date()), me=localStorage.getItem("playerCode"), ol=document.getElementById("bpc-list"), box=document.getElementById("bpc-top10"), wnEl=document.getElementById("wk-num");
-  if(wnEl) wnEl.textContent=wk.split("-W")[1];
-  if(window.bpcTimer) clearInterval(window.bpcTimer);
+  const wk=weekKey(new Date()); const me=localStorage.getItem("playerCode");
+  const ol=document.getElementById("bpc-list"); const box=document.getElementById("bpc-top10");
+  const wnEl=document.getElementById("wk-num"); if(wnEl)wnEl.textContent=wk.split("-W")[1]; 
+  if(window.bpcTimer)clearInterval(window.bpcTimer);
   function updateTimer(){
-    const now=getLondonNowCompat(), target=new Date(now), day=target.getDay(), remEl=document.getElementById("wk-rem");
-    target.setDate(now.getDate()+((7-day)%7)); target.setHours(23,59,59,999);
-    const diff=target-now; if(!remEl)return; if(diff<=0){remEl.textContent="Resetting...";return;}
-    const d=Math.floor(diff/86400000), h=Math.floor((diff%86400000)/3600000), m=Math.floor((diff%3600000)/60000), s=Math.floor((diff%60000)/1000);
-    remEl.textContent=`${d}d ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; remEl.style.color=(d===0)?"#ef4444":"#facc15";
+    const now = getLondonNowCompat();
+    const target = new Date(now);
+    const day = target.getDay(); 
+    const daysUntilSunday = (7 - day) % 7; 
+    target.setDate(now.getDate() + daysUntilSunday);
+    target.setHours(23, 59, 59, 999);
+    
+    const diff=target-now; const remEl=document.getElementById("wk-rem"); if(!remEl)return;
+    if(diff<=0){remEl.textContent="Resetting...";return;}
+    const d=Math.floor(diff/(1000*60*60*24)); const h=Math.floor((diff%(1000*60*60*24))/(1000*60*60));
+    const m=Math.floor((diff%(1000*60*60))/(1000*60)); const s=Math.floor((diff%(1000*60))/1000);
+    remEl.textContent=`${d}d ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    remEl.style.color=(d===0)?"#ef4444":"#facc15";
   }
   updateTimer(); window.bpcTimer=setInterval(updateTimer,1000);
+
   const list=await getWeeklyTop10(wk);
-  if(ol){ ol.innerHTML=list.length?list.map((it,i)=>`<li class="${it.code===me?'me':''}"><span class="rank-num">${i+1}.</span>${getFlagEmoji(it.country)} ${it.code} → ${it.score} pts</li>`).join(""):`<div style="opacity:.7;text-align:center">No scores this week yet.</div>`; }
-  if(box) box.style.display="block";
+  if(ol){
+    ol.innerHTML=list.length
+      ? list.map((it,i)=>{
+          const mine=it.code===me; const flag=getFlagEmoji(it.country);
+          return `<li class="${mine?'me':''}"><span class="rank-num">${i+1}.</span>${flag} ${it.code} → ${it.score} pts</li>`;
+        }).join("")
+      : `<div style="opacity:.7;text-align:center">No scores this week yet.</div>`;
+  }
+  if(box)box.style.display="block";
 }
 
-window.incrementGlobalPlays=incrementGlobalPlays; window.saveScore=saveScore; window.showWeeklyPanel=showWeeklyPanel; window.bumpLocation=bumpLocation;
+window.incrementGlobalPlays=incrementGlobalPlays; window.saveScore=saveScore;
+window.showWeeklyPanel=showWeeklyPanel; window.bumpLocation=bumpLocation;
 </script>
 </body>
 </html>
