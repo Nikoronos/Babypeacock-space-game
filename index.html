@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Babypeacock — BPC Space Game</title>
 <style>
-  html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
+  /* GÜNCELLEME: height: 100dvh yapıldı. Bu Safari'deki adres çubuğu sorununu çözer. */
+  html,body{margin:0;height:100dvh;width:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden;touch-action:none;}
   
   /* --- UI DÜZENİ (GRID SİSTEMİ) --- */
   #ui-layer {
@@ -148,9 +149,8 @@
   <canvas id="game"></canvas>
 
 <script>
-/* ====== SES SİSTEMİ (GÜNCELLENDİ: "ÇIT" ÖNLEYİCİ LOOP) ====== */
+/* ====== SES SİSTEMİ ====== */
 const v = "?v=" + Math.floor(Math.random() * 9999); 
-
 const sounds = {
   normalShot: new Audio("laser_one.mp3" + v), 
   powerShot:  new Audio("laser.mp3" + v),     
@@ -159,27 +159,12 @@ const sounds = {
   gem:        new Audio("gem.mp3" + v),
   gameOver:   new Audio("space_chords.mp3" + v)
 };
-
-// OTOMATİK LOOP'U KAPATIYORUZ (Manuel kontrol için)
 sounds.gameOver.loop = false;
-
-// YUMUŞAK GEÇİŞ (SEAMLESS LOOP) MANTIĞI
 sounds.gameOver.addEventListener('timeupdate', function(){
-  // Eğer müzik son 0.6 saniyeye geldiyse
   const buffer = 0.6;
   if(this.duration && this.currentTime > (this.duration - buffer)){
-    // 1. Çıt sesini önlemek için sesi anlık olarak çok kıs (ama 0 yapma, çok kısık olsun)
-    this.volume = 0.01;
-
-    // 2. Başa sar
-    this.currentTime = 0;
-    this.play();
-
-    // 3. Sesi çok kısa sürede tekrar normal seviyeye çek (Fade-In)
-    // Bu sayede kesinti veya çıt sesi duyulmaz
-    setTimeout(() => { 
-      if(soundEnabled) this.volume = 1.0; 
-    }, 40);
+    this.volume = 0.01; this.currentTime = 0; this.play();
+    setTimeout(() => { if(soundEnabled) this.volume = 1.0; }, 40);
   }
 });
 
@@ -194,59 +179,25 @@ function updateSoundIcon() {
 updateSoundIcon();
 
 soundBtn.onclick = (e) => {
-  e.stopPropagation(); 
-  soundEnabled = !soundEnabled;
-  localStorage.setItem("bpc_sound", soundEnabled ? "1" : "0");
-  updateSoundIcon();
-  // Sesi açarsa ve Game Over ekranındaysa çal
-  if(soundEnabled && gameOver) {
-     sounds.gameOver.volume = 1.0; // Sesi garanti aç
-     sounds.gameOver.play().catch(()=>{});
-  } else if(!soundEnabled) {
-     sounds.gameOver.pause();
-  }
+  e.stopPropagation(); soundEnabled = !soundEnabled; localStorage.setItem("bpc_sound", soundEnabled ? "1" : "0"); updateSoundIcon();
+  if(soundEnabled && gameOver) { sounds.gameOver.volume = 1.0; sounds.gameOver.play().catch(()=>{}); } else if(!soundEnabled) { sounds.gameOver.pause(); }
 };
 
-function playShootSound(isPower) {
-  if (!soundEnabled) return;
-  const sound = isPower ? sounds.powerShot : sounds.normalShot;
-  const s = sound.cloneNode();
-  s.volume = 0.4; 
-  s.play().catch(e => {});
-}
-
-function playExplosionSound(kind) {
-  if (!soundEnabled) return;
-  
-  // ARTIK HEPSİNDE AYNI TOK SES (BOOM_ONE) ÇALACAK
-  const s = sounds.boomShip.cloneNode(); 
-  s.volume = 0.8;
-  s.play().catch(e => {});
-}
-
-function playLifeSound() {
-  if (!soundEnabled) return;
-  const s = sounds.gem.cloneNode();
-  s.volume = 0.8;
-  s.play().catch(e => {});
-}
+function playShootSound(isPower) { if (!soundEnabled) return; const sound = isPower ? sounds.powerShot : sounds.normalShot; const s = sound.cloneNode(); s.volume = 0.4; s.play().catch(e => {}); }
+function playExplosionSound(kind) { if (!soundEnabled) return; const s = sounds.boomShip.cloneNode(); s.volume = 0.8; s.play().catch(e => {}); }
+function playLifeSound() { if (!soundEnabled) return; const s = sounds.gem.cloneNode(); s.volume = 0.8; s.play().catch(e => {}); }
 function playGemSound() { playLifeSound(); }
 
 /* ====== GAME SETUP ====== */
 const cv=document.getElementById("game");
 
-// GÜNCELLEME: Ekran boyutu değişse bile gemiyi alt hizada tut
 function resize(){ 
   cv.width=window.innerWidth; cv.height=window.innerHeight; 
-  if(player) {
-    player.y = cv.height - 120;
-    player.x = clamp(player.x, 0, cv.width - player.w);
-  }
+  if(player) { player.y = cv.height - 120; player.x = clamp(player.x, 0, cv.width - player.w); }
 }
 window.addEventListener('resize', resize); 
 const ctx=cv.getContext("2d"); ctx.imageSmoothingEnabled=false;
 
-/* UI ELEMENTS */
 const uiLayer = document.getElementById("ui-layer");
 const uiPause = document.getElementById("pauseBtn");
 
@@ -268,23 +219,12 @@ function keyOutDark(img, TH){
   const off=document.createElement('canvas'); off.width=w; off.height=h;
   const g=off.getContext('2d'); g.drawImage(img,0,0); 
   const d=g.getImageData(0,0,w,h), a=d.data;
-  for(let i=0;i<a.length;i+=4){
-    const r=a[i], g1=a[i+1], b=a[i+2];
-    if(r<TH && g1<TH && b<TH) a[i+3]=0;
-  }
+  for(let i=0;i<a.length;i+=4){ const r=a[i], g1=a[i+1], b=a[i+2]; if(r<TH && g1<TH && b<TH) a[i+3]=0; }
   g.putImageData(d,0,0); return off;
 }
 
-const PLAYER_SRC="img/player/bpc_mini.png";
-const PEACOCK_SRC="yc3ku6.jpg";
-
-/* === SPRITE CONFIG === */
-const SPRITE_CONFIG = {
-  green:   { src: "bpc_enemy_green_sprite.png", frames: 60, mode: 'normal', th: 30, delay: 20 }, 
-  ufo_red: { src: "ufo_red_sprite.png", frames: 85, mode: 'screen', th: 100, delay: 20 },
-  ufo_gray:{ src: "ufo_gray_sprite.png", frames: 60, mode: 'screen', th: 100, delay: 20 },
-  red:     { src: "bpc_enemy_red_sprite.png", frames: 60, mode: 'screen', th: 100, delay: 80 } 
-};
+const PLAYER_SRC="img/player/bpc_mini.png"; const PEACOCK_SRC="yc3ku6.jpg";
+const SPRITE_CONFIG = { green: { src: "bpc_enemy_green_sprite.png", frames: 60, mode: 'normal', th: 30, delay: 20 }, ufo_red: { src: "ufo_red_sprite.png", frames: 85, mode: 'screen', th: 100, delay: 20 }, ufo_gray:{ src: "ufo_gray_sprite.png", frames: 60, mode: 'screen', th: 100, delay: 20 }, red: { src: "bpc_enemy_red_sprite.png", frames: 60, mode: 'screen', th: 100, delay: 80 } };
 
 let bullets=[], enemies=[], enemyBullets=[], gems=[], mascots=[], particles=[];
 let score=0,lives=3,started=false,gameOver=false,paused=false,inCountdown=false;
@@ -292,19 +232,15 @@ let powerTime=0, fireTimer=0, FIRE_MS=170;
 let elapsed=0,enT=0,gemT=0,mascotT=0;
 let scoreSent=false;
 let player={x:cv.width/2-33,y:cv.height-120,w:66,h:66};
-// İlk açılışta resize'ı çağırarak konumu garantiye al
 resize();
 
 function getPlayerCode(){ let c=localStorage.getItem("playerCode"); if(!c){c="BPC"+Math.floor(100000+Math.random()*899999);localStorage.setItem("playerCode",c);} return c; }
-const myCode=getPlayerCode();
-(function(){const box=document.getElementById("playerCode");if(box)box.innerHTML=`👤 Player: <b>${myCode}</b>`;})();
+const myCode=getPlayerCode(); (function(){const box=document.getElementById("playerCode");if(box)box.innerHTML=`👤 Player: <b>${myCode}</b>`;})();
 
 let playId=Math.floor(performance.now()+Math.random()*1e9);
 let verifyCode="--------";
 async function makeCode(){
-  const t=Math.floor(Date.now()/1000);
-  const msg=new TextEncoder().encode(playId+"|"+t+"|babypeacock");
-  const buf=await crypto.subtle.digest("SHA-256",msg);
+  const t=Math.floor(Date.now()/1000); const msg=new TextEncoder().encode(playId+"|"+t+"|babypeacock"); const buf=await crypto.subtle.digest("SHA-256",msg);
   verifyCode=[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("").slice(0,8).toUpperCase();
 }
 makeCode();
@@ -322,37 +258,17 @@ function startCountdownSequence(callback) {
 
 function initGame(){
   if(started)return;
+  // GÜNCELLEME: Safari için otomatik kaydırma denemesi
+  window.scrollTo(0,1);
   
   const doc=document.documentElement; 
-  try{
-    if(doc.requestFullscreen) doc.requestFullscreen();
-    else if(doc.webkitRequestFullscreen) doc.webkitRequestFullscreen();
-  }catch(e){}
-
-  startOverlay.style.display="none"; 
-  uiLayer.style.display = "grid"; 
-  
-  startCountdownSequence(()=>{
-    started=true; paused=false; uiPause.style.display="flex";
-    player.y=cv.height-120; 
-    player.x=cv.width/2-player.w/2;
-  });
+  try{ if(doc.requestFullscreen) doc.requestFullscreen(); else if(doc.webkitRequestFullscreen) doc.webkitRequestFullscreen(); }catch(e){}
+  startOverlay.style.display="none"; uiLayer.style.display = "grid"; 
+  startCountdownSequence(()=>{ started=true; paused=false; uiPause.style.display="flex"; player.y=cv.height-120; player.x=cv.width/2-player.w/2; });
 }
 startBtn.onclick=initGame;
 pauseBtn.onclick=()=>{if(!started||gameOver||inCountdown)return;paused=true;pauseOverlay.style.display="flex";uiPause.style.display="none";};
-
-// GÜNCELLEME: Resume sonrası gemiyi sabitle
-resumeBtn.onclick=()=>{
-  pauseOverlay.style.display="none";
-  startCountdownSequence(()=>{
-    paused=false;
-    uiPause.style.display="flex";
-    
-    // Pause sonrası gemiyi tekrar alt hizaya sabitle
-    player.y = cv.height - 120;
-    player.x = clamp(player.x, 0, cv.width - player.w);
-  });
-};
+resumeBtn.onclick=()=>{pauseOverlay.style.display="none";startCountdownSequence(()=>{paused=false;uiPause.style.display="flex";});};
 
 function updateLives(){livesEl.innerHTML="❤️".repeat(lives);} updateLives();
 
@@ -375,7 +291,6 @@ function drawDiamondGem(ctx,x,y,w,h,t){ctx.save();ctx.translate(x+w/2,y+h/2);ctx
   ctx.shadowBlur=0;ctx.lineWidth=1.8;ctx.strokeStyle="#0e7490";ctx.stroke();ctx.restore();}
 
 function spawnGem(){ if(powerTime>0) return; const s=22; gems.push({x:rand(0,cv.width-s), y:-s, w:s, h:s, vy:1.5}); }
-
 function spawnMascot(){ 
   let dyn = 1; if(score > 2000){ const over = score - 2000; dyn = 1 + over * 0.0006; dyn = Math.min(dyn, 2.0); }
   if(score >= 300 && score < 800 && Math.random() < 0.60) return;
@@ -385,58 +300,28 @@ function spawnMascot(){
   if(score > 2000 && Math.random() < (0.98 * dyn)) return;
   const s=22; mascots.push({x:rand(0,cv.width-s), y:-s, w:s, h:s, vy:1.4}); 
 }
-
 function explosion(x,y,count=18){
   const left=Math.max(0,120-particles.length);const n=Math.min(12,left);
   for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=1.2+Math.random()*2.8;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:420+Math.random()*280,size:1.6+Math.random()*2.4});}
 }
 
-function allowedKindsByTime(t){
-  if(t<10) return ["ufo_red","ufo_gray"]; 
-  if(t<40) return ["ufo_red","ufo_gray","green"]; 
-  return ["ufo_red","ufo_gray","green","red"];
-}
+function allowedKindsByTime(t){ if(t<10) return ["ufo_red","ufo_gray"]; if(t<40) return ["ufo_red","ufo_gray","green"]; return ["ufo_red","ufo_gray","green","red"]; }
 
 function spawnEnemy(k, spMul){ 
-  // GÜNCELLEME: Düşman limiti (enemyCap) arttırıldı (2000+ ve 2300+)
-  const enemyCap = 
-    (score >= 2300) ? 30 :
-    (score >= 2000) ? 26 :
-    (score >= 1500) ? 22 :
-    (score >= 1300) ? 20 :
-    (score >= 800)  ? 18 :
-    (score >= 500)  ? 14 : 12;
-
+  const enemyCap = (score >= 2300) ? 30 : (score >= 2000) ? 26 : (score >= 1500) ? 22 : (score >= 1300) ? 20 : (score >= 800)  ? 18 : (score >= 500)  ? 14 : 12;
   if(enemies.length > enemyCap) return; 
-  
   const kind=k[Math.floor(Math.random()*k.length)]; 
-  let size=rand(48,70); 
-  if(kind === "red") size = rand(60, 80); 
-
+  let size=rand(48,70); if(kind === "red") size = rand(60, 80); 
   let isSprite = false, img = null, frames = 1, blendMode = 'normal', frameDelay = 30;
+  if (loadedSprites[kind]) { img = loadedSprites[kind].img; frames = loadedSprites[kind].frames; blendMode = SPRITE_CONFIG[kind].mode || 'normal'; frameDelay = SPRITE_CONFIG[kind].delay || 30; isSprite = (frames > 1); }
   
-  if (loadedSprites[kind]) {
-    img = loadedSprites[kind].img;
-    frames = loadedSprites[kind].frames;
-    blendMode = SPRITE_CONFIG[kind].mode || 'normal';
-    frameDelay = SPRITE_CONFIG[kind].delay || 30; 
-    isSprite = (frames > 1);
-  }
-  
-  // GÜNCELLEME: 2300+ puan için yatay hız (vx) belirle
   let vx = 0;
-  if (score >= 2300) {
-    const dir = Math.random() < 0.5 ? -1 : 1;
-    vx = dir * rand(0.8, 1.6) * spMul;
-  }
+  if (score >= 2300) { const dir = Math.random() < 0.5 ? -1 : 1; vx = dir * rand(0.8, 1.6) * spMul; }
 
   enemies.push({
     x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul,
-    vx: vx, // Zigzag için yeni özellik
-    kind, img, isSprite, blendMode, frameDelay,
-    frame:0, frameTimer:0, totalFrames: frames,
-    canShoot:(kind==="red"||kind==="green"), 
-    shootT:0,shootInt:500
+    vx: vx, kind, img, isSprite, blendMode, frameDelay, frame:0, frameTimer:0, totalFrames: frames,
+    canShoot:(kind==="red"||kind==="green"), shootT:0,shootInt:500
   }); 
 }
 
@@ -445,7 +330,6 @@ function enemyShoot(e){
   let dyn = 1; if(score > 2000){ const over = score - 2000; dyn = 1 + over * 0.0006; dyn = Math.min(dyn, 2.0); }
   const mul = (score >= 1500) ? 1.78 : (score >= 1300) ? 1.60 : (score >= 800)  ? 1.45 : (score >= 500)  ? 1.20 : (score >= 300)  ? 1.10 : 1.00;
   const finalMul = mul * dyn;
-  
   if(e.kind==="red") enemyBullets.push({x:cx-2,y:e.y+e.h,w:4,h:12,vy:6*finalMul,color:"#ef4444"});
   else enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6.5*finalMul,color:"#22c55e"}); 
 }
@@ -472,13 +356,7 @@ function renderFinalScore(t){
 
 async function endGame(){
   gameOver=true; uiPause.style.display="none"; overEl.style.display="flex"; 
-  
-  if(soundEnabled) {
-     sounds.gameOver.currentTime = 0;
-     sounds.gameOver.volume = 1.0; 
-     sounds.gameOver.play().catch(()=>{});
-  }
-
+  if(soundEnabled) { sounds.gameOver.currentTime = 0; sounds.gameOver.volume = 1.0; sounds.gameOver.play().catch(()=>{}); }
   if(window.checkMondayWinner) window.checkMondayWinner();
   try{
     if(navigator.onLine){
@@ -495,7 +373,6 @@ async function endGame(){
 function update(dt){
   starsA.forEach(s=>{s.y+=s.sp;if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);}}); 
   starsB.forEach(s=>{s.y+=s.sp;if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);}});
-  
   if(!started||gameOver||paused||inCountdown)return;
   
   elapsed+=dt/1000;enT+=dt;gemT+=dt;mascotT+=dt;
@@ -524,26 +401,15 @@ function update(dt){
   
   enemies.forEach(e=>{
     e.y+=e.vy;
-    
-    // GÜNCELLEME: 2300+ puan için zigzag hareketi ve çarpma kontrolü
-    if (score >= 2300 && typeof e.vx === "number") {
+    if(score >= 2300 && typeof e.vx === "number") {
       e.x += e.vx;
-      // Kenara çarpınca yön değiştir
-      if (e.x < 0 || e.x + e.w > cv.width) {
-        e.vx *= -1;
-        e.x = clamp(e.x, 0, cv.width - e.w);
-      }
+      if (e.x < 0 || e.x + e.w > cv.width) { e.vx *= -1; e.x = clamp(e.x, 0, cv.width - e.w); }
     }
-
     e.shootT+=dt;
     if(e.canShoot&&e.shootT>=e.shootInt){e.shootT=0;enemyShoot(e);}
-    
     if(e.isSprite && e.img) {
       e.frameTimer += dt;
-      if(e.frameTimer > e.frameDelay) { 
-        e.frameTimer = 0;
-        e.frame = (e.frame + 1) % e.totalFrames;
-      }
+      if(e.frameTimer > e.frameDelay) { e.frameTimer = 0; e.frame = (e.frame + 1) % e.totalFrames; }
     }
   }); 
   enemies=enemies.filter(e=>e.y<=cv.height+40);
@@ -555,23 +421,20 @@ function update(dt){
 
   for(const e of enemies){
     if(rectHit(pBox,e)){
-      playExplosionSound(e.kind);
-      explosion(player.x+player.w/2,player.y+player.h/2,22);
+      playExplosionSound(e.kind); explosion(player.x+player.w/2,player.y+player.h/2,22);
       lives--;updateLives();if(lives<=0)endGame();e.dead=1;
     }
   }
   for(const m of enemyBullets){
     if(rectHit(pBox,m)){
-      playExplosionSound('red'); 
-      explosion(player.x+player.w/2,player.y+player.h/2,22);
+      playExplosionSound('red'); explosion(player.x+player.w/2,player.y+player.h/2,22);
       lives--;updateLives();if(lives<=0)endGame();m.dead=1;
     }
   }
   for(const b of bullets){ 
     for(const e of enemies){ 
       if(rectHit(b,e)){ 
-        playExplosionSound(e.kind);
-        explosion(e.x+e.w/2,e.y+e.h/2,16); b.dead=1; e.dead=1; 
+        playExplosionSound(e.kind); explosion(e.x+e.w/2,e.y+e.h/2,16); b.dead=1; e.dead=1; 
         if(!gameOver){ score++; scEl.textContent=score; } 
       } 
     } 
