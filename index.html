@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover" />
-<title>Babypeacock — BPC Space Game</title>
+<title>Babypeacock — Neon Evolution</title>
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   
@@ -337,8 +337,10 @@ cv.addEventListener("pointerup",()=>holding=false); cv.addEventListener("pointer
 
 function shoot(){
   playShootSound(powerTime > 0);
-  if(powerTime>0){ bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10}); bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10,ang:3}); bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10,ang:-3}); }
-  else { bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10}); }
+  const bx = player.x + player.w/2 - 2;
+  const by = player.y;
+  if(powerTime>0){ bullets.push({x:bx,y:by,w:4,h:12,vy:-10}); bullets.push({x:bx,y:by,w:4,h:12,vy:-10,ang:3}); bullets.push({x:bx,y:by,w:4,h:12,vy:-10,ang:-3}); }
+  else { bullets.push({x:bx,y:by,w:4,h:12,vy:-10}); }
 }
 
 function drawDiamondGem(ctx,x,y,w,h,t){ctx.save();ctx.translate(x+w/2,y+h/2);ctx.rotate(Math.sin(t*2)*0.20);
@@ -364,23 +366,23 @@ function explosion(x,y,count=18){
 
 function allowedKindsByTime(t){ if(t<10) return ["ufo_red","ufo_gray"]; if(t<40) return ["ufo_red","ufo_gray","green"]; return ["ufo_red","ufo_gray","green","red"]; }
 
-/* --- DÜŞMAN VE 500 PUAN ÖNCESİ NEON ŞEKİL SİSTEMİ --- */
+/* --- DÜŞMAN VE NEON EVRİM SİSTEMİ --- */
 function spawnEnemy(k, spMul){ 
   const enemyCap = (score >= 2300) ? 30 : (score >= 2000) ? 26 : (score >= 1500) ? 22 : (score >= 1300) ? 20 : (score >= 800)  ? 18 : (score >= 500)  ? 14 : 12;
   if(enemies.length > enemyCap) return; 
   
-  let kind = "", size = 0;
-  let isSprite = false, img = null, frames = 1, blendMode = 'normal', frameDelay = 30;
-  let polyColor = "", polySides = 0;
+  let kind = "", size = 0, isSprite = false, img = null, frames = 1, blendMode = 'normal', frameDelay = 30;
+  let neonType = "", neonColor = "";
 
   // 500 PUAN KONTROLÜ
   if (score < 500) {
-    kind = "polygon";
-    size = rand(55, 80);
+    kind = "neon_ship";
+    size = rand(60, 90);
     // Neon Renkler
-    const colors = ["#bc13fe", "#00ffc8", "#39ff14", "#ff007f", "#ffff00", "#00bfff"];
-    polyColor = colors[Math.floor(Math.random() * colors.length)];
-    polySides = Math.floor(rand(5, 8)); // 5, 6 veya 7 gen
+    const colors = ["#bc13fe", "#00ffc8", "#39ff14", "#ff007f", "#ffff00"];
+    neonColor = colors[Math.floor(Math.random() * colors.length)];
+    // Gemi Tipleri: 'fighter' (uçak) veya 'ufo'
+    neonType = Math.random() < 0.6 ? "fighter" : "ufo";
   } else {
     // 500 PUANDAN SONRA ESKİ SPRITE SİSTEMİ
     kind = k[Math.floor(Math.random()*k.length)]; 
@@ -400,7 +402,7 @@ function spawnEnemy(k, spMul){
     vx: vx, kind, img, isSprite, blendMode, frameDelay, frame:0, frameTimer:0, totalFrames: frames,
     canShoot:((kind==="red"||kind==="green") && score >= 500), shootT:0,shootInt:500,
     hp: hp, maxHp: hp,
-    polyColor: polyColor, polySides: polySides, rot: rand(0, Math.PI*2), rotSp: rand(-0.02, 0.02)
+    neonColor: neonColor, neonType: neonType, rot: rand(0, Math.PI*2), rotSp: rand(-0.01, 0.01)
   }); 
 }
 
@@ -481,7 +483,7 @@ function update(dt){
   
   enemies.forEach(e=>{
     e.y+=e.vy;
-    if(e.kind === "polygon") e.rot += e.rotSp; // Neon Şekil Dönüşü
+    if(e.kind === "neon_ship") e.rot += e.rotSp;
     if(score >= 2300 && typeof e.vx === "number") {
       e.x += e.vx;
       if (e.x < 0 || e.x + e.w > cv.width) { e.vx *= -1; e.x = clamp(e.x, 0, cv.width - e.w); }
@@ -502,7 +504,7 @@ function update(dt){
 
   for(const e of enemies){
     if(!e.dead && rectHit(pBox,e)){
-      playExplosionSound(e.kind==="polygon" ? 'red' : e.kind); explosion(player.x+player.w/2,player.y+player.h/2,22);
+      playExplosionSound(e.kind==="neon_ship" ? 'red' : e.kind); explosion(player.x+player.w/2,player.y+player.h/2,22);
       lives--;updateLives();if(lives<=0)endGame();e.dead=1;
     }
   }
@@ -513,17 +515,21 @@ function update(dt){
     }
   }
 
-  // Merminin Düşmana Çarpması (HP SİSTEMİ)
+  // Merminin Düşmana Çarpması (HP VE PUAN SİSTEMİ)
   for(const b of bullets){ 
     for(const e of enemies){ 
       if(!b.dead && !e.dead && rectHit(b,e)){ 
         b.dead=1; 
         e.hp--; 
         if(e.hp <= 0) {
-          playExplosionSound(e.kind==="polygon" ? 'red' : e.kind); 
+          playExplosionSound(e.kind==="neon_ship" ? 'red' : e.kind); 
           explosion(e.x+e.w/2,e.y+e.h/2,16); 
           e.dead=1; 
-          if(!gameOver){ score++; scEl.textContent=score; } 
+          if(!gameOver){ 
+            // YENİ: Patlatınca içindeki rakam kadar puan ver
+            score += Math.max(1, e.maxHp); 
+            scEl.textContent=score; 
+          } 
         }
       } 
     } 
@@ -549,29 +555,47 @@ function draw(t){
   
   // Düşmanları çiz
   enemies.forEach(e=>{
-    if (e.kind === "polygon") {
-      // 500 PUAN ÖNCESİ NEON ŞEKİLLER
+    if (e.kind === "neon_ship") {
+      // 500 PUAN ÖNCESİ VEKTÖREL NEON ÇİZİMLER
       ctx.save();
       ctx.translate(e.x + e.w/2, e.y + e.h/2);
-      ctx.rotate(e.rot);
-      ctx.strokeStyle = e.polyColor;
+      ctx.rotate(e.rot); // Neon gemi hafif döner
+      ctx.strokeStyle = e.neonColor;
       ctx.lineWidth = 4;
-      ctx.shadowColor = e.polyColor;
-      ctx.shadowBlur = 15;
+      ctx.shadowColor = e.neonColor;
+      ctx.shadowBlur = 18; // Neon parlama efekti
+      
+      const sw = e.w * 0.9; const sh = e.h * 0.9; // Çizim boyutu
+
       ctx.beginPath();
-      const rad = (e.w / 2) * 0.85; 
-      for(let i=0; i<e.polySides; i++){
-        const angle = (i * 2 * Math.PI) / e.polySides;
-        const px = Math.cos(angle) * rad;
-        const py = Math.sin(angle) * rad;
-        if(i===0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
+      if (e.neonType === "fighter") {
+        // --- Neon Uçak Çizimi ---
+        ctx.moveTo(0, -sh/2); // Burun
+        ctx.lineTo(sw/10, -sh/10); 
+        ctx.lineTo(sw/2, sh/6); // Kanat ucu sağ
+        ctx.lineTo(sw/10, sh/6);
+        ctx.lineTo(sw/10, sh/2); // Kuyruk sağ
+        ctx.lineTo(-sw/10, sh/2); // Kuyruk sol
+        ctx.lineTo(-sw/10, sh/6);
+        ctx.lineTo(-sw/2, sh/6); // Kanat ucu sol
+        ctx.lineTo(-sw/10, -sh/10);
+      } else {
+        // --- Neon UFO Çizimi ---
+        ctx.ellipse(0, 0, sw/2, sh/3, 0, 0, Math.PI*2); // Ana gövde
+        ctx.moveTo(sw/4, -sh/6);
+        ctx.ellipse(0, -sh/6, sw/4, sh/4, 0, Math.PI, Math.PI*2); // Kubbe
       }
       ctx.closePath();
       ctx.stroke();
-      ctx.fillStyle = e.polyColor;
-      ctx.globalAlpha = 0.1;
-      ctx.fill();
+      
+      // HP YAZISI (Neon efektli)
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "900 24px system-ui";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.shadowBlur = 0; // Gölgeyi HP yazısı için kapat
+      ctx.fillText(e.hp, 0, 0); // Merkezine yaz
+
       ctx.restore();
     } 
     else if(e.isSprite && e.img && e.totalFrames > 0) {
@@ -584,15 +608,16 @@ function draw(t){
     } else if(e.img) { ctx.drawImage(e.img, e.x, e.y, e.w, e.h); } 
     else { ctx.fillStyle=e.kind==="green"?"#22c55e":"#ef4444"; ctx.fillRect(e.x,e.y,e.w,e.h); }
 
-    // HP YAZISI (Tam Ortada)
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "900 22px system-ui";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.shadowColor = "rgba(0,0,0,0.9)";
-    ctx.shadowBlur = 5;
-    ctx.fillText(e.hp, e.x + e.w/2, e.y + e.h/2);
-    ctx.shadowBlur = 0; 
+    // Sprite HP YAZISI (Gerekirse)
+    if(e.kind !== "neon_ship") {
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "900 18px system-ui";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.shadowColor = "#000"; ctx.shadowBlur = 4;
+      ctx.fillText(e.hp, e.x + e.w/2, e.y + e.h/2);
+      ctx.shadowBlur = 0; 
+    }
   });
   
   enemyBullets.forEach(m=>{ctx.fillStyle=m.color;ctx.fillRect(m.x,m.y,m.w,m.h);});
