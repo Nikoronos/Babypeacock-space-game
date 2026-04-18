@@ -157,7 +157,7 @@
 
   <canvas id="game"></canvas>
 <script>
-/* ====== SES SİSTEMİ (WEB AUDIO API) ====== */
+/* ====== SES SİSTEMİ ====== */
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContext();
 
@@ -364,14 +364,29 @@ function explosion(x,y,count=18){
 
 function allowedKindsByTime(t){ if(t<10) return ["ufo_red","ufo_gray"]; if(t<40) return ["ufo_red","ufo_gray","green"]; return ["ufo_red","ufo_gray","green","red"]; }
 
-/* --- DÜŞMAN VE HP SİSTEMİ --- */
+/* --- DÜŞMAN VE 500 PUAN ÖNCESİ NEON ŞEKİL SİSTEMİ --- */
 function spawnEnemy(k, spMul){ 
   const enemyCap = (score >= 2300) ? 30 : (score >= 2000) ? 26 : (score >= 1500) ? 22 : (score >= 1300) ? 20 : (score >= 800)  ? 18 : (score >= 500)  ? 14 : 12;
   if(enemies.length > enemyCap) return; 
-  const kind=k[Math.floor(Math.random()*k.length)]; 
-  let size=rand(48,70); if(kind === "red") size = rand(60, 80); 
+  
+  let kind = "", size = 0;
   let isSprite = false, img = null, frames = 1, blendMode = 'normal', frameDelay = 30;
-  if (loadedSprites[kind]) { img = loadedSprites[kind].img; frames = loadedSprites[kind].frames; blendMode = SPRITE_CONFIG[kind].mode || 'normal'; frameDelay = SPRITE_CONFIG[kind].delay || 30; isSprite = (frames > 1); }
+  let polyColor = "", polySides = 0;
+
+  // 500 PUAN KONTROLÜ
+  if (score < 500) {
+    kind = "polygon";
+    size = rand(55, 80);
+    // Neon Renkler
+    const colors = ["#bc13fe", "#00ffc8", "#39ff14", "#ff007f", "#ffff00", "#00bfff"];
+    polyColor = colors[Math.floor(Math.random() * colors.length)];
+    polySides = Math.floor(rand(5, 8)); // 5, 6 veya 7 gen
+  } else {
+    // 500 PUANDAN SONRA ESKİ SPRITE SİSTEMİ
+    kind = k[Math.floor(Math.random()*k.length)]; 
+    size = rand(48,70); if(kind === "red") size = rand(60, 80); 
+    if (loadedSprites[kind]) { img = loadedSprites[kind].img; frames = loadedSprites[kind].frames; blendMode = SPRITE_CONFIG[kind].mode || 'normal'; frameDelay = SPRITE_CONFIG[kind].delay || 30; isSprite = (frames > 1); }
+  }
   
   let vx = 0;
   if (score >= 2300) { const dir = Math.random() < 0.5 ? -1 : 1; vx = dir * rand(0.8, 1.6) * spMul; }
@@ -383,8 +398,9 @@ function spawnEnemy(k, spMul){
   enemies.push({
     x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul,
     vx: vx, kind, img, isSprite, blendMode, frameDelay, frame:0, frameTimer:0, totalFrames: frames,
-    canShoot:(kind==="red"||kind==="green"), shootT:0,shootInt:500,
-    hp: hp, maxHp: hp // YENİ: HP Eklendi
+    canShoot:((kind==="red"||kind==="green") && score >= 500), shootT:0,shootInt:500,
+    hp: hp, maxHp: hp,
+    polyColor: polyColor, polySides: polySides, rot: rand(0, Math.PI*2), rotSp: rand(-0.02, 0.02)
   }); 
 }
 
@@ -465,6 +481,7 @@ function update(dt){
   
   enemies.forEach(e=>{
     e.y+=e.vy;
+    if(e.kind === "polygon") e.rot += e.rotSp; // Neon Şekil Dönüşü
     if(score >= 2300 && typeof e.vx === "number") {
       e.x += e.vx;
       if (e.x < 0 || e.x + e.w > cv.width) { e.vx *= -1; e.x = clamp(e.x, 0, cv.width - e.w); }
@@ -485,7 +502,7 @@ function update(dt){
 
   for(const e of enemies){
     if(!e.dead && rectHit(pBox,e)){
-      playExplosionSound(e.kind); explosion(player.x+player.w/2,player.y+player.h/2,22);
+      playExplosionSound(e.kind==="polygon" ? 'red' : e.kind); explosion(player.x+player.w/2,player.y+player.h/2,22);
       lives--;updateLives();if(lives<=0)endGame();e.dead=1;
     }
   }
@@ -496,14 +513,14 @@ function update(dt){
     }
   }
 
-  // YENİ: Merminin Düşmana Çarpması (HP SİSTEMİ)
+  // Merminin Düşmana Çarpması (HP SİSTEMİ)
   for(const b of bullets){ 
     for(const e of enemies){ 
       if(!b.dead && !e.dead && rectHit(b,e)){ 
         b.dead=1; 
         e.hp--; 
         if(e.hp <= 0) {
-          playExplosionSound(e.kind); 
+          playExplosionSound(e.kind==="polygon" ? 'red' : e.kind); 
           explosion(e.x+e.w/2,e.y+e.h/2,16); 
           e.dead=1; 
           if(!gameOver){ score++; scEl.textContent=score; } 
@@ -530,9 +547,35 @@ function draw(t){
   if(playerImg)ctx.drawImage(playerImg,player.x,player.y,player.w,player.h); else{ctx.fillStyle="#38bdf8";ctx.fillRect(player.x,player.y,player.w,player.h);}
   ctx.fillStyle="#0099ff"; bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
   
-  // Düşmanları ve üzerindeki HP'leri çiz
+  // Düşmanları çiz
   enemies.forEach(e=>{
-    if(e.isSprite && e.img && e.totalFrames > 0) {
+    if (e.kind === "polygon") {
+      // 500 PUAN ÖNCESİ NEON ŞEKİLLER
+      ctx.save();
+      ctx.translate(e.x + e.w/2, e.y + e.h/2);
+      ctx.rotate(e.rot);
+      ctx.strokeStyle = e.polyColor;
+      ctx.lineWidth = 4;
+      ctx.shadowColor = e.polyColor;
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      const rad = (e.w / 2) * 0.85; 
+      for(let i=0; i<e.polySides; i++){
+        const angle = (i * 2 * Math.PI) / e.polySides;
+        const px = Math.cos(angle) * rad;
+        const py = Math.sin(angle) * rad;
+        if(i===0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.stroke();
+      ctx.fillStyle = e.polyColor;
+      ctx.globalAlpha = 0.1;
+      ctx.fill();
+      ctx.restore();
+    } 
+    else if(e.isSprite && e.img && e.totalFrames > 0) {
+      // 500 PUAN SONRASI SPRITE'LAR
       const frameW = e.img.width / e.totalFrames; const frameH = e.img.height; const sx = e.frame * frameW;
       ctx.save();
       if(e.blendMode === 'screen') ctx.globalCompositeOperation = "screen";
@@ -541,15 +584,15 @@ function draw(t){
     } else if(e.img) { ctx.drawImage(e.img, e.x, e.y, e.w, e.h); } 
     else { ctx.fillStyle=e.kind==="green"?"#22c55e":"#ef4444"; ctx.fillRect(e.x,e.y,e.w,e.h); }
 
-    // HP YAZISI
+    // HP YAZISI (Tam Ortada)
     ctx.fillStyle = "#ffffff";
-    ctx.font = "900 18px system-ui";
+    ctx.font = "900 22px system-ui";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.shadowColor = "#000";
-    ctx.shadowBlur = 4;
+    ctx.shadowColor = "rgba(0,0,0,0.9)";
+    ctx.shadowBlur = 5;
     ctx.fillText(e.hp, e.x + e.w/2, e.y + e.h/2);
-    ctx.shadowBlur = 0; // gölgeyi sıfırla
+    ctx.shadowBlur = 0; 
   });
   
   enemyBullets.forEach(m=>{ctx.fillStyle=m.color;ctx.fillRect(m.x,m.y,m.w,m.h);});
