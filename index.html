@@ -3,218 +3,229 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover" />
-<title>Babypeacock — BPC Space Final Edition</title>
+<title>Babypeacock — BPC Space Master</title>
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
-  #ui-layer { position: fixed; top: 0; left: 0; right: 0; height: 55px; padding: max(10px, env(safe-area-inset-top)) 15px 0 15px; display: none; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; z-index: 20; pointer-events: none; background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent); font-size: 15px; font-weight: 800; white-space: nowrap; }
-  #brand { justify-self: start; background:linear-gradient(90deg,#22d3ee,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent; font-weight: 900; font-size: 17px; text-shadow: 0 0 10px rgba(34, 211, 238, 0.3); }
-  .center-group { justify-self: center; display: flex; flex-direction: row; align-items: center; gap: 15px; }
+  #ui-layer { position: fixed; top: 0; left: 0; right: 0; height: 55px; padding: max(10px, env(safe-area-inset-top)) 15px 0 15px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; z-index: 20; pointer-events: none; background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent); font-size: 15px; font-weight: 800; white-space: nowrap; }
+  #brand { justify-self: start; background:linear-gradient(90deg,#22d3ee,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent; font-weight: 900; font-size: 17px; }
+  .center-group { justify-self: center; display: flex; align-items: center; gap: 15px; }
   #score { color:#00ffc8; text-shadow: 0 0 6px rgba(0, 255, 200, 0.5); font-size: 18px; }
-  #lives { letter-spacing: 2px; font-size: 15px; text-shadow: 0 0 5px rgba(255, 50, 50, 0.4); min-width: 60px; text-align: center; }
-  #power { justify-self: end; color:#a7f3d0; text-shadow: 0 0 6px rgba(167, 243, 208, 0.5); font-size: 16px; }
-  #pauseBtn{ display:none; position:fixed;left:50%;transform:translateX(-50%); bottom:max(20px,env(safe-area-inset-bottom)); z-index:50; width:42px;height:42px; background:rgba(15, 23, 42, 0.95); border:2px solid #38bdf8; color:#38bdf8; border-radius:50%; align-items:center; justify-content:center; cursor:pointer; }
-  #startOverlay,#gameOver,#pauseOverlay,#countdownOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:60}
-  #startOverlay{background:rgba(0,0,0,0.85);color:#fff;display:flex;overflow:hidden}
-  #pauseOverlay{background:rgba(0,0,0,0.9);color:#fff;}
-  #startLogo { width: 90px; height: 90px; border-radius: 50%; border: 3px solid #22d3ee; object-fit: cover; margin-bottom: 8px; animation: floatLogo 3.5s ease-in-out infinite; }
-  @keyframes floatLogo { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-  .slogan { font-size: 15px; font-style: italic; background: linear-gradient(90deg, #a7f3d0, #22d3ee); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 25px; font-weight: 600; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(34, 211, 238, 0.2); }
-  #gameOver { background: transparent; justify-content: flex-start; padding-top: 40vh; overflow-y: auto; }
-  #mondayChampBox { display: none; flex-direction: column; align-items: center; margin-bottom: 10px; padding: 8px 15px; background: rgba(20, 20, 10, 0.95); border: 1px solid #facc15; border-radius: 8px; box-shadow: 0 0 15px rgba(250, 204, 21, 0.4); width: min(320px, 80vw); text-align: center; }
-  .champ-label { color:#facc15;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px; }
-  .champ-name { color:#fff;font-size:15px;font-weight:900;margin-bottom:4px;text-shadow:0 0 5px rgba(255,255,255,0.5); }
-  #winnerSecret { display: none; font-family: monospace; color:#00ffc8;font-size:13px;font-weight:bold; background:#000;padding:4px 8px;border-radius:4px;border:1px dashed #00ffc8; margin-top:4px; }
-  #countdownOverlay{background:transparent;pointer-events:none;z-index:70}
-  #cntText{font-size:90px;font-weight:900;color:#fff;text-shadow:0 0 25px #22d3ee;font-family:monospace}
-  .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer;margin-bottom:5px;box-shadow:0 0 20px rgba(0,255,200,0.4);}
-  #soundToggle { margin-top: 20px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(34, 211, 238, 0.5); background: rgba(15, 23, 42, 0.9); color: #22d3ee; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; z-index: 100; }
-  #bpc-top10 { width: min(380px, 90vw); background: rgba(5, 5, 5, 0.9); border: 1px solid #333; border-radius: 10px; padding: 10px; color: #fff; font-size: 13px; line-height: 1.4; margin-top: 10px; margin-bottom: 40px; }
-  #bpc-top10 h4{margin:0 0 5px 0;font-size:12px;font-weight:800;text-align:center;color:#e2e8f0;letter-spacing:.5px;}
-  #bpc-top10 ol { margin:0; padding:0; list-style:none; max-height: 35vh; overflow-y: auto; } 
-  #globalCounterBox { margin-top:5px;font-size:12px;opacity:.9;text-align:center;color:#cbd5e1;text-shadow:0 2px 4px #000; }
-  canvas { display: block; margin: 0 auto; background: radial-gradient(circle at center, #0f172a 0%, #000 100%); touch-action: none; width: 100%; height: 100%; transition: background 3.5s ease-in-out; }
-  .red-zone { background: radial-gradient(circle at center, #2e1065 0%, #0f172a 60%, #000 100%) !important; }
+  #lives { letter-spacing: 2px; font-size: 15px; min-width: 60px; text-align: center; }
+  #power { justify-self: end; color:#a7f3d0; font-size: 16px; }
+  
+  #startOverlay,#gameOver,#pauseOverlay,#countdownOverlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:60}
+  #startOverlay{background:#000;color:#fff;}
+  #pauseOverlay{background:rgba(0,0,0,0.9);display:none;}
+  #gameOver{background:rgba(0,0,0,0.95);display:none;padding-top:20vh;overflow-y:auto;}
+  
+  #startLogo { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #22d3ee; margin-bottom: 8px; }
+  .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;font-size:16px;cursor:pointer;margin-top:10px;box-shadow:0 0 15px rgba(0,255,200,0.3);}
+  #cntText{font-size:90px;font-weight:900;color:#fff;text-shadow:0 0 25px #22d3ee;}
+  #countdownOverlay{pointer-events:none;display:none;}
+  
+  canvas { display: block; background: radial-gradient(circle at center, #0f172a 0%, #000 100%); touch-action: none; width: 100%; height: 100%; }
+  #bpc-top10 { width: min(380px, 90vw); background: rgba(5, 5, 5, 0.9); border: 1px solid #333; border-radius: 10px; padding: 10px; color: #fff; font-size: 13px; margin-top: 20px; }
+  #bpc-top10 ol { list-style:none; padding:0; margin:0; }
+  #bpc-top10 li { display:flex; justify-content:space-between; border-bottom:1px solid #222; padding:4px 0; }
 </style>
 </head>
 <body>
   <div id="ui-layer">
-    <div id="brand">Babypeacock 🦚</div>
+    <div id="brand">Babypeacock</div>
     <div class="center-group">
       <div id="score">Score: <span id="sc">0</span></div>
       <div id="lives">❤️❤️❤️</div>
     </div>
     <div id="power">💎 <span id="px">0</span>s</div>
   </div>
-  <div id="pauseBtn">II</div>
+
   <div id="startOverlay">
     <img id="startLogo" src="yc3ku6.jpg">
-    <div class="slogan">From feather to flight</div>
+    <div style="color:#22d3ee; font-style:italic; margin-bottom:20px;">From feather to flight</div>
     <button id="startBtn" class="btn">START GAME</button>
-    <div id="playerCode" style="margin-top:15px;font-size:14px;color:#00ffc8;"></div>
-    <div id="soundToggle">🔊</div>
   </div>
+
   <div id="pauseOverlay">
-    <div style="font-size:32px;font-weight:900;margin-bottom:15px;color:#fff;">PAUSED</div>
+    <div style="font-size:32px; font-weight:900; color:#fff;">PAUSED</div>
     <button id="resumeBtn" class="btn">RESUME</button>
   </div>
+
   <div id="countdownOverlay"><div id="cntText"></div></div>
+
   <div id="gameOver">
-    <div id="mondayChampBox">
-      <div class="champ-label">👑 Week <span id="mc-week">--</span> Champion</div>
-      <div class="champ-name" id="mc-name">Loading...</div>
-      <div id="winnerSecret">CODE: <span id="mc-code">---</span></div>
-    </div>
-    <button id="restart" class="btn">Restart</button>
-    <div id="globalCounterBox">Global plays: <span id="globalCounter">…</span></div>
-    <div id="bpc-top10" style="display:none">
-      <h4>🏆 Weekly Top 20</h4>
+    <h1 style="color:#ff5c5c; font-size:48px; margin:0;">GAME OVER</h1>
+    <button onclick="location.reload()" class="btn">RESTART</button>
+    <div id="bpc-top10">
+      <h4 style="text-align:center;margin:0 0 10px 0;">🏆 Weekly Top 10</h4>
       <ol id="bpc-list"></ol>
     </div>
   </div>
+
   <canvas id="game"></canvas>
 
-<script>
-/* ====== AUDIO SYSTEM (Web Audio API) ====== */
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-const audioCtx = new AudioContext();
-class SoundPool {
-  constructor(src, volume = 1.0) {
-    this.buffer = null; this.volume = volume; this.isLoaded = false;
-    fetch(src).then(r => r.arrayBuffer()).then(ab => audioCtx.decodeAudioData(ab)).then(b => { this.buffer = b; this.isLoaded = true; }).catch(()=>{});
-  }
-  play() { if (!this.isLoaded) return; if (audioCtx.state === 'suspended') audioCtx.resume();
-    const s = audioCtx.createBufferSource(); s.buffer = this.buffer; const g = audioCtx.createGain(); g.gain.value = this.volume; s.connect(g); g.connect(audioCtx.destination); s.start(0);
-  }
-}
-const sounds = { 
-  normalShot: new SoundPool("laser_one.mp3", 0.25), 
-  powerShot: new SoundPool("laser.mp3", 0.25), 
-  boom: new SoundPool("boom_one.mp3", 0.5), 
-  gem: new SoundPool("gem.mp3", 0.6),
-  gameOver: new Audio("space_chords.mp3") 
-};
-let soundEnabled = localStorage.getItem("bpc_sound") !== "0";
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, push, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-/* ====== GAME DATA ====== */
+const app = initializeApp({ databaseURL: "https://bpc-space-default-rtdb.europe-west1.firebasedatabase.app/" });
+const db = getDatabase(app);
+
+/* --- OYUN AYARLARI --- */
 const cv=document.getElementById("game"), ctx=cv.getContext("2d");
-let player={x:0,y:0,w:66,h:66}, bullets=[], enemies=[], enemyBullets=[], gems=[], mascots=[], particles=[];
-let score=0, lives=3, started=false, gameOver=false, paused=false, inCountdown=false, powerTime=0, fireTimer=0, enT=0, lt=0;
-let playerImg, peacockImg, loadedSprites = {};
-const SPRITE_CONFIG = { green: { src: "bpc_enemy_green_sprite.png", frames: 60, th: 30 }, ufo_red: { src: "ufo_red_sprite.png", frames: 85, th: 100 }, ufo_gray: { src: "ufo_gray_sprite.png", frames: 60, th: 100 }, red: { src: "bpc_enemy_red_sprite.png", frames: 60, th: 100 } };
+let player={x:0,y:0,w:66,h:66}, bullets=[], enemies=[], stars=[], started=false, gameOver=false, paused=false;
+let score=0, lives=3, powerTime=0, enT=0, fireTimer=0, lt=0;
+let playerImg, loadedSprites = {};
 
 function resize(){ cv.width=window.innerWidth; cv.height=window.innerHeight; }
 window.onresize=resize; resize();
-function clamp(v,a,b){return v<a?a:v>b?b:v;}
-function rand(a,b){return a+Math.random()*(b-a);}
-function rectHit(a,b){return !(a.x+a.w<b.x||a.x>b.x+b.w||a.y+a.h<b.y||a.y>b.y+b.h);}
 
-function keyOutDark(img, TH){
-  const c=document.createElement('canvas'); c.width=img.width; c.height=img.height; const g=c.getContext('2d'); g.drawImage(img,0,0);
-  const d=g.getImageData(0,0,c.width,c.height), a=d.data;
-  for(let i=0;i<a.length;i+=4) if(a[i]<TH && a[i+1]<TH && a[i+2]<TH) a[i+3]=0;
-  g.putImageData(d,0,0); return c;
+function clamp(v,a,b){return v<a?a:v>b?b:v;}
+function rectHit(a,b){return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;}
+
+/* --- ASSET YÜKLEME --- */
+function loadImage(src){
+  return new Promise(res => {
+    const i = new Image();
+    i.crossOrigin = "anonymous";
+    i.onload = () => res(i);
+    i.onerror = () => res(null);
+    i.src = src;
+  });
 }
 
-/* ====== LEVEL & ENEMY SYSTEM ====== */
+async function init(){
+  playerImg = await loadImage("img/player/bpc_mini.png");
+  // Sprite listesi
+  const list = { ufo:"ufo_red_sprite.png", green:"bpc_enemy_green_sprite.png", red:"bpc_enemy_red_sprite.png" };
+  for(let k in list) loadedSprites[k] = await loadImage(list[k]);
+  console.log("Assets Loaded");
+}
+
+/* --- DÜŞMAN MOTORU (YILAN SİSTEMİ DAHİL) --- */
 function spawnEnemy() {
   if (score >= 300 && score < 1000) {
-    // LEVEL 2: SNAKE & POLYGON MODE
-    let snakeLen = 7 + Math.floor(Math.random()*3);
-    let startX = rand(60, cv.width-120), offset = rand(0, 5000), color = `hsl(${rand(0,360)}, 80%, 60%)`, sides = Math.floor(rand(5, 9));
-    for (let i = 0; i < snakeLen; i++) {
-      let hp = Math.floor(rand(5, 15));
-      enemies.push({ x: startX, y: -i * 65 - 100, w: 62, h: 62, vy: 3, type: "snake", hp: hp, maxHp: hp, offset: offset, color: color, sides: sides, rot: rand(0, 6), rotSp: rand(-0.03, 0.03) });
+    // YILAN MODU (Snake vs Block)
+    let len = 6 + Math.floor(Math.random()*4);
+    let startX = Math.random()*(cv.width-80);
+    let offset = Math.random()*2000;
+    let color = `hsl(${Math.random()*360}, 80%, 60%)`;
+    for(let i=0; i<len; i++) {
+      enemies.push({ 
+        x:startX, y:-i*65-100, w:60, h:60, vy:3, 
+        type:"snake", hp:Math.floor(Math.random()*12+5), 
+        maxHp:0, offset, color, sides:Math.floor(Math.random()*3+5)
+      });
     }
   } else {
-    // LEVEL 1 & 3: CLASSIC SPRITES
-    const k = (score >= 1000) ? ["ufo_red","ufo_gray","green","red"] : ["ufo_red","ufo_gray"];
-    const kind = k[Math.floor(Math.random()*k.length)];
-    let size = (kind==="red")?rand(65,85):rand(50,75);
-    enemies.push({ x: rand(0, cv.width-size), y: -size, w: size, h: size, vy: score>=1000?4.5:rand(1.8,3), type: "classic", kind: kind, hp: 1, frame:0, frameTimer:0 });
+    // NORMAL VE KLASİK (1000+)
+    let isClassic = score >= 1000;
+    let kind = isClassic ? ["ufo","green","red"][Math.floor(Math.random()*3)] : "ufo";
+    let size = 60;
+    enemies.push({ 
+      x:Math.random()*(cv.width-size), y:-size, w:size, h:size, 
+      vy:isClassic?5:2.5, type:"classic", kind, hp:1 
+    });
   }
 }
 
-/* ====== CORE LOOP ====== */
+/* --- KONTROLLER --- */
+let holding=false;
+const move = (e) => {
+  const cx = (e.clientX ?? e.touches[0].clientX);
+  const cy = (e.clientY ?? e.touches[0].clientY);
+  player.x = clamp(cx - player.w/2, 0, cv.width - player.w);
+  player.y = clamp(cy - player.h/2, 0, cv.height - player.h);
+};
+cv.addEventListener("pointerdown", e => { holding=true; move(e); });
+cv.addEventListener("pointermove", e => { if(holding) move(e); });
+cv.addEventListener("pointerup", () => holding=false);
+
+/* --- ANA DÖNGÜ --- */
 function update(dt){
-  if(!started || paused || gameOver || inCountdown) return;
+  if(!started || paused || gameOver) return;
   enT += dt; fireTimer += dt;
-  let rate = score >= 300 && score < 1000 ? 2400 : 750;
+  let rate = (score >= 300 && score < 1000) ? 2500 : 800;
   if(enT > rate){ spawnEnemy(); enT=0; }
-  if(holding && fireTimer > 165){
-    if(soundEnabled) (powerTime>0?sounds.powerShot.play():sounds.normalShot.play());
-    bullets.push({x:player.x+player.w/2-2, y:player.y, w:4, h:12, vy:-12, ang:0});
-    if(powerTime>0){ bullets.push({x:player.x+player.w/2-2, y:player.y, w:4, h:12, vy:-12, ang:3}); bullets.push({x:player.x+player.w/2-2, y:player.y, w:4, h:12, vy:-12, ang:-3}); }
+  
+  if(holding && fireTimer > 150){
+    bullets.push({x:player.x+player.w/2-2, y:player.y, w:4, h:12, vy:-12});
     fireTimer=0;
   }
-  if(powerTime>0) powerTime -= dt; document.getElementById("px").textContent = Math.ceil(Math.max(0, powerTime/1000));
   
-  bullets.forEach(b=>{ b.y+=b.vy; b.x+=(b.ang||0)*0.5; });
-  enemies.forEach(e=>{ 
-    e.y+=e.vy; if(e.type==="snake") { e.x += Math.sin(e.y*0.01 + e.offset)*5; e.rot+=e.rotSp; }
-    else { e.frameTimer+=dt; if(e.frameTimer>30){ e.frame=(e.frame+1)%60; e.frameTimer=0; } }
-    if(!e.dead && rectHit(player, e)){ lives--; e.dead=true; document.getElementById("lives").innerHTML="❤️".repeat(Math.max(0,lives)); if(lives<=0) end(); }
+  bullets.forEach(b=>b.y+=b.vy);
+  enemies.forEach(e=>{
+    e.y += e.vy;
+    if(e.type==="snake") e.x += Math.sin(e.y*0.01 + e.offset)*5;
+    if(rectHit(player, e)){
+      lives--; e.dead=true;
+      document.getElementById("lives").innerHTML="❤️".repeat(Math.max(0,lives));
+      if(lives<=0) { gameOver=true; document.getElementById("gameOver").style.display="flex"; saveScore(); }
+    }
   });
 
   bullets.forEach(b=>{
     enemies.forEach(e=>{
       if(!b.dead && !e.dead && rectHit(b,e)){
         b.dead=true; e.hp--;
-        if(e.hp<=0){ e.dead=true; score += (e.type==="snake"?e.maxHp:1); document.getElementById("sc").textContent=score; if(soundEnabled) sounds.boom.play(); }
+        if(e.hp<=0){ 
+            e.dead=true; 
+            score += (e.type==="snake" ? 5 : 1); 
+            document.getElementById("sc").textContent=score; 
+        }
       }
     });
   });
-  enemies=enemies.filter(e=>!e.dead && e.y<cv.height+100); bullets=bullets.filter(b=>!b.dead && b.y>-20);
-  if(score>=1500) cv.classList.add("red-zone");
+  enemies=enemies.filter(e=>!e.dead && e.y<cv.height+200);
+  bullets=bullets.filter(b=>!b.dead && b.y>-20);
 }
 
 function draw(){
   ctx.clearRect(0,0,cv.width,cv.height);
-  if(!started) return;
   if(playerImg) ctx.drawImage(playerImg, player.x, player.y, player.w, player.h);
+  else { ctx.fillStyle="cyan"; ctx.fillRect(player.x,player.y,player.w,player.h); }
+
   enemies.forEach(e=>{
     if(e.type==="snake"){
-      ctx.save(); ctx.translate(e.x+e.w/2, e.y+e.h/2); ctx.rotate(e.rot); ctx.strokeStyle=e.color; ctx.lineWidth=4; ctx.shadowBlur=15; ctx.shadowColor=e.color;
-      ctx.beginPath(); for(let i=0;i<e.sides;i++){ const a=(i*2*Math.PI)/e.sides; ctx.lineTo(Math.cos(a)*e.w/2.2, Math.sin(a)*e.w/2.2); }
-      ctx.closePath(); ctx.stroke(); ctx.restore();
-      ctx.fillStyle="#fff"; ctx.font="900 20px Arial"; ctx.textAlign="center"; ctx.fillText(e.hp, e.x+e.w/2, e.y+e.h/2+7);
+      ctx.strokeStyle=e.color; ctx.lineWidth=4; 
+      ctx.strokeRect(e.x, e.y, e.w, e.h);
+      ctx.fillStyle="#fff"; ctx.font="bold 20px Arial"; ctx.textAlign="center";
+      ctx.fillText(e.hp, e.x+e.w/2, e.y+e.h/2+7);
     } else {
-      const s = loadedSprites[e.kind]; if(s){ const fw=s.width/(e.kind==="ufo_red"?85:60); ctx.drawImage(s, (e.frame||0)*fw, 0, fw, s.height, e.x, e.y, e.w, e.h); }
+      ctx.fillStyle="red"; ctx.fillRect(e.x, e.y, e.w, e.h);
     }
   });
   ctx.fillStyle="#00ffc8"; bullets.forEach(b=>ctx.fillRect(b.x, b.y, b.w, b.h));
 }
 
-/* ====== CONTROLS ====== */
-let holding=false;
-const move = (e) => {
-  const cx = (e.clientX ?? e.touches[0].clientX); const cy = (e.clientY ?? e.touches[0].clientY);
-  player.x = clamp(cx - player.w/2, 0, cv.width-player.w);
-  player.y = clamp(cy - player.h/2, 0, cv.height-player.h);
-};
-cv.onpointerdown=e=>{ holding=true; move(e); }; cv.onpointermove=e=>{ if(holding) move(e); }; cv.onpointerup=()=>holding=false;
-
-/* ====== START / END ====== */
-async function end(){ gameOver=true; uiPause.style.display="none"; document.getElementById("gameOver").style.display="flex"; if(soundEnabled) sounds.gameOver.play(); if(window.saveScore) await window.saveScore(score); }
-
-document.getElementById("startBtn").onclick= async ()=>{
-  await initAssets(); document.getElementById("startOverlay").style.display="none"; started=true; uiLayer.style.display="grid"; document.getElementById("pauseBtn").style.display="flex";
-  player.x=cv.width/2-33; player.y=cv.height-120; requestAnimationFrame(function loop(t){ update(t-(lt||t)); lt=t; draw(); if(!gameOver) requestAnimationFrame(loop); });
-};
-
-async function initAssets(){
-  const load = (s) => new Promise(res => { const i=new Image(); i.crossOrigin="anonymous"; i.onload=()=>res(i); i.src=s; });
-  playerImg = keyOutDark(await load("img/player/bpc_mini.png"), 80);
-  for(let k in SPRITE_CONFIG) loadedSprites[k] = keyOutDark(await load(SPRITE_CONFIG[k]), SPRITE_CONFIG[k].th);
+function loop(t){
+  if(!lt) lt=t; let dt=t-lt; lt=t;
+  update(dt); draw();
+  requestAnimationFrame(loop);
 }
-</script>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-const app = initializeApp({ databaseURL: "https://bpc-space-default-rtdb.europe-west1.firebasedatabase.app/" });
-const db = getDatabase(app);
-window.saveScore = async (s) => { const code = localStorage.getItem("playerCode") || "BPC"; await push(ref(db, "scores"), { code, score: s, ts: Date.now() }); };
-onValue(ref(db, "stats/globalPlays"), s => document.getElementById("globalCounter").textContent = (s.val()||0).toLocaleString());
+/* --- FIREBASE İŞLEMLERİ --- */
+async function saveScore(){
+  const playerCode = localStorage.getItem("playerCode") || "BPC_USER";
+  await push(ref(db, "scores"), { code:playerCode, score:score, ts:Date.now() });
+  loadTop10();
+}
+
+async function loadTop10(){
+  const snap = await get(ref(db, "scores"));
+  if(snap.exists()){
+    const data = Object.values(snap.val()).sort((a,b)=>b.score-a.score).slice(0,10);
+    document.getElementById("bpc-list").innerHTML = data.map(i=>`<li><span>${i.code}</span> <span>${i.score}</span></li>`).join("");
+  }
+}
+
+/* --- BAŞLATMA --- */
+document.getElementById("startBtn").onclick = async () => {
+  document.getElementById("startOverlay").style.display="none";
+  await init();
+  started=true;
+  player.x=cv.width/2-player.w/2; player.y=cv.height-120;
+  requestAnimationFrame(loop);
+};
 </script>
 </body>
 </html>
