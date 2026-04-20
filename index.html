@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover" />
-<title>Babypeacock — BPC Space Game</title>
+<title>Babypeacock — BPC Space Perfect Evolution</title>
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   
@@ -157,7 +157,7 @@
 
   <canvas id="game"></canvas>
 <script>
-/* ====== ORİJİNAL SES SİSTEMİ (WEB AUDIO API) ====== */
+/* ====== SENİN ORİJİNAL SES SİSTEMİN ====== */
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContext();
 
@@ -180,7 +180,7 @@ class SoundPool {
   }
 }
 
-// SENİN ORİJİNAL DOSYALARIN!
+// BİREBİR ORİJİNAL DOSYA İSİMLERİ VE SESLER! (boom.mp3 ve boom_one.mp3)
 const sounds = {
   normalShot: new SoundPool("laser_one.mp3", 10, 0.25), 
   powerShot:  new SoundPool("laser.mp3", 10, 0.25),   
@@ -222,16 +222,21 @@ soundBtn.onclick = (e) => {
 };
 
 function playShootSound(isPower) { if (!soundEnabled) return; if (isPower) sounds.powerShot.play(); else sounds.normalShot.play(); }
-function playExplosionSound(kind) { 
+
+// Orijinal patlama sesini türüne göre çağıran fonksiyon
+function playExplosionSound(type) { 
   if (!soundEnabled) return; 
-  // Orijinal patlama sesi mantığın
-  if(kind === "red" || kind === "snake") sounds.boomShip.play(); 
-  else sounds.boomUfo.play(); 
+  if(type === "ufo_red" || type === "ufo_gray" || type === "neon_ufo") {
+     sounds.boomUfo.play(); // boom.mp3 çalar
+  } else {
+     sounds.boomShip.play(); // boom_one.mp3 çalar (Çokgenler ve Kırmızı uçak için)
+  }
 }
+
 function playLifeSound() { if (!soundEnabled) return; sounds.gem.play(); }
 function playGemSound() { playLifeSound(); }
 
-/* ====== OYUN KURULUMU ====== */
+/* ====== GAME SETUP ====== */
 const cv=document.getElementById("game");
 function resize(){ 
   cv.width=window.innerWidth; cv.height=window.innerHeight; 
@@ -370,34 +375,48 @@ function explosion(x,y,count=18){
 
 function allowedKindsByTime(t){ if(t<10) return ["ufo_red","ufo_gray"]; if(t<40) return ["ufo_red","ufo_gray","green"]; return ["ufo_red","ufo_gray","green","red"]; }
 
-/* --- DÜŞMAN MOTORU (SENİN İSTEDİĞİN YILAN SİSTEMİ) --- */
+/* --- DÜŞMAN SPAWN SİSTEMİ (Senin Tam Kuralların) --- */
 function spawnEnemy(k, spMul){ 
   const enemyCap = (score >= 2300) ? 30 : (score >= 2000) ? 26 : (score >= 1500) ? 22 : (score >= 1300) ? 20 : (score >= 800)  ? 18 : (score >= 500)  ? 14 : 12;
   if(enemies.length > enemyCap) return; 
   
-  if (score >= 300 && score < 1000) {
-    // 300 - 1000 ARASI YILAN MODU (Ufo, gemi yok. Sadece çokgen bloklar)
+  if (score < 300) {
+    // 1) 0 - 300 ARASI: NEON UÇAK VE UFO
+    let size = rand(60, 90);
+    let colors = ["#bc13fe", "#00ffc8", "#39ff14", "#ff007f", "#ffff00"];
+    let color = colors[Math.floor(Math.random() * colors.length)];
+    let neonType = Math.random() < 0.6 ? "fighter" : "ufo";
+    let hp = Math.floor(rand(1, 4)); // Az can
+
+    enemies.push({
+      x: rand(0, cv.width - size), y: -size, w: size, h: size, vy: rand(1.4, 3) * spMul,
+      type: "neon_ship", neonType: neonType, color: color,
+      hp: hp, maxHp: hp, rot: rand(0, Math.PI * 2), rotSp: rand(-0.01, 0.01), dead: false
+    });
+
+  } else if (score >= 300 && score < 1000) {
+    // 2) 300 - 1000 ARASI: YILAN GİBİ KIVRILAN ÇOKGENLER (Snake Mode)
     let snakeLen = Math.floor(rand(5, 9));
     let startX = rand(50, cv.width - 100);
     let offset = rand(0, 1000);
-    let sides = Math.floor(rand(5, 8));
+    let sides = Math.floor(rand(5, 8)); // 5, 6 veya 7 gen
     let color = `hsl(${rand(0,360)}, 100%, 60%)`;
     
     for(let i=0; i<snakeLen; i++){
       let hp = Math.floor(rand(3, 12)); 
       enemies.push({
         x: startX, y: -i * 65 - 100, w: 60, h: 60, vy: 2 * spMul,
-        type: "snake", hp: hp, maxHp: hp, offset: offset, sides: sides, color: color,
-        rot: rand(0, Math.PI*2), rotSp: rand(-0.02, 0.02), dead: false
+        type: "snake", sides: sides, color: color, hp: hp, maxHp: hp,
+        offset: offset, rot: rand(0, Math.PI*2), rotSp: rand(-0.02, 0.02), dead: false
       });
     }
+
   } else {
-    // 0 - 300 veya 1000 ÜZERİ KLASİK MOD (Senin orijinal Sprite'ların)
-    const kind=k[Math.floor(Math.random()*k.length)]; 
-    let size=rand(48,70); if(kind === "red") size = rand(60, 80); 
+    // 3) 1000+ ARASI: ORİJİNAL RESİMLİ DÜŞMANLAR (Tek vuruş)
+    const kind = k[Math.floor(Math.random()*k.length)]; 
+    let size = rand(48,70); if(kind === "red") size = rand(60, 80); 
     let isSprite = false, img = null, frames = 1, blendMode = 'normal', frameDelay = 30;
     
-    // ORİJİNAL RESİM BULMA MANTIĞI (Kırmızı kare hatasını engeller)
     if (loadedSprites[kind]) { 
       img = loadedSprites[kind].img; 
       frames = loadedSprites[kind].frames; 
@@ -411,7 +430,7 @@ function spawnEnemy(k, spMul){
 
     enemies.push({
       x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul,
-      vx: vx, kind, img, isSprite, blendMode, frameDelay, frame:0, frameTimer:0, totalFrames: frames,
+      vx: vx, kind: kind, img: img, isSprite: isSprite, blendMode: blendMode, frameDelay: frameDelay, frame:0, frameTimer:0, totalFrames: frames,
       canShoot:(kind==="red"||kind==="green"), shootT:0,shootInt:500,
       type: "classic", hp: 1, maxHp: 1, dead: false
     }); 
@@ -498,6 +517,8 @@ function update(dt){
     if(e.type === "snake") {
        e.x += Math.sin(e.y * 0.01 + e.offset) * 4;
        e.rot += e.rotSp;
+    } else if (e.type === "neon_ship") {
+       e.rot += e.rotSp;
     } else if(e.type === "classic") {
       if(score >= 2300 && typeof e.vx === "number") {
         e.x += e.vx;
@@ -520,7 +541,9 @@ function update(dt){
 
   for(const e of enemies){
     if(!e.dead && rectHit(pBox,e)){
-      playExplosionSound(e.type === "snake" ? "snake" : e.kind); 
+      // PATLAMA SESİ MANTIĞI 
+      let soundType = e.type === "neon_ship" && e.neonType === "ufo" ? "neon_ufo" : (e.type === "snake" ? "snake" : e.kind);
+      playExplosionSound(soundType); 
       explosion(player.x+player.w/2,player.y+player.h/2,22);
       lives--;updateLives();if(lives<=0)endGame();e.dead=1;
     }
@@ -532,18 +555,19 @@ function update(dt){
     }
   }
 
-  /* --- MERMİ VURUŞU (ÇOKGEN PUAN SİSTEMİ) --- */
+  /* --- MERMİ VURUŞU (CAN VE PUAN) --- */
   for(const b of bullets){ 
     for(const e of enemies){ 
       if(!b.dead && !e.dead && rectHit(b,e)){ 
         b.dead=1; 
         e.hp--; 
         if(e.hp <= 0) {
-          playExplosionSound(e.type === "snake" ? "snake" : e.kind); 
+          let soundType = e.type === "neon_ship" && e.neonType === "ufo" ? "neon_ufo" : (e.type === "snake" ? "snake" : e.kind);
+          playExplosionSound(soundType); 
           explosion(e.x+e.w/2,e.y+e.h/2,16); 
           e.dead=1; 
           if(!gameOver){ 
-             score += (e.type === "snake" ? e.maxHp : 1); // Çokgenler canı kadar, klasikler 1 puan!
+             score += e.maxHp; // HP'si kadar puan verir.
              scEl.textContent=score; 
           } 
         }
@@ -569,10 +593,33 @@ function draw(t){
   if(playerImg)ctx.drawImage(playerImg,player.x,player.y,player.w,player.h); else{ctx.fillStyle="#38bdf8";ctx.fillRect(player.x,player.y,player.w,player.h);}
   ctx.fillStyle="#0099ff"; bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
   
-  /* --- ÇİZİM MOTORU (ORİJİNAL KAYMADAN) --- */
+  /* --- DÜŞMAN ÇİZİMLERİ --- */
   enemies.forEach(e=>{
-    if(e.type === "snake") {
-       // NEON ÇOKGEN ÇİZİMİ
+    if(e.type === "neon_ship") {
+       // NEON UÇAK/UFO (0-300 Puan)
+       ctx.save();
+       ctx.translate(e.x + e.w/2, e.y + e.h/2);
+       ctx.rotate(e.rot); 
+       ctx.strokeStyle = e.color;
+       ctx.lineWidth = 4;
+       ctx.shadowColor = e.color;
+       ctx.shadowBlur = 18;
+       const sw = e.w * 0.9; const sh = e.h * 0.9; 
+       ctx.beginPath();
+       if (e.neonType === "fighter") {
+         ctx.moveTo(0, -sh/2); ctx.lineTo(sw/10, -sh/10); ctx.lineTo(sw/2, sh/6); ctx.lineTo(sw/10, sh/6); ctx.lineTo(sw/10, sh/2); ctx.lineTo(-sw/10, sh/2); ctx.lineTo(-sw/10, sh/6); ctx.lineTo(-sw/2, sh/6); ctx.lineTo(-sw/10, -sh/10);
+       } else {
+         ctx.ellipse(0, 0, sw/2, sh/3, 0, 0, Math.PI*2); ctx.moveTo(sw/4, -sh/6); ctx.ellipse(0, -sh/6, sw/4, sh/4, 0, Math.PI, Math.PI*2); 
+       }
+       ctx.closePath();
+       ctx.stroke();
+       // HP YAZISI
+       ctx.fillStyle = "#ffffff"; ctx.font = "900 24px system-ui"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.shadowBlur = 0;
+       ctx.fillText(e.hp, 0, 0); 
+       ctx.restore();
+
+    } else if(e.type === "snake") {
+       // NEON ÇOKGENLER (300-1000 Puan)
        ctx.save();
        ctx.translate(e.x + e.w/2, e.y + e.h/2);
        ctx.rotate(e.rot);
@@ -586,25 +633,18 @@ function draw(t){
          const angle = (i * 2 * Math.PI) / e.sides;
          const px = Math.cos(angle) * rad;
          const py = Math.sin(angle) * rad;
-         if(i===0) ctx.moveTo(px, py);
-         else ctx.lineTo(px, py);
+         if(i===0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
        }
        ctx.closePath();
        ctx.stroke();
-       ctx.fillStyle = e.color;
-       ctx.globalAlpha = 0.1;
-       ctx.fill();
+       ctx.fillStyle = e.color; ctx.globalAlpha = 0.1; ctx.fill();
        ctx.restore();
-
-       // ÇOKGEN İÇİ RAKAM (HP)
-       ctx.fillStyle = "#ffffff";
-       ctx.font = "900 22px system-ui";
-       ctx.textAlign = "center";
-       ctx.textBaseline = "middle";
-       ctx.shadowBlur = 0;
+       // HP YAZISI
+       ctx.fillStyle = "#ffffff"; ctx.font = "900 22px system-ui"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.shadowBlur = 0;
        ctx.fillText(e.hp, e.x + e.w/2, e.y + e.h/2);
+
     } else {
-       // KLASİK RESİMLİ (SPRITE) DÜŞMAN ÇİZİMİ
+       // KLASİK RESİMLİ DÜŞMAN (1000+ Puan)
        if(e.isSprite && e.img && e.totalFrames > 0) {
          const frameW = e.img.width / e.totalFrames; const frameH = e.img.height; const sx = e.frame * frameW;
          ctx.save();
@@ -613,10 +653,7 @@ function draw(t){
          ctx.restore();
        } else if(e.img) { 
          ctx.drawImage(e.img, e.x, e.y, e.w, e.h); 
-       } else { 
-         // Sadece resimler yüklenmediğinde buraya düşer
-         ctx.fillStyle=e.kind==="green"?"#22c55e":"#ef4444"; ctx.fillRect(e.x,e.y,e.w,e.h); 
-       }
+       } 
     }
   });
   
@@ -640,7 +677,7 @@ restartBtn.onclick=()=>{
   if(cv.classList.contains("red-zone")) cv.classList.remove("red-zone");
 };
 
-/* ====== RESİMLERİN YÜKLENMESİ VE SİYAH ARKA PLANLARIN SİLİNMESİ ====== */
+/* ====== RESİMLERİ YÜKLE ====== */
 let playerImg=null, peacockImg=null;
 let loadedSprites = {};
 (async function(){
