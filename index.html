@@ -157,7 +157,7 @@
 
   <canvas id="game"></canvas>
 <script>
-/* ====== SES SİSTEMİ (WEB AUDIO API) ====== */
+/* ====== ORİJİNAL SES SİSTEMİ (WEB AUDIO API) ====== */
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContext();
 
@@ -180,6 +180,7 @@ class SoundPool {
   }
 }
 
+// SENİN ORİJİNAL DOSYALARIN!
 const sounds = {
   normalShot: new SoundPool("laser_one.mp3", 10, 0.25), 
   powerShot:  new SoundPool("laser.mp3", 10, 0.25),   
@@ -221,7 +222,12 @@ soundBtn.onclick = (e) => {
 };
 
 function playShootSound(isPower) { if (!soundEnabled) return; if (isPower) sounds.powerShot.play(); else sounds.normalShot.play(); }
-function playExplosionSound(type) { if (!soundEnabled) return; if(type==="red" || type==="snake") sounds.boomShip.play(); else sounds.boomUfo.play(); }
+function playExplosionSound(kind) { 
+  if (!soundEnabled) return; 
+  // Orijinal patlama sesi mantığın
+  if(kind === "red" || kind === "snake") sounds.boomShip.play(); 
+  else sounds.boomUfo.play(); 
+}
 function playLifeSound() { if (!soundEnabled) return; sounds.gem.play(); }
 function playGemSound() { playLifeSound(); }
 
@@ -362,46 +368,53 @@ function explosion(x,y,count=18){
   for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=1.2+Math.random()*2.8;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:420+Math.random()*280,size:1.6+Math.random()*2.4});}
 }
 
-/* --- YENİ DÜŞMAN SPAWN SİSTEMİ (0-300 | 300-1000 | 1000+) --- */
-function allowedKindsByTime(s){ if(s<10) return ["ufo_red","ufo_gray"]; if(s<40) return ["ufo_red","ufo_gray","green"]; return ["ufo_red","ufo_gray","green","red"]; }
+function allowedKindsByTime(t){ if(t<10) return ["ufo_red","ufo_gray"]; if(t<40) return ["ufo_red","ufo_gray","green"]; return ["ufo_red","ufo_gray","green","red"]; }
 
+/* --- DÜŞMAN MOTORU (SENİN İSTEDİĞİN YILAN SİSTEMİ) --- */
 function spawnEnemy(k, spMul){ 
   const enemyCap = (score >= 2300) ? 30 : (score >= 2000) ? 26 : (score >= 1500) ? 22 : (score >= 1300) ? 20 : (score >= 800)  ? 18 : (score >= 500)  ? 14 : 12;
   if(enemies.length > enemyCap) return; 
   
-  if(score >= 300 && score < 1000) {
-     // YILAN/ÇOKGEN EVRESİ
-     let snakeLen = Math.floor(rand(5, 9));
-     let startX = rand(50, cv.width - 100);
-     let offset = rand(0, 1000);
-     let sides = Math.floor(rand(5, 8)); // 5,6,7 gen
-     let color = `hsl(${rand(0,360)}, 100%, 60%)`;
-     
-     for(let i=0; i<snakeLen; i++){
-        let hp = Math.floor(rand(3, 12)); // Can / Puan
-        enemies.push({
-           x: startX, y: -i * 65 - 100, w: 60, h: 60, vy: 2 * spMul,
-           type: "snake", hp: hp, maxHp: hp, offset: offset, sides: sides, color: color,
-           rot: rand(0, 6.28), rotSp: rand(-0.02, 0.02),
-           dead: false
-        });
-     }
+  if (score >= 300 && score < 1000) {
+    // 300 - 1000 ARASI YILAN MODU (Ufo, gemi yok. Sadece çokgen bloklar)
+    let snakeLen = Math.floor(rand(5, 9));
+    let startX = rand(50, cv.width - 100);
+    let offset = rand(0, 1000);
+    let sides = Math.floor(rand(5, 8));
+    let color = `hsl(${rand(0,360)}, 100%, 60%)`;
+    
+    for(let i=0; i<snakeLen; i++){
+      let hp = Math.floor(rand(3, 12)); 
+      enemies.push({
+        x: startX, y: -i * 65 - 100, w: 60, h: 60, vy: 2 * spMul,
+        type: "snake", hp: hp, maxHp: hp, offset: offset, sides: sides, color: color,
+        rot: rand(0, Math.PI*2), rotSp: rand(-0.02, 0.02), dead: false
+      });
+    }
   } else {
-     // KLASİK EVRE (0-300 veya 1000+)
-     const kind=k[Math.floor(Math.random()*k.length)]; 
-     let size=rand(48,70); if(kind === "red") size = rand(60, 80); 
-     let isSprite = false, img = null, frames = 1, blendMode = 'normal', frameDelay = 30;
-     if (loadedSprites[kind]) { img = loadedSprites[kind].img; frames = loadedSprites[kind].frames; blendMode = SPRITE_CONFIG[kind].mode || 'normal'; frameDelay = SPRITE_CONFIG[kind].delay || 30; isSprite = (frames > 1); }
-     
-     let vx = 0;
-     if (score >= 2300) { const dir = Math.random() < 0.5 ? -1 : 1; vx = dir * rand(0.8, 1.6) * spMul; }
+    // 0 - 300 veya 1000 ÜZERİ KLASİK MOD (Senin orijinal Sprite'ların)
+    const kind=k[Math.floor(Math.random()*k.length)]; 
+    let size=rand(48,70); if(kind === "red") size = rand(60, 80); 
+    let isSprite = false, img = null, frames = 1, blendMode = 'normal', frameDelay = 30;
+    
+    // ORİJİNAL RESİM BULMA MANTIĞI (Kırmızı kare hatasını engeller)
+    if (loadedSprites[kind]) { 
+      img = loadedSprites[kind].img; 
+      frames = loadedSprites[kind].frames; 
+      blendMode = SPRITE_CONFIG[kind].mode || 'normal'; 
+      frameDelay = SPRITE_CONFIG[kind].delay || 30; 
+      isSprite = (frames > 1); 
+    }
+    
+    let vx = 0;
+    if (score >= 2300) { const dir = Math.random() < 0.5 ? -1 : 1; vx = dir * rand(0.8, 1.6) * spMul; }
 
-     enemies.push({
-        x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul,
-        vx: vx, kind, img, isSprite, blendMode, frameDelay, frame:0, frameTimer:0, totalFrames: frames,
-        canShoot:(kind==="red"||kind==="green"), shootT:0,shootInt:500,
-        type: "classic", hp: 1, maxHp: 1, dead: false
-     }); 
+    enemies.push({
+      x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul,
+      vx: vx, kind, img, isSprite, blendMode, frameDelay, frame:0, frameTimer:0, totalFrames: frames,
+      canShoot:(kind==="red"||kind==="green"), shootT:0,shootInt:500,
+      type: "classic", hp: 1, maxHp: 1, dead: false
+    }); 
   }
 }
 
@@ -507,7 +520,8 @@ function update(dt){
 
   for(const e of enemies){
     if(!e.dead && rectHit(pBox,e)){
-      playExplosionSound(e.type==="snake" ? 'red' : e.kind); explosion(player.x+player.w/2,player.y+player.h/2,22);
+      playExplosionSound(e.type === "snake" ? "snake" : e.kind); 
+      explosion(player.x+player.w/2,player.y+player.h/2,22);
       lives--;updateLives();if(lives<=0)endGame();e.dead=1;
     }
   }
@@ -518,18 +532,18 @@ function update(dt){
     }
   }
 
-  // MERMİ ÇARPIŞMASI (HP ve PUAN SİSTEMİ)
+  /* --- MERMİ VURUŞU (ÇOKGEN PUAN SİSTEMİ) --- */
   for(const b of bullets){ 
     for(const e of enemies){ 
       if(!b.dead && !e.dead && rectHit(b,e)){ 
         b.dead=1; 
         e.hp--; 
         if(e.hp <= 0) {
-          playExplosionSound(e.type==="snake" ? 'red' : e.kind); 
+          playExplosionSound(e.type === "snake" ? "snake" : e.kind); 
           explosion(e.x+e.w/2,e.y+e.h/2,16); 
           e.dead=1; 
           if(!gameOver){ 
-             score += e.maxHp; // Yılansa canı kadar, klasikse 1 puan verir.
+             score += (e.type === "snake" ? e.maxHp : 1); // Çokgenler canı kadar, klasikler 1 puan!
              scEl.textContent=score; 
           } 
         }
@@ -555,10 +569,10 @@ function draw(t){
   if(playerImg)ctx.drawImage(playerImg,player.x,player.y,player.w,player.h); else{ctx.fillStyle="#38bdf8";ctx.fillRect(player.x,player.y,player.w,player.h);}
   ctx.fillStyle="#0099ff"; bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
   
-  // DÜŞMAN ÇİZİMLERİ
+  /* --- ÇİZİM MOTORU (ORİJİNAL KAYMADAN) --- */
   enemies.forEach(e=>{
     if(e.type === "snake") {
-       // ÇOKGEN ÇİZİMİ
+       // NEON ÇOKGEN ÇİZİMİ
        ctx.save();
        ctx.translate(e.x + e.w/2, e.y + e.h/2);
        ctx.rotate(e.rot);
@@ -582,23 +596,27 @@ function draw(t){
        ctx.fill();
        ctx.restore();
 
-       // HP YAZISI
+       // ÇOKGEN İÇİ RAKAM (HP)
        ctx.fillStyle = "#ffffff";
-       ctx.font = "900 20px system-ui";
+       ctx.font = "900 22px system-ui";
        ctx.textAlign = "center";
        ctx.textBaseline = "middle";
        ctx.shadowBlur = 0;
        ctx.fillText(e.hp, e.x + e.w/2, e.y + e.h/2);
     } else {
-       // KLASİK SPRITE ÇİZİMİ
+       // KLASİK RESİMLİ (SPRITE) DÜŞMAN ÇİZİMİ
        if(e.isSprite && e.img && e.totalFrames > 0) {
          const frameW = e.img.width / e.totalFrames; const frameH = e.img.height; const sx = e.frame * frameW;
          ctx.save();
          if(e.blendMode === 'screen') ctx.globalCompositeOperation = "screen";
          if(frameW > 0 && sx >= 0) ctx.drawImage(e.img, sx, 0, frameW, frameH, e.x, e.y, e.w, e.h);
          ctx.restore();
-       } else if(e.img) { ctx.drawImage(e.img, e.x, e.y, e.w, e.h); } 
-       else { ctx.fillStyle=e.kind==="green"?"#22c55e":"#ef4444"; ctx.fillRect(e.x,e.y,e.w,e.h); }
+       } else if(e.img) { 
+         ctx.drawImage(e.img, e.x, e.y, e.w, e.h); 
+       } else { 
+         // Sadece resimler yüklenmediğinde buraya düşer
+         ctx.fillStyle=e.kind==="green"?"#22c55e":"#ef4444"; ctx.fillRect(e.x,e.y,e.w,e.h); 
+       }
     }
   });
   
@@ -622,6 +640,7 @@ restartBtn.onclick=()=>{
   if(cv.classList.contains("red-zone")) cv.classList.remove("red-zone");
 };
 
+/* ====== RESİMLERİN YÜKLENMESİ VE SİYAH ARKA PLANLARIN SİLİNMESİ ====== */
 let playerImg=null, peacockImg=null;
 let loadedSprites = {};
 (async function(){
