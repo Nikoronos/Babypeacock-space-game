@@ -230,7 +230,7 @@ function playExplosionSound() {
   const now = performance.now();
   if (now - lastBoomTime < 50) return; // 50ms içinde tekrar patlama gelirse yoksay
   lastBoomTime = now;
-  sounds.boomShip.play(); // Orijinal boom_one sesini kullanır
+  sounds.boomShip.play(); // Sadece orijinal dosya
 }
 
 function playLifeSound() { if (!soundEnabled) return; sounds.gem.play(); }
@@ -285,7 +285,7 @@ let elapsed=0,enT=0,gemT=0,mascotT=0;
 let scoreSent=false;
 let player={x:cv.width/2-33,y:cv.height-120,w:66,h:66};
 
-// YENİ OYUN MODU VE KORİDOR DEĞİŞKENLERİ
+// YENİ OYUN MODU VE KORİDOR ZİNCİR DEĞİŞKENLERİ
 let gameMode = "classic"; // "classic" veya "corridor"
 let lastGameMode = "classic";
 let corridorRowsSpawned = 0;
@@ -333,7 +333,7 @@ resumeBtn.onclick=()=>{pauseOverlay.style.display="none";startCountdownSequence(
 
 function updateLives(){livesEl.innerHTML="❤️".repeat(Math.max(0, lives));} updateLives();
 
-/* --- SERBEST HAREKET KONTROLÜ (X VE Y EKSENİ) --- */
+/* --- SERBEST HAREKET KONTROLÜ --- */
 let holding=false;
 function getPos(e){
   const rect = cv.getBoundingClientRect();
@@ -396,35 +396,43 @@ function explosion(x,y,count=18){
 
 function allowedKindsByTime(t){ if(t<10) return ["ufo_red","ufo_gray"]; if(t<40) return ["ufo_red","ufo_gray","green"]; return ["ufo_red","ufo_gray","green","red"]; }
 
-/* --- 300-1000 ARASI KORİDOR (STAGE) ÜRETİCİSİ --- */
+/* --- YENİ 300-1000 ARASI KORİDOR (ZİNCİR) ÜRETİCİSİ --- */
+// Bu fonksiyon duvar örmez, ekranda kıvrılan tek/çiftli bir blok zinciri üretir.
 function spawnCorridorRow(blockSize, spMul) {
     let rowY = -blockSize;
-    let cols = 5;
-    // Sinüs dalgası ile güvenli yolu belirle (0 ile 4 arası index)
-    let pathCenterIndex = Math.floor(2.5 + Math.sin(corridorRowsSpawned * 0.4) * 1.8); 
     corridorRowsSpawned++;
 
-    // Her 12 satırda bir özel node (ödül veya mini-boss) düşür
-    let isNodeRow = (corridorRowsSpawned % 12 === 0);
+    // Merkez noktayı sinüs dalgası ile sağa/sola kıvır
+    let amplitude = cv.width / 2 - blockSize; // Sağa sola salınım genliği
+    let centerX = cv.width / 2 + Math.sin(corridorRowsSpawned * 0.15) * amplitude;
 
-    for (let i = 0; i < cols; i++) {
-        let x = i * blockSize;
-        let isPath = Math.abs(i - pathCenterIndex) <= 1; // Merkezdeki 2-3 blok zayıf/kırılabilir yol
+    // Özel Node ve Boss zamanlaması
+    let isNodeRow = (corridorRowsSpawned % 15 === 0);
+    let isBossRow = (corridorRowsSpawned % 45 === 0);
 
-        if (isNodeRow && isPath && i === pathCenterIndex) {
-            let types = ["node_blue", "node_green", "node_red", "node_boss"];
-            let t = types[Math.floor(Math.random()*types.length)];
-            let hp = (t === "node_boss") ? 60 : 15;
+    if (isBossRow) {
+        // Büyük Kırmızı Tehdit (Yüksek HP, İri obje)
+        enemies.push({
+            x: centerX - blockSize * 0.8, y: rowY, w: blockSize * 1.6, h: blockSize * 1.6, vy: 2 * spMul,
+            type: "node_boss", hp: 80, maxHp: 80, dead: false
+        });
+    } else if (isNodeRow) {
+        // Upgrade Nodeları (Mavi, Yeşil, Kırmızı)
+        let types = ["node_blue", "node_green", "node_red"];
+        let t = types[Math.floor(Math.random()*types.length)];
+        enemies.push({
+            x: centerX - blockSize/2, y: rowY, w: blockSize, h: blockSize, vy: 2 * spMul,
+            type: t, hp: 15, maxHp: 15, dead: false
+        });
+    } else {
+        // Kıvrılan Rotayı oluşturan 1 veya yan yana 2 blok (Duvar Değil)
+        let blocksInRow = Math.random() < 0.6 ? 1 : 2;
+        for(let i=0; i<blocksInRow; i++) {
+            let offsetX = (i - (blocksInRow - 1) / 2) * blockSize;
+            let hp = Math.floor(rand(5, 12));
             enemies.push({
-                x: x, y: rowY, w: blockSize, h: blockSize, vy: 2 * spMul,
-                type: t, hp: hp, maxHp: hp, dead: false
-            });
-        } else {
-            // Yoldaki bloklar 5-15 can, Duvar blokları 40-80 can
-            let hp = isPath ? Math.floor(rand(5, 15)) : Math.floor(rand(40, 80));
-            enemies.push({
-                x: x, y: rowY, w: blockSize, h: blockSize, vy: 2 * spMul,
-                type: "corridor_block", hp: hp, maxHp: hp, isWall: !isPath, dead: false
+                x: centerX + offsetX - blockSize/2, y: rowY, w: blockSize, h: blockSize, vy: 2 * spMul,
+                type: "corridor_block", hp: hp, maxHp: hp, isWall: false, dead: false
             });
         }
     }
@@ -441,7 +449,7 @@ function spawnEnemy(k, spMul){
     let colors = ["#bc13fe", "#00ffc8", "#39ff14", "#ff007f", "#ffff00"];
     let color = colors[Math.floor(Math.random() * colors.length)];
     
-    // YENİ: Aynı tipin ve aynı yerin arka arkaya gelme olasılığını kır (Spam Engelleyici)
+    // Spam Engelleyici
     let neonType = Math.random() < 0.5 ? "fighter" : "ufo";
     if (neonType === lastNeonType && Math.random() < 0.75) {
         neonType = (neonType === "fighter") ? "ufo" : "fighter";
@@ -564,9 +572,9 @@ function update(dt){
   if (gameMode === "classic") {
       if(enT > 600/(spwMul * dyn)){ spawnEnemy(allowedKindsByTime(elapsed), spMul); enT = 0; }
   } else if (gameMode === "corridor") {
-      lastRowY += (2 * spMul); // Düşman hızına (vy) göre mesafe takibi
-      let blockSize = Math.floor(cv.width / 5); // Ekranı 5 kolona böl
-      if (lastRowY > blockSize * 0.95) { // Blok boyutu kadar inince yenisini ekle
+      lastRowY += (2 * spMul); 
+      let blockSize = Math.floor(cv.width / 5); // Boyut referansı
+      if (lastRowY > blockSize * 1.05) { // Aralarında hafif boşluklu zincir
           spawnCorridorRow(blockSize, spMul);
           lastRowY = 0;
       }
@@ -604,7 +612,7 @@ function update(dt){
   
   const pBox = { x: player.x + 12, y: player.y + 12, w: player.w - 24, h: player.h - 24 };
 
-  // Oyuncu Düşmana veya Koridor Duvarına Çarparsa
+  // Çarpışma: Oyuncu
   for(const e of enemies){
     if(!e.dead && rectHit(pBox,e)){
       playExplosionSound(); 
@@ -619,7 +627,7 @@ function update(dt){
     }
   }
 
-  /* --- MERMİ VURUŞU --- */
+  /* --- Çarpışma: Mermi --- */
   for(const b of bullets){ 
     for(const e of enemies){ 
       if(!b.dead && !e.dead && rectHit(b,e)){ 
@@ -637,7 +645,7 @@ function update(dt){
                  if (e.type === "node_red") { powerTime = 15000; playGemSound(); }
                  if (e.type === "node_boss") { score += 50; }
              } else if (e.type === "corridor_block") {
-                 score += 1; // Sadece yoldaki blokları kırınca ufak puan
+                 score += e.maxHp; 
              } else {
                  score += e.maxHp; 
              }
@@ -679,7 +687,7 @@ function draw(t){
        ctx.beginPath();
        
        if (e.neonType === "fighter") {
-         // YENİ: UÇAK YÖNÜ TAM AŞAĞI, OYUNCUYA BAKIYOR
+         // UÇAK YÖNÜ TAM AŞAĞI, OYUNCUYA BAKIYOR
          ctx.moveTo(0, sh/2); 
          ctx.lineTo(sw/2, -sh/2); 
          ctx.lineTo(sw/6, -sh/4); 
@@ -697,24 +705,24 @@ function draw(t){
        ctx.restore();
 
     } else if (e.type === "corridor_block") {
-       // KORİDOR BLOKLARI: Duvarlar koyu, kırılabilir yollar parlak neon
+       // SADECE ZİNCİR HATTI ÜZERİNDEKİ SAYI BLOKLARI (Neon Beyaz Altıgen)
        ctx.save();
        ctx.translate(e.x + e.w/2, e.y + e.h/2);
-       ctx.strokeStyle = e.isWall ? "#334155" : "#ffffff";
+       ctx.strokeStyle = "#ffffff";
        ctx.lineWidth = 3;
-       ctx.shadowColor = e.isWall ? "transparent" : "#ffffff";
-       ctx.shadowBlur = e.isWall ? 0 : 12;
+       ctx.shadowColor = "#00ffc8"; 
+       ctx.shadowBlur = 10;
        ctx.beginPath();
-       let rad = e.w * 0.48; // Bitişik görünmesi için geniş
+       let rad = e.w * 0.45;
        for(let i=0; i<6; i++) {
-           let a = i * Math.PI / 3;
+           let a = i * Math.PI / 3 + Math.PI/6; 
            let px = Math.cos(a) * rad; let py = Math.sin(a) * rad;
            if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
        }
        ctx.closePath();
        ctx.stroke();
-       if (!e.isWall) { ctx.fillStyle = "rgba(255,255,255,0.08)"; ctx.fill(); }
-       ctx.fillStyle = e.isWall ? "#64748b" : "#ffffff";
+       ctx.fillStyle = "rgba(255,255,255,0.1)"; ctx.fill();
+       ctx.fillStyle = "#ffffff";
        ctx.font = "900 20px system-ui"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.shadowBlur=0;
        ctx.fillText(e.hp, 0, 0);
        ctx.restore();
@@ -723,15 +731,27 @@ function draw(t){
        // KORİDOR NODELARI (Mavi, Yeşil, Kırmızı, Boss)
        ctx.save();
        ctx.translate(e.x + e.w/2, e.y + e.h/2);
-       let color = e.type === "node_blue" ? "#3b82f6" : e.type === "node_green" ? "#22c55e" : e.type === "node_red" ? "#ef4444" : "#dc2626";
-       ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.shadowColor = color; ctx.shadowBlur = 20;
-       ctx.beginPath();
-       if(e.type === "node_boss") { ctx.rect(-e.w*0.4, -e.h*0.4, e.w*0.8, e.h*0.8); } 
-       else { ctx.arc(0, 0, e.w*0.35, 0, Math.PI*2); }
-       ctx.stroke();
-       ctx.fillStyle = color; ctx.globalAlpha = 0.25; ctx.fill(); ctx.globalAlpha = 1.0;
-       ctx.fillStyle = "#fff"; ctx.font = "900 18px system-ui"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.shadowBlur=0;
-       ctx.fillText(e.hp, 0, 0);
+       if(e.type === "node_boss") { 
+           // Büyük Kırmızı Boss (Sekizgen)
+           let color = "#ef4444";
+           ctx.strokeStyle = color; ctx.lineWidth = 6; ctx.shadowColor = color; ctx.shadowBlur = 25;
+           ctx.beginPath();
+           let rad = e.w * 0.45;
+           for(let i=0; i<8; i++) {
+               let a = i * Math.PI / 4;
+               ctx.lineTo(Math.cos(a)*rad, Math.sin(a)*rad);
+           }
+           ctx.closePath(); ctx.stroke();
+           ctx.fillStyle = "rgba(239, 68, 68, 0.2)"; ctx.fill();
+           ctx.fillStyle = "#fff"; ctx.font = "900 24px system-ui"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(e.hp, 0, 0);
+       } 
+       else {
+           let color = e.type === "node_blue" ? "#3b82f6" : e.type === "node_green" ? "#22c55e" : "#ef4444";
+           ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.shadowColor = color; ctx.shadowBlur = 20;
+           ctx.beginPath(); ctx.arc(0, 0, e.w*0.35, 0, Math.PI*2); ctx.stroke();
+           ctx.fillStyle = color; ctx.globalAlpha = 0.25; ctx.fill(); ctx.globalAlpha = 1.0;
+           ctx.fillStyle = "#fff"; ctx.font = "900 18px system-ui"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.shadowBlur=0; ctx.fillText(e.hp, 0, 0);
+       }
        ctx.restore();
 
     } else {
