@@ -157,7 +157,7 @@
 
   <canvas id="game"></canvas>
 <script>
-/* ====== SENİN ORİJİNAL SES SİSTEMİN ====== */
+/* ====== SES SİSTEMİ (DOSYA TABANLI, TEMİZLENMİŞ) ====== */
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContext();
 
@@ -180,7 +180,6 @@ class SoundPool {
   }
 }
 
-// BİREBİR ORİJİNAL DOSYA İSİMLERİ (boom.mp3 ve boom_one.mp3)
 const sounds = {
   normalShot: new SoundPool("laser_one.mp3", 10, 0.25), 
   powerShot:  new SoundPool("laser.mp3", 10, 0.25),   
@@ -200,7 +199,8 @@ function unlockAudioEngine() {
     sounds.gameOver.play().then(() => { sounds.gameOver.pause(); sounds.gameOver.currentTime = 0; sounds.gameOver.volume = oldVol; }).catch(() => {});
   } catch (e) {}
   audioUnlocked = true;
-  document.removeEventListener("touchstart", unlockAudioEngine); document.removeEventListener("click", unlockAudioEngine);
+  document.removeEventListener("touchstart", unlockAudioEngine, { passive: true });
+  document.removeEventListener("click", unlockAudioEngine);
 }
 document.addEventListener("touchstart", unlockAudioEngine, { passive: true });
 document.addEventListener("click", unlockAudioEngine);
@@ -223,13 +223,14 @@ soundBtn.onclick = (e) => {
 
 function playShootSound(isPower) { if (!soundEnabled) return; if (isPower) sounds.powerShot.play(); else sounds.normalShot.play(); }
 
-function playExplosionSound(type) { 
+// YENİ: Çift patlama sesini önlemek için Debounce sistemi (50ms bekleme)
+let lastBoomTime = 0;
+function playExplosionSound() { 
   if (!soundEnabled) return; 
-  if(type === "ufo_red" || type === "ufo_gray" || type === "neon_ufo") {
-     sounds.boomUfo.play(); 
-  } else {
-     sounds.boomShip.play(); 
-  }
+  const now = performance.now();
+  if (now - lastBoomTime < 50) return; // 50ms içinde tekrar patlama gelirse yoksay
+  lastBoomTime = now;
+  sounds.boomShip.play(); // Orijinal boom_one sesini kullanır
 }
 
 function playLifeSound() { if (!soundEnabled) return; sounds.gem.play(); }
@@ -283,6 +284,16 @@ let powerTime=0, fireTimer=0, FIRE_MS=170;
 let elapsed=0,enT=0,gemT=0,mascotT=0;
 let scoreSent=false;
 let player={x:cv.width/2-33,y:cv.height-120,w:66,h:66};
+
+// YENİ OYUN MODU VE KORİDOR DEĞİŞKENLERİ
+let gameMode = "classic"; // "classic" veya "corridor"
+let lastGameMode = "classic";
+let corridorRowsSpawned = 0;
+let lastRowY = 0;
+let activeBuffs = { blue: 0 };
+let lastNeonType = "";
+let lastNeonX = -1000;
+
 resize();
 
 function getPlayerCode(){ let c=localStorage.getItem("playerCode"); if(!c){c="BPC"+Math.floor(100000+Math.random()*899999);localStorage.setItem("playerCode",c);} return c; }
@@ -347,8 +358,19 @@ cv.addEventListener("pointerup",()=>holding=false); cv.addEventListener("pointer
 
 function shoot(){
   playShootSound(powerTime > 0);
-  if(powerTime>0){ bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10}); bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10,ang:3}); bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10,ang:-3}); }
-  else { bullets.push({x:player.x+player.w/2-2,y:player.y,w:4,h:12,vy:-10}); }
+  let bVy = -12;
+  let px = player.x + player.w/2 - 2;
+  if(powerTime > 0 || activeBuffs.blue > 0){ 
+      bullets.push({x:px, y:player.y, w:4, h:12, vy:bVy}); 
+      bullets.push({x:px, y:player.y, w:4, h:12, vy:bVy, ang:3}); 
+      bullets.push({x:px, y:player.y, w:4, h:12, vy:bVy, ang:-3}); 
+      if(activeBuffs.blue > 0) { // Koridor Blue Node ekstra güç
+         bullets.push({x:px, y:player.y, w:4, h:12, vy:bVy, ang:6});
+         bullets.push({x:px, y:player.y, w:4, h:12, vy:bVy, ang:-6});
+      }
+  } else { 
+      bullets.push({x:px, y:player.y, w:4, h:12, vy:bVy}); 
+  }
 }
 
 function drawDiamondGem(ctx,x,y,w,h,t){ctx.save();ctx.translate(x+w/2,y+h/2);ctx.rotate(Math.sin(t*2)*0.20);
@@ -374,56 +396,79 @@ function explosion(x,y,count=18){
 
 function allowedKindsByTime(t){ if(t<10) return ["ufo_red","ufo_gray"]; if(t<40) return ["ufo_red","ufo_gray","green"]; return ["ufo_red","ufo_gray","green","red"]; }
 
-/* --- DÜŞMAN SPAWN SİSTEMİ (0-300: Sabit Neon | 300-1000: Yapışık Yılan) --- */
+/* --- 300-1000 ARASI KORİDOR (STAGE) ÜRETİCİSİ --- */
+function spawnCorridorRow(blockSize, spMul) {
+    let rowY = -blockSize;
+    let cols = 5;
+    // Sinüs dalgası ile güvenli yolu belirle (0 ile 4 arası index)
+    let pathCenterIndex = Math.floor(2.5 + Math.sin(corridorRowsSpawned * 0.4) * 1.8); 
+    corridorRowsSpawned++;
+
+    // Her 12 satırda bir özel node (ödül veya mini-boss) düşür
+    let isNodeRow = (corridorRowsSpawned % 12 === 0);
+
+    for (let i = 0; i < cols; i++) {
+        let x = i * blockSize;
+        let isPath = Math.abs(i - pathCenterIndex) <= 1; // Merkezdeki 2-3 blok zayıf/kırılabilir yol
+
+        if (isNodeRow && isPath && i === pathCenterIndex) {
+            let types = ["node_blue", "node_green", "node_red", "node_boss"];
+            let t = types[Math.floor(Math.random()*types.length)];
+            let hp = (t === "node_boss") ? 60 : 15;
+            enemies.push({
+                x: x, y: rowY, w: blockSize, h: blockSize, vy: 2 * spMul,
+                type: t, hp: hp, maxHp: hp, dead: false
+            });
+        } else {
+            // Yoldaki bloklar 5-15 can, Duvar blokları 40-80 can
+            let hp = isPath ? Math.floor(rand(5, 15)) : Math.floor(rand(40, 80));
+            enemies.push({
+                x: x, y: rowY, w: blockSize, h: blockSize, vy: 2 * spMul,
+                type: "corridor_block", hp: hp, maxHp: hp, isWall: !isPath, dead: false
+            });
+        }
+    }
+}
+
+/* --- KLASİK DÜŞMAN ÜRETİCİ (0-300 ve 1000+) --- */
 function spawnEnemy(k, spMul){ 
   const enemyCap = (score >= 2300) ? 30 : (score >= 2000) ? 26 : (score >= 1500) ? 22 : (score >= 1300) ? 20 : (score >= 800)  ? 18 : (score >= 500)  ? 14 : 12;
   if(enemies.length > enemyCap) return; 
   
   if (score < 300) {
-    // 1) 0 - 300 ARASI: DÖNMEYEN SABİT NEON UÇAK VE UFO
+    // 0 - 300 ARASI: Neon Uçak ve Ufo
     let size = rand(60, 90);
     let colors = ["#bc13fe", "#00ffc8", "#39ff14", "#ff007f", "#ffff00"];
     let color = colors[Math.floor(Math.random() * colors.length)];
-    let neonType = Math.random() < 0.6 ? "fighter" : "ufo";
+    
+    // YENİ: Aynı tipin ve aynı yerin arka arkaya gelme olasılığını kır (Spam Engelleyici)
+    let neonType = Math.random() < 0.5 ? "fighter" : "ufo";
+    if (neonType === lastNeonType && Math.random() < 0.75) {
+        neonType = (neonType === "fighter") ? "ufo" : "fighter";
+    }
+    let xPos = rand(0, cv.width - size);
+    let tries = 0;
+    while(Math.abs(xPos - lastNeonX) < size * 1.5 && tries < 5) {
+        xPos = rand(0, cv.width - size); tries++;
+    }
+    lastNeonType = neonType; lastNeonX = xPos;
     let hp = Math.floor(rand(1, 4)); 
 
     enemies.push({
-      x: rand(0, cv.width - size), y: -size, w: size, h: size, vy: rand(1.4, 3) * spMul,
+      x: xPos, y: -size, w: size, h: size, vy: rand(1.4, 3) * spMul,
       type: "neon_ship", neonType: neonType, color: color,
-      hp: hp, maxHp: hp, rot: 0, rotSp: 0, dead: false // DÖNME İPTAL EDİLDİ
+      hp: hp, maxHp: hp, dead: false 
     });
 
-  } else if (score >= 300 && score < 1000) {
-    // 2) 300 - 1000 ARASI: BİRBİRİNE YAPIŞIK GERÇEK YILAN MODU
-    let snakeLen = Math.floor(rand(5, 9));
-    let startX = rand(100, cv.width - 100);
-    let offset = rand(0, 1000);
-    let sides = Math.floor(rand(5, 8)); // 5, 6 veya 7 gen
-    let color = `hsl(${rand(0,360)}, 100%, 60%)`;
-    
-    for(let i=0; i<snakeLen; i++){
-      let hp = Math.floor(rand(3, 12)); 
-      enemies.push({
-        x: startX, baseX: startX, // Orijinal pozisyonu hafızada tut
-        y: -i * 60 - 100, // ARALIK TAM 60, BİRBİRİNE YAPIŞIK
-        w: 60, h: 60, vy: 2 * spMul,
-        type: "snake", sides: sides, color: color, hp: hp, maxHp: hp,
-        offset: offset, rot: 0, rotSp: 0, dead: false // DÖNME İPTAL, SABİT OKUNUR RAKAM
-      });
-    }
-
   } else {
-    // 3) 1000+ ARASI: ORİJİNAL RESİMLİ DÜŞMANLAR
+    // 1000+ ARASI: ORİJİNAL RESİMLİ DÜŞMANLAR
     const kind = k[Math.floor(Math.random()*k.length)]; 
     let size = rand(48,70); if(kind === "red") size = rand(60, 80); 
     let isSprite = false, img = null, frames = 1, blendMode = 'normal', frameDelay = 30;
     
     if (loadedSprites[kind]) { 
-      img = loadedSprites[kind].img; 
-      frames = loadedSprites[kind].frames; 
-      blendMode = SPRITE_CONFIG[kind].mode || 'normal'; 
-      frameDelay = SPRITE_CONFIG[kind].delay || 30; 
-      isSprite = (frames > 1); 
+      img = loadedSprites[kind].img; frames = loadedSprites[kind].frames; 
+      blendMode = SPRITE_CONFIG[kind].mode || 'normal'; frameDelay = SPRITE_CONFIG[kind].delay || 30; isSprite = (frames > 1); 
     }
     
     let vx = 0;
@@ -491,6 +536,7 @@ function update(dt){
   
   elapsed+=dt/1000;enT+=dt;gemT+=dt;mascotT+=dt;
   if(powerTime>0){powerTime-=dt;if(powerTime<0)powerTime=0;} pxEl.textContent=powerTime>0?Math.ceil(powerTime/1000):0;
+  if(activeBuffs.blue > 0) activeBuffs.blue -= dt;
   fireTimer+=dt;if(holding&&fireTimer>FIRE_MS){shoot();fireTimer=0;}
   
   let spMul = 1.0; let spwMul = 1.0;
@@ -501,7 +547,30 @@ function update(dt){
   if(score >= 1500){ spMul = 1.72; spwMul = 2.35; }
   let dyn = 1; if(score > 2000){ const over = score - 2000; dyn = 1 + over * 0.0006; dyn = Math.min(dyn, 2.0); }
 
-  if(enT > 600/(spwMul * dyn)){ spawnEnemy(allowedKindsByTime(elapsed), spMul); enT = 0; }
+  /* --- MOD KONTROLÜ VE GEÇİŞ --- */
+  if (score < 300) gameMode = "classic";
+  else if (score >= 300 && score < 1000) gameMode = "corridor";
+  else gameMode = "classic";
+
+  if (gameMode !== lastGameMode) {
+     if (gameMode === "corridor") {
+         enemies = enemies.filter(e => e.type !== "classic" && e.type !== "neon_ship"); // Temiz geçiş
+         lastRowY = 999; // Hemen koridor başlat
+     }
+     lastGameMode = gameMode;
+  }
+
+  /* --- SPAWN DÖNGÜSÜ --- */
+  if (gameMode === "classic") {
+      if(enT > 600/(spwMul * dyn)){ spawnEnemy(allowedKindsByTime(elapsed), spMul); enT = 0; }
+  } else if (gameMode === "corridor") {
+      lastRowY += (2 * spMul); // Düşman hızına (vy) göre mesafe takibi
+      let blockSize = Math.floor(cv.width / 5); // Ekranı 5 kolona böl
+      if (lastRowY > blockSize * 0.95) { // Blok boyutu kadar inince yenisini ekle
+          spawnCorridorRow(blockSize, spMul);
+          lastRowY = 0;
+      }
+  }
   
   const gemInterval = (score >= 1500) ? 25000 : (score >= 1300) ? 21000 : (score >= 800)  ? 18000 : (score >= 500)  ? 11000 : (score >= 300)  ? 9500  : 9000;
   const gemChance = (score >= 1500) ? 0.28 : (score >= 1300) ? 0.35 : (score >= 800)  ? 0.40 : 0.55;
@@ -515,12 +584,7 @@ function update(dt){
   
   enemies.forEach(e=>{
     e.y+=e.vy;
-    if(e.type === "snake") {
-       // ZİK ZAK YERİNE KUSURSUZ SİNÜS DALGASI (Yapışık Yılan Hareketi)
-       e.x = e.baseX + Math.sin(e.y * 0.015 + e.offset) * 80;
-    } else if (e.type === "neon_ship") {
-       // Artık dönmüyorlar
-    } else if(e.type === "classic") {
+    if(e.type === "classic") {
       if(score >= 2300 && typeof e.vx === "number") {
         e.x += e.vx;
         if (e.x < 0 || e.x + e.w > cv.width) { e.vx *= -1; e.x = clamp(e.x, 0, cv.width - e.w); }
@@ -540,34 +604,43 @@ function update(dt){
   
   const pBox = { x: player.x + 12, y: player.y + 12, w: player.w - 24, h: player.h - 24 };
 
+  // Oyuncu Düşmana veya Koridor Duvarına Çarparsa
   for(const e of enemies){
     if(!e.dead && rectHit(pBox,e)){
-      let soundType = e.type === "neon_ship" && e.neonType === "ufo" ? "neon_ufo" : (e.type === "snake" ? "snake" : e.kind);
-      playExplosionSound(soundType); 
+      playExplosionSound(); 
       explosion(player.x+player.w/2,player.y+player.h/2,22);
       lives--;updateLives();if(lives<=0)endGame();e.dead=1;
     }
   }
   for(const m of enemyBullets){
     if(!m.dead && rectHit(pBox,m)){
-      playExplosionSound('red'); explosion(player.x+player.w/2,player.y+player.h/2,22);
+      playExplosionSound(); explosion(player.x+player.w/2,player.y+player.h/2,22);
       lives--;updateLives();if(lives<=0)endGame();m.dead=1;
     }
   }
 
-  /* --- MERMİ VURUŞU (CAN VE PUAN) --- */
+  /* --- MERMİ VURUŞU --- */
   for(const b of bullets){ 
     for(const e of enemies){ 
       if(!b.dead && !e.dead && rectHit(b,e)){ 
         b.dead=1; 
         e.hp--; 
         if(e.hp <= 0) {
-          let soundType = e.type === "neon_ship" && e.neonType === "ufo" ? "neon_ufo" : (e.type === "snake" ? "snake" : e.kind);
-          playExplosionSound(soundType); 
+          playExplosionSound(); 
           explosion(e.x+e.w/2,e.y+e.h/2,16); 
           e.dead=1; 
+          
           if(!gameOver){ 
-             score += e.maxHp; // Rakam kadar puan
+             if (e.type.startsWith("node_")) {
+                 if (e.type === "node_blue") { activeBuffs.blue = 6000; playGemSound(); }
+                 if (e.type === "node_green") { lives++; updateLives(); playGemSound(); }
+                 if (e.type === "node_red") { powerTime = 15000; playGemSound(); }
+                 if (e.type === "node_boss") { score += 50; }
+             } else if (e.type === "corridor_block") {
+                 score += 1; // Sadece yoldaki blokları kırınca ufak puan
+             } else {
+                 score += e.maxHp; 
+             }
              scEl.textContent=score; 
           } 
         }
@@ -598,48 +671,71 @@ function draw(t){
     if(e.type === "neon_ship") {
        ctx.save();
        ctx.translate(e.x + e.w/2, e.y + e.h/2);
-       // DÖNME YOK
        ctx.strokeStyle = e.color;
        ctx.lineWidth = 4;
        ctx.shadowColor = e.color;
        ctx.shadowBlur = 18;
        const sw = e.w * 0.9; const sh = e.h * 0.9; 
        ctx.beginPath();
+       
        if (e.neonType === "fighter") {
-         ctx.moveTo(0, -sh/2); ctx.lineTo(sw/10, -sh/10); ctx.lineTo(sw/2, sh/6); ctx.lineTo(sw/10, sh/6); ctx.lineTo(sw/10, sh/2); ctx.lineTo(-sw/10, sh/2); ctx.lineTo(-sw/10, sh/6); ctx.lineTo(-sw/2, sh/6); ctx.lineTo(-sw/10, -sh/10);
+         // YENİ: UÇAK YÖNÜ TAM AŞAĞI, OYUNCUYA BAKIYOR
+         ctx.moveTo(0, sh/2); 
+         ctx.lineTo(sw/2, -sh/2); 
+         ctx.lineTo(sw/6, -sh/4); 
+         ctx.lineTo(0, -sh/2); 
+         ctx.lineTo(-sw/6, -sh/4); 
+         ctx.lineTo(-sw/2, -sh/2); 
        } else {
          ctx.ellipse(0, 0, sw/2, sh/3, 0, 0, Math.PI*2); ctx.moveTo(sw/4, -sh/6); ctx.ellipse(0, -sh/6, sw/4, sh/4, 0, Math.PI, Math.PI*2); 
        }
+       
        ctx.closePath();
        ctx.stroke();
        ctx.fillStyle = "#ffffff"; ctx.font = "900 24px system-ui"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.shadowBlur = 0;
        ctx.fillText(e.hp, 0, 0); 
        ctx.restore();
 
-    } else if(e.type === "snake") {
+    } else if (e.type === "corridor_block") {
+       // KORİDOR BLOKLARI: Duvarlar koyu, kırılabilir yollar parlak neon
        ctx.save();
        ctx.translate(e.x + e.w/2, e.y + e.h/2);
-       // DÖNME YOK (SABİT OKUNUR)
-       ctx.strokeStyle = e.color;
-       ctx.lineWidth = 4;
-       ctx.shadowColor = e.color;
-       ctx.shadowBlur = 15;
+       ctx.strokeStyle = e.isWall ? "#334155" : "#ffffff";
+       ctx.lineWidth = 3;
+       ctx.shadowColor = e.isWall ? "transparent" : "#ffffff";
+       ctx.shadowBlur = e.isWall ? 0 : 12;
        ctx.beginPath();
-       const rad = e.w / 2.2; 
-       for(let i=0; i<e.sides; i++){
-         const angle = (i * 2 * Math.PI) / e.sides;
-         const px = Math.cos(angle) * rad;
-         const py = Math.sin(angle) * rad;
-         if(i===0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+       let rad = e.w * 0.48; // Bitişik görünmesi için geniş
+       for(let i=0; i<6; i++) {
+           let a = i * Math.PI / 3;
+           let px = Math.cos(a) * rad; let py = Math.sin(a) * rad;
+           if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
        }
        ctx.closePath();
        ctx.stroke();
-       ctx.fillStyle = e.color; ctx.globalAlpha = 0.1; ctx.fill();
+       if (!e.isWall) { ctx.fillStyle = "rgba(255,255,255,0.08)"; ctx.fill(); }
+       ctx.fillStyle = e.isWall ? "#64748b" : "#ffffff";
+       ctx.font = "900 20px system-ui"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.shadowBlur=0;
+       ctx.fillText(e.hp, 0, 0);
        ctx.restore();
-       ctx.fillStyle = "#ffffff"; ctx.font = "900 22px system-ui"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.shadowBlur = 0;
-       ctx.fillText(e.hp, e.x + e.w/2, e.y + e.h/2);
+
+    } else if (e.type.startsWith("node_")) {
+       // KORİDOR NODELARI (Mavi, Yeşil, Kırmızı, Boss)
+       ctx.save();
+       ctx.translate(e.x + e.w/2, e.y + e.h/2);
+       let color = e.type === "node_blue" ? "#3b82f6" : e.type === "node_green" ? "#22c55e" : e.type === "node_red" ? "#ef4444" : "#dc2626";
+       ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.shadowColor = color; ctx.shadowBlur = 20;
+       ctx.beginPath();
+       if(e.type === "node_boss") { ctx.rect(-e.w*0.4, -e.h*0.4, e.w*0.8, e.h*0.8); } 
+       else { ctx.arc(0, 0, e.w*0.35, 0, Math.PI*2); }
+       ctx.stroke();
+       ctx.fillStyle = color; ctx.globalAlpha = 0.25; ctx.fill(); ctx.globalAlpha = 1.0;
+       ctx.fillStyle = "#fff"; ctx.font = "900 18px system-ui"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.shadowBlur=0;
+       ctx.fillText(e.hp, 0, 0);
+       ctx.restore();
 
     } else {
+       // KLASİK RESİMLİ DÜŞMAN
        if(e.isSprite && e.img && e.totalFrames > 0) {
          const frameW = e.img.width / e.totalFrames; const frameH = e.img.height; const sx = e.frame * frameW;
          ctx.save();
@@ -661,7 +757,7 @@ function loop(t){const dt=Math.min(t-(window._lt||t),32);window._lt=t;update(dt)
 
 restartBtn.onclick=()=>{
   if(window.bpcTimer)clearInterval(window.bpcTimer);
-  score=0;lives=3;powerTime=0;scEl.textContent=0;pxEl.textContent=0;
+  score=0;lives=3;powerTime=0;scEl.textContent=0;pxEl.textContent=0; activeBuffs.blue = 0;
   bullets=[];enemies=[];enemyBullets=[];gems=[];mascots=[];particles=[];
   updateLives();gameOver=false;scoreSent=false;paused=false;inCountdown=false;
   overEl.style.display="none";top10Box.style.display="none";uiPause.style.display="none";
