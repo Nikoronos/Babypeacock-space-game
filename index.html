@@ -230,7 +230,7 @@ function playExplosionSound() {
   const now = performance.now();
   if (now - lastBoomTime < 50) return; // 50ms içinde tekrar patlama gelirse yoksay
   lastBoomTime = now;
-  sounds.boomShip.play(); // Sadece orijinal dosya
+  sounds.boomShip.play(); // Orijinal boom_one sesini kullanır
 }
 
 function playLifeSound() { if (!soundEnabled) return; sounds.gem.play(); }
@@ -285,8 +285,8 @@ let elapsed=0,enT=0,gemT=0,mascotT=0;
 let scoreSent=false;
 let player={x:cv.width/2-33,y:cv.height-120,w:66,h:66};
 
-// YENİ OYUN MODU VE KORİDOR ZİNCİR DEĞİŞKENLERİ
-let gameMode = "classic"; // "classic" veya "corridor"
+// OYUN MODU VE SNAKE VS BLOCK DEĞİŞKENLERİ
+let gameMode = "classic"; 
 let lastGameMode = "classic";
 let corridorRowsSpawned = 0;
 let lastRowY = 0;
@@ -364,7 +364,7 @@ function shoot(){
       bullets.push({x:px, y:player.y, w:4, h:12, vy:bVy}); 
       bullets.push({x:px, y:player.y, w:4, h:12, vy:bVy, ang:3}); 
       bullets.push({x:px, y:player.y, w:4, h:12, vy:bVy, ang:-3}); 
-      if(activeBuffs.blue > 0) { // Koridor Blue Node ekstra güç
+      if(activeBuffs.blue > 0) { 
          bullets.push({x:px, y:player.y, w:4, h:12, vy:bVy, ang:6});
          bullets.push({x:px, y:player.y, w:4, h:12, vy:bVy, ang:-6});
       }
@@ -396,55 +396,12 @@ function explosion(x,y,count=18){
 
 function allowedKindsByTime(t){ if(t<10) return ["ufo_red","ufo_gray"]; if(t<40) return ["ufo_red","ufo_gray","green"]; return ["ufo_red","ufo_gray","green","red"]; }
 
-/* --- YENİ 300-1000 ARASI KORİDOR (ZİNCİR) ÜRETİCİSİ --- */
-// Bu fonksiyon duvar örmez, ekranda kıvrılan tek/çiftli bir blok zinciri üretir.
-function spawnCorridorRow(blockSize, spMul) {
-    let rowY = -blockSize;
-    corridorRowsSpawned++;
-
-    // Merkez noktayı sinüs dalgası ile sağa/sola kıvır
-    let amplitude = cv.width / 2 - blockSize; // Sağa sola salınım genliği
-    let centerX = cv.width / 2 + Math.sin(corridorRowsSpawned * 0.15) * amplitude;
-
-    // Özel Node ve Boss zamanlaması
-    let isNodeRow = (corridorRowsSpawned % 15 === 0);
-    let isBossRow = (corridorRowsSpawned % 45 === 0);
-
-    if (isBossRow) {
-        // Büyük Kırmızı Tehdit (Yüksek HP, İri obje)
-        enemies.push({
-            x: centerX - blockSize * 0.8, y: rowY, w: blockSize * 1.6, h: blockSize * 1.6, vy: 2 * spMul,
-            type: "node_boss", hp: 80, maxHp: 80, dead: false
-        });
-    } else if (isNodeRow) {
-        // Upgrade Nodeları (Mavi, Yeşil, Kırmızı)
-        let types = ["node_blue", "node_green", "node_red"];
-        let t = types[Math.floor(Math.random()*types.length)];
-        enemies.push({
-            x: centerX - blockSize/2, y: rowY, w: blockSize, h: blockSize, vy: 2 * spMul,
-            type: t, hp: 15, maxHp: 15, dead: false
-        });
-    } else {
-        // Kıvrılan Rotayı oluşturan 1 veya yan yana 2 blok (Duvar Değil)
-        let blocksInRow = Math.random() < 0.6 ? 1 : 2;
-        for(let i=0; i<blocksInRow; i++) {
-            let offsetX = (i - (blocksInRow - 1) / 2) * blockSize;
-            let hp = Math.floor(rand(5, 12));
-            enemies.push({
-                x: centerX + offsetX - blockSize/2, y: rowY, w: blockSize, h: blockSize, vy: 2 * spMul,
-                type: "corridor_block", hp: hp, maxHp: hp, isWall: false, dead: false
-            });
-        }
-    }
-}
-
 /* --- KLASİK DÜŞMAN ÜRETİCİ (0-300 ve 1000+) --- */
 function spawnEnemy(k, spMul){ 
   const enemyCap = (score >= 2300) ? 30 : (score >= 2000) ? 26 : (score >= 1500) ? 22 : (score >= 1300) ? 20 : (score >= 800)  ? 18 : (score >= 500)  ? 14 : 12;
   if(enemies.length > enemyCap) return; 
   
   if (score < 300) {
-    // 0 - 300 ARASI: Neon Uçak ve Ufo
     let size = rand(60, 90);
     let colors = ["#bc13fe", "#00ffc8", "#39ff14", "#ff007f", "#ffff00"];
     let color = colors[Math.floor(Math.random() * colors.length)];
@@ -469,7 +426,7 @@ function spawnEnemy(k, spMul){
     });
 
   } else {
-    // 1000+ ARASI: ORİJİNAL RESİMLİ DÜŞMANLAR
+    // 1000+ ARASI
     const kind = k[Math.floor(Math.random()*k.length)]; 
     let size = rand(48,70); if(kind === "red") size = rand(60, 80); 
     let isSprite = false, img = null, frames = 1, blendMode = 'normal', frameDelay = 30;
@@ -563,20 +520,55 @@ function update(dt){
   if (gameMode !== lastGameMode) {
      if (gameMode === "corridor") {
          enemies = enemies.filter(e => e.type !== "classic" && e.type !== "neon_ship"); // Temiz geçiş
-         lastRowY = 999; // Hemen koridor başlat
+         lastRowY = 999; 
      }
      lastGameMode = gameMode;
   }
 
-  /* --- SPAWN DÖNGÜSÜ --- */
+  /* --- SNAKE VS BLOCK SPAWN DÖNGÜSÜ (300-1000) --- */
   if (gameMode === "classic") {
       if(enT > 600/(spwMul * dyn)){ spawnEnemy(allowedKindsByTime(elapsed), spMul); enT = 0; }
   } else if (gameMode === "corridor") {
       lastRowY += (2 * spMul); 
-      let blockSize = Math.floor(cv.width / 5); // Boyut referansı
-      if (lastRowY > blockSize * 1.05) { // Aralarında hafif boşluklu zincir
-          spawnCorridorRow(blockSize, spMul);
+      let spacing = 18; // Sarı halkaların üst üste binmesi için kısa aralık (Overlap)
+      
+      if (lastRowY > spacing) {
           lastRowY = 0;
+          corridorRowsSpawned++;
+          
+          // Her 40 adımda bir Duvar (Bloklar) ve Nodelar
+          if (corridorRowsSpawned % 40 === 0) {
+              let bw = cv.width / 5;
+              for(let i=0; i<5; i++) {
+                  if (Math.random() < 0.15) continue; // %15 ihtimalle duvarda boşluk bırak
+                  let hp = Math.floor(rand(10, 50));
+                  enemies.push({
+                      x: i * bw + 2, y: -bw, w: bw - 4, h: bw - 4, vy: 2 * spMul,
+                      type: "wall_block", hp: hp, maxHp: hp, dead: false
+                  });
+              }
+          } else if (corridorRowsSpawned % 40 === 35) {
+              // Duvara çarpmadan hemen önce Buff Nodeları çıkar
+              let types = ["node_blue", "node_green", "node_red"];
+              let t = types[Math.floor(Math.random()*types.length)];
+              let bw = cv.width / 5;
+              let rndCol = Math.floor(Math.random()*5);
+              enemies.push({
+                  x: rndCol * bw + bw/2 - 15, y: -30, w: 30, h: 30, vy: 2 * spMul,
+                  type: t, hp: 15, maxHp: 15, dead: false
+              });
+          } else if (corridorRowsSpawned % 40 < 32) {
+              // Yılan Gövdesi (Sarı Yuvarlaklar)
+              let amplitude = cv.width / 2 - 20;
+              // Sinüs dalgası ile soldan sağa kıvrılan rota
+              let centerX = cv.width / 2 + Math.sin(corridorRowsSpawned * 0.12) * amplitude;
+              
+              let hp = Math.floor(rand(1, 4));
+              enemies.push({
+                  x: centerX - 15, y: -30, w: 30, h: 30, vy: 2 * spMul,
+                  type: "snake_body", hp: hp, maxHp: hp, dead: false
+              });
+          }
       }
   }
   
@@ -643,9 +635,9 @@ function update(dt){
                  if (e.type === "node_blue") { activeBuffs.blue = 6000; playGemSound(); }
                  if (e.type === "node_green") { lives++; updateLives(); playGemSound(); }
                  if (e.type === "node_red") { powerTime = 15000; playGemSound(); }
-                 if (e.type === "node_boss") { score += 50; }
-             } else if (e.type === "corridor_block") {
-                 score += e.maxHp; 
+                 score += 5;
+             } else if (e.type === "snake_body" || e.type === "wall_block") {
+                 score += e.maxHp; // Numara kadar puan
              } else {
                  score += e.maxHp; 
              }
@@ -704,54 +696,49 @@ function draw(t){
        ctx.fillText(e.hp, 0, 0); 
        ctx.restore();
 
-    } else if (e.type === "corridor_block") {
-       // SADECE ZİNCİR HATTI ÜZERİNDEKİ SAYI BLOKLARI (Neon Beyaz Altıgen)
+    } else if (e.type === "snake_body") {
+       // KIVRILAN SARI YILAN (Snake VS Block Stili)
        ctx.save();
        ctx.translate(e.x + e.w/2, e.y + e.h/2);
-       ctx.strokeStyle = "#ffffff";
-       ctx.lineWidth = 3;
-       ctx.shadowColor = "#00ffc8"; 
+       ctx.fillStyle = "#facc15"; // Canlı Sarı
+       ctx.shadowColor = "rgba(250, 204, 21, 0.6)"; 
        ctx.shadowBlur = 10;
        ctx.beginPath();
-       let rad = e.w * 0.45;
-       for(let i=0; i<6; i++) {
-           let a = i * Math.PI / 3 + Math.PI/6; 
-           let px = Math.cos(a) * rad; let py = Math.sin(a) * rad;
-           if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
-       }
-       ctx.closePath();
-       ctx.stroke();
-       ctx.fillStyle = "rgba(255,255,255,0.1)"; ctx.fill();
-       ctx.fillStyle = "#ffffff";
-       ctx.font = "900 20px system-ui"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.shadowBlur=0;
+       ctx.arc(0, 0, e.w/2, 0, Math.PI*2);
+       ctx.fill();
+       ctx.fillStyle = "#000000"; // Siyah numara
+       ctx.shadowBlur = 0;
+       ctx.font = "900 16px system-ui"; ctx.textAlign="center"; ctx.textBaseline="middle"; 
+       ctx.fillText(e.hp, 0, 0);
+       ctx.restore();
+
+    } else if (e.type === "wall_block") {
+       // RENKLİ KARE BLOK DUVARLAR (Snake VS Block Stili)
+       ctx.save();
+       ctx.translate(e.x + e.w/2, e.y + e.h/2);
+       // Canına göre rengi değişsin (Az canlılar Yeşilimsi/Mavi, çok canlılar Kırmızı/Turuncu)
+       let hue = Math.max(0, 180 - e.hp * 3); 
+       ctx.fillStyle = `hsl(${hue}, 85%, 50%)`;
+       ctx.beginPath();
+       let r = 8, w = e.w, h = e.h;
+       // Kare ama köşeleri hafif oval (Tüm cihazlarda çalışması için rect fallbackli)
+       if(ctx.roundRect) { ctx.roundRect(-w/2, -h/2, w, h, r); } else { ctx.rect(-w/2, -h/2, w, h); }
+       ctx.fill();
+       ctx.fillStyle = "#ffffff"; // Beyaz numara
+       ctx.font = "900 22px system-ui"; ctx.textAlign="center"; ctx.textBaseline="middle"; 
        ctx.fillText(e.hp, 0, 0);
        ctx.restore();
 
     } else if (e.type.startsWith("node_")) {
-       // KORİDOR NODELARI (Mavi, Yeşil, Kırmızı, Boss)
+       // KORİDOR NODELARI (Mavi, Yeşil, Kırmızı)
        ctx.save();
        ctx.translate(e.x + e.w/2, e.y + e.h/2);
-       if(e.type === "node_boss") { 
-           // Büyük Kırmızı Boss (Sekizgen)
-           let color = "#ef4444";
-           ctx.strokeStyle = color; ctx.lineWidth = 6; ctx.shadowColor = color; ctx.shadowBlur = 25;
-           ctx.beginPath();
-           let rad = e.w * 0.45;
-           for(let i=0; i<8; i++) {
-               let a = i * Math.PI / 4;
-               ctx.lineTo(Math.cos(a)*rad, Math.sin(a)*rad);
-           }
-           ctx.closePath(); ctx.stroke();
-           ctx.fillStyle = "rgba(239, 68, 68, 0.2)"; ctx.fill();
-           ctx.fillStyle = "#fff"; ctx.font = "900 24px system-ui"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(e.hp, 0, 0);
-       } 
-       else {
-           let color = e.type === "node_blue" ? "#3b82f6" : e.type === "node_green" ? "#22c55e" : "#ef4444";
-           ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.shadowColor = color; ctx.shadowBlur = 20;
-           ctx.beginPath(); ctx.arc(0, 0, e.w*0.35, 0, Math.PI*2); ctx.stroke();
-           ctx.fillStyle = color; ctx.globalAlpha = 0.25; ctx.fill(); ctx.globalAlpha = 1.0;
-           ctx.fillStyle = "#fff"; ctx.font = "900 18px system-ui"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.shadowBlur=0; ctx.fillText(e.hp, 0, 0);
-       }
+       let color = e.type === "node_blue" ? "#3b82f6" : e.type === "node_green" ? "#22c55e" : "#ef4444";
+       ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.shadowColor = color; ctx.shadowBlur = 15;
+       ctx.beginPath(); ctx.arc(0, 0, e.w*0.35, 0, Math.PI*2); ctx.stroke();
+       ctx.fillStyle = color; ctx.globalAlpha = 0.25; ctx.fill(); ctx.globalAlpha = 1.0;
+       ctx.fillStyle = "#fff"; ctx.font = "900 16px system-ui"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.shadowBlur=0;
+       ctx.fillText(e.hp, 0, 0);
        ctx.restore();
 
     } else {
