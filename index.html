@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -75,11 +76,39 @@
   .upg-btn:active { background: #facc15; color: #000; }
   .upg-btn:disabled { border-color: #555; color: #555; cursor: not-allowed; background: transparent; }
 
-  #gameOver { background: transparent; justify-content: flex-start; padding-top: 40vh; overflow-y: auto; }
+  /* --- LEADERBOARD & GAME OVER UI --- */
+  #gameOver { background: transparent; justify-content: flex-start; padding-top: 35vh; overflow-y: auto; }
+  #mondayChampBox {
+    display: none; flex-direction: column; align-items: center; margin-bottom: 10px; padding: 8px 15px;
+    background: rgba(20, 20, 10, 0.95); border: 1px solid #facc15; border-radius: 8px; 
+    box-shadow: 0 0 15px rgba(250, 204, 21, 0.4); width: min(320px, 80vw); text-align: center; 
+  }
+  .champ-label { color:#facc15;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px; }
+  .champ-name { color:#fff;font-size:15px;font-weight:900;margin-bottom:4px;text-shadow:0 0 5px rgba(255,255,255,0.5); }
+  #winnerSecret { display: none; font-family: monospace; color:#00ffc8;font-size:13px;font-weight:bold; background:#000;padding:4px 8px;border-radius:4px;border:1px dashed #00ffc8; margin-top:4px; }
+  
+  #bpc-top10 { width: min(380px, 90vw); background: rgba(5, 5, 5, 0.9); border: 1px solid #333; border-radius: 10px; padding: 10px; color: #fff; font-size: 13px; line-height: 1.4; margin-top: 10px; margin-bottom: 40px; }
+  #bpc-top10 h4{margin:0 0 5px 0;font-size:12px;font-weight:800;text-align:center;color:#e2e8f0;letter-spacing:.5px;}
+  #week-timer{text-align:center;font-size:11px;color:#94a3b8;margin-bottom:6px;font-weight:600;border-bottom:1px dashed #333;padding-bottom:4px}
+  #bpc-top10 ol { margin:0; padding:0; list-style:none; max-height: 35vh; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-right: 5px; } 
+  #bpc-top10 ol::-webkit-scrollbar { width: 4px; }
+  #bpc-top10 ol::-webkit-scrollbar-track { background: #111; border-radius: 2px; }
+  #bpc-top10 ol::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+  #bpc-top10 li { margin-bottom:4px; display:flex; justify-content: space-between; align-items:center; border-bottom:1px solid #222; padding-bottom:2px; color:#fff; }
+  .li-info { display: flex; align-items: center; } 
+  .li-medal { text-align: right; min-width: 25px; font-size: 14px; } 
+  .rank-num { display:inline-block;width:25px;text-align:right;margin-right:8px;color:#94a3b8;font-weight:bold;font-family:monospace; }
+  #bpc-top10 .me{color:#ff5c5c;font-weight:bold} 
+  #bpc-top10 .me .rank-num{color:#ff5c5c}
+  #globalCounterBox { margin-top:5px;font-size:12px;opacity:.9;text-align:center;color:#cbd5e1;text-shadow:0 2px 4px #000; }
+  #globalCounterBox::before { content: "🌍 "; }
+
   #countdownOverlay{background:transparent;pointer-events:none;z-index:70}
   #cntText{font-size:90px;font-weight:900;color:#fff;text-shadow:0 0 25px #22d3ee;font-family:monospace}
   @keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
+  
   .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer;margin-bottom:5px;box-shadow:0 0 20px rgba(0,255,200,0.4);}
+  #goToMarketBtn { border-color: #facc15; color: #facc15; box-shadow:0 0 20px rgba(250,204,21,0.4); }
   
   #soundToggle { position:absolute; bottom: 20px; right: 20px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(34, 211, 238, 0.5); background: rgba(15, 23, 42, 0.9); color: #22d3ee; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 100; }
   
@@ -119,7 +148,8 @@
     </div>
 
     <button id="startBtn" class="btn">START GAME</button>
-    <div style="margin-top:12px;font-size:12px;color:#ccc;">Serbest sürükleme aktiftir (Yukarı/Aşağı/Sağa/Sola)</div>
+    <div id="playerCode" style="margin-top:10px;font-size:14px;color:#00ffc8;"></div>
+    <div style="margin-top:8px;font-size:12px;color:#ccc;">Serbest sürükleme aktiftir (Yukarı/Aşağı/Sağa/Sola)</div>
     <div id="soundToggle">🔊</div>
   </div>
 
@@ -131,7 +161,19 @@
   <div id="countdownOverlay"><div id="cntText"></div></div>
 
   <div id="gameOver">
+    <div id="mondayChampBox">
+      <div class="champ-label">👑 Week <span id="mc-week">--</span> Champion</div>
+      <div class="champ-name" id="mc-name">Loading...</div>
+      <div id="winnerSecret">CODE: <span id="mc-code">---</span></div>
+    </div>
     <button id="restart" class="btn">Restart</button>
+    <button id="goToMarketBtn" class="btn">Market / Upgrades</button>
+    <div id="globalCounterBox">Global plays: <span id="globalCounter">…</span></div>
+    <div id="bpc-top10" style="display:none">
+      <h4>🏆 Weekly Top 20</h4>
+      <div id="week-timer">Week <span id="wk-num">--</span> • <span id="wk-rem" style="color:#facc15">--:--:--</span></div>
+      <ol id="bpc-list"></ol>
+    </div>
   </div>
 
   <canvas id="game"></canvas>
@@ -163,17 +205,14 @@ const sounds = {
   boomUfo:    new SoundPool("boom.mp3", 5, 0.6),
   boomShip:   new SoundPool("boom_one.mp3", 5, 0.6),
   gem:        new SoundPool("gem.mp3", 5, 0.7),
-  coin:       new SoundPool("gem.mp3", 5, 0.4), // Jeton sesi (elmasla aynı ama kısık)
+  coin:       new SoundPool("gem.mp3", 5, 0.4),
   gameOver:   new Audio("space_chords.mp3")
 };
 sounds.gameOver.loop = false; let gameOverMusicPlayed = false;
 
 let soundEnabled = localStorage.getItem("bpc_sound") !== "0";
 const soundBtn = document.getElementById("soundToggle");
-function updateSoundIcon() {
-  soundBtn.textContent = soundEnabled ? "🔊" : "🔇";
-  soundBtn.style.opacity = soundEnabled ? "1" : "0.5";
-}
+function updateSoundIcon() { soundBtn.textContent = soundEnabled ? "🔊" : "🔇"; soundBtn.style.opacity = soundEnabled ? "1" : "0.5"; }
 updateSoundIcon();
 soundBtn.onclick = (e) => { e.stopPropagation(); soundEnabled = !soundEnabled; localStorage.setItem("bpc_sound", soundEnabled ? "1" : "0"); updateSoundIcon(); };
 
@@ -195,22 +234,28 @@ function updateMarketUI() {
   btnUpgSpeed.textContent = `Ateş Hızı + (${1000 + upgSpeed * 1000} Jeton)`;
   
   btnUpgLife.disabled = bpcCoins < (500 + upgLife * 500);
-  btnUpgSpeed.disabled = bpcCoins < (1000 + upgSpeed * 1000) || upgSpeed >= 5; // Hız max 5 level
+  btnUpgSpeed.disabled = bpcCoins < (1000 + upgSpeed * 1000) || upgSpeed >= 5;
 }
 updateMarketUI();
 
-btnUpgLife.onclick = () => {
-  const cost = 500 + upgLife * 500;
-  if(bpcCoins >= cost) { bpcCoins -= cost; upgLife++; localStorage.setItem('bpc_coins', bpcCoins); localStorage.setItem('bpc_upg_life', upgLife); updateMarketUI(); }
-};
-btnUpgSpeed.onclick = () => {
-  const cost = 1000 + upgSpeed * 1000;
-  if(bpcCoins >= cost && upgSpeed < 5) { bpcCoins -= cost; upgSpeed++; localStorage.setItem('bpc_coins', bpcCoins); localStorage.setItem('bpc_upg_speed', upgSpeed); updateMarketUI(); }
-};
+btnUpgLife.onclick = () => { const cost = 500 + upgLife * 500; if(bpcCoins >= cost) { bpcCoins -= cost; upgLife++; localStorage.setItem('bpc_coins', bpcCoins); localStorage.setItem('bpc_upg_life', upgLife); updateMarketUI(); } };
+btnUpgSpeed.onclick = () => { const cost = 1000 + upgSpeed * 1000; if(bpcCoins >= cost && upgSpeed < 5) { bpcCoins -= cost; upgSpeed++; localStorage.setItem('bpc_coins', bpcCoins); localStorage.setItem('bpc_upg_speed', upgSpeed); updateMarketUI(); } };
 
-function addCoins(amount) {
-  bpcCoins += amount; localStorage.setItem('bpc_coins', bpcCoins); document.getElementById("cn").textContent = bpcCoins.toLocaleString("tr-TR");
+function addCoins(amount) { bpcCoins += amount; localStorage.setItem('bpc_coins', bpcCoins); document.getElementById("cn").textContent = bpcCoins.toLocaleString("tr-TR"); }
+
+/* ====== PLAYER CODE & VERIFY (Leaderboard) ====== */
+function getPlayerCode(){ let c=localStorage.getItem("playerCode"); if(!c){c="BPC"+Math.floor(100000+Math.random()*899999);localStorage.setItem("playerCode",c);} return c; }
+const myCode=getPlayerCode();
+(function(){const box=document.getElementById("playerCode");if(box)box.innerHTML=`👤 Player: <b>${myCode}</b>`;})();
+
+let playId=Math.floor(performance.now()+Math.random()*1e9);
+let verifyCode="--------";
+async function makeCode(){
+  const t=Math.floor(Date.now()/1000); const msg=new TextEncoder().encode(playId+"|"+t+"|babypeacock");
+  const buf=await crypto.subtle.digest("SHA-256",msg);
+  verifyCode=[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("").slice(0,8).toUpperCase();
 }
+makeCode();
 
 /* ====== GAME SETUP ====== */
 const cv=document.getElementById("game");
@@ -221,9 +266,11 @@ const ctx=cv.getContext("2d"); ctx.imageSmoothingEnabled=false;
 const uiLayer = document.getElementById("ui-layer"), uiPause = document.getElementById("pauseBtn");
 const scEl=document.getElementById("sc"), wlEl=document.getElementById("wl"), livesEl=document.getElementById("lives"), cnEl=document.getElementById("cn");
 const startOverlay=document.getElementById("startOverlay"), startBtn=document.getElementById("startBtn");
-const overEl=document.getElementById("gameOver"), restartBtn=document.getElementById("restart");
+const overEl=document.getElementById("gameOver"), restartBtn=document.getElementById("restart"), goToMarketBtn=document.getElementById("goToMarketBtn");
+const top10Box=document.getElementById("bpc-top10");
 const pauseBtn=document.getElementById("pauseBtn"), pauseOverlay=document.getElementById("pauseOverlay"), resumeBtn=document.getElementById("resumeBtn");
 const countOverlay=document.getElementById("countdownOverlay"), cntText=document.getElementById("cntText");
+const mondayBox = document.getElementById("mondayChampBox"), mcWeek = document.getElementById("mc-week"), mcName = document.getElementById("mc-name"), mcSecretBox = document.getElementById("winnerSecret"), mcCode = document.getElementById("mc-code");
 
 function clamp(v,a,b){return v<a?a:v>b?b:v;}
 function rand(a,b){return a+Math.random()*(b-a);}
@@ -241,12 +288,11 @@ const SPRITE_CONFIG = { green: { src: "bpc_enemy_green_sprite.png", frames: 60, 
 
 let bullets=[], enemies=[], enemyBullets=[], gems=[], coinsList=[], mascots=[], particles=[];
 let score=0, baseLives=3, lives=3, weaponLevel=1, started=false, gameOver=false, paused=false, inCountdown=false;
-let fireTimer=0;
-let elapsed=0,enT=0,gemT=0;
+let fireTimer=0, elapsed=0, enT=0, gemT=0, scoreSent=false;
 let player={x:cv.width/2-33,y:cv.height-120,w:66,h:66};
 resize();
 
-/* YANIP SÖNEN YILDIZLAR SİSTEMİ (Twinkling) */
+/* YANIP SÖNEN YILDIZLAR */
 const starsA=[], starsB=[];
 for(let i=0;i<30;i++) starsA.push({x:rand(0,cv.width),y:rand(0,cv.height), sp:rand(0.2,0.4), blink: rand(0.002, 0.005), off: rand(0, Math.PI*2)});
 for(let i=0;i<20;i++) starsB.push({x:rand(0,cv.width),y:rand(0,cv.height), sp:rand(0.7,1.1), blink: rand(0.003, 0.007), off: rand(0, Math.PI*2)});
@@ -272,80 +318,80 @@ resumeBtn.onclick=()=>{pauseOverlay.style.display="none";startCountdownSequence(
 function updateLives(){livesEl.innerHTML="❤️".repeat(lives);} 
 function updateWeaponUI(){wlEl.textContent=weaponLevel;}
 
-/* SERBEST SÜRÜKLEME KONTROLLERİ (Tam Eksen X ve Y) */
+/* SERBEST SÜRÜKLEME KONTROLLERİ */
 let holding=false;
 function getX(e){return (e.clientX??(e.touches?e.touches[0].clientX:0))-cv.getBoundingClientRect().left;}
 function getY(e){return (e.clientY??(e.touches?e.touches[0].clientY:0))-cv.getBoundingClientRect().top;}
 
-cv.addEventListener("pointerdown",e=>{
-  if(!started||paused||inCountdown)return; holding=true;
-  player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w);
-  player.y=clamp(getY(e)-player.h/2,0,cv.height-player.h);
-});
-cv.addEventListener("pointermove",e=>{
-  if(!holding||paused||inCountdown)return;
-  player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w);
-  player.y=clamp(getY(e)-player.h/2,0,cv.height-player.h);
-});
+cv.addEventListener("pointerdown",e=>{ if(!started||paused||inCountdown)return; holding=true; player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w); player.y=clamp(getY(e)-player.h/2,0,cv.height-player.h); });
+cv.addEventListener("pointermove",e=>{ if(!holding||paused||inCountdown)return; player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w); player.y=clamp(getY(e)-player.h/2,0,cv.height-player.h); });
 cv.addEventListener("pointerup",()=>holding=false); cv.addEventListener("pointercancel",()=>holding=false);
 
 function shoot(){
-  playShootSound(weaponLevel > 1);
-  const cx = player.x + player.w/2 - 2;
-  // Aşamalı Silah Evrimi (Seviyeye Göre Mermi Atışı)
-  if (weaponLevel === 1) {
-    bullets.push({x:cx, y:player.y, w:4, h:12, vy:-10});
-  } else if (weaponLevel === 2) {
-    bullets.push({x:cx - 8, y:player.y, w:4, h:12, vy:-10});
-    bullets.push({x:cx + 8, y:player.y, w:4, h:12, vy:-10});
-  } else {
-    bullets.push({x:cx, y:player.y, w:4, h:12, vy:-10});
-    bullets.push({x:cx, y:player.y, w:4, h:12, vy:-10, ang: 3});
-    bullets.push({x:cx, y:player.y, w:4, h:12, vy:-10, ang: -3});
-  }
+  playShootSound(weaponLevel > 1); const cx = player.x + player.w/2 - 2;
+  if (weaponLevel === 1) { bullets.push({x:cx, y:player.y, w:4, h:12, vy:-10}); } 
+  else if (weaponLevel === 2) { bullets.push({x:cx - 8, y:player.y, w:4, h:12, vy:-10}); bullets.push({x:cx + 8, y:player.y, w:4, h:12, vy:-10}); } 
+  else { bullets.push({x:cx, y:player.y, w:4, h:12, vy:-10}); bullets.push({x:cx, y:player.y, w:4, h:12, vy:-10, ang: 3}); bullets.push({x:cx, y:player.y, w:4, h:12, vy:-10, ang: -3}); }
 }
 
 function spawnGem(){ if(weaponLevel >= 3) return; const s=22; gems.push({x:rand(0,cv.width-s), y:-s, w:s, h:s, vy:1.5}); }
-function explosion(x,y,count=18){
-  const left=Math.max(0,120-particles.length);const n=Math.min(12,left);
-  for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=1.2+Math.random()*2.8;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:420+Math.random()*280,size:1.6+Math.random()*2.4});}
-}
-
+function explosion(x,y,count=18){ const left=Math.max(0,120-particles.length);const n=Math.min(12,left); for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=1.2+Math.random()*2.8;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:420+Math.random()*280,size:1.6+Math.random()*2.4});} }
 function spawnEnemy(k, spMul){ 
-  const kind=k[Math.floor(Math.random()*k.length)]; 
-  let size=rand(48,70); 
+  const kind=k[Math.floor(Math.random()*k.length)]; let size=rand(48,70); 
   let img = null, frames = 1, blendMode = 'normal';
   if (loadedSprites[kind]) { img = loadedSprites[kind].img; frames = loadedSprites[kind].frames; blendMode = SPRITE_CONFIG[kind].mode || 'normal'; }
   enemies.push({ x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul, kind, img, isSprite:(frames>1), blendMode, frame:0, frameTimer:0, totalFrames: frames, canShoot:(kind==="red"||kind==="green"), shootT:0,shootInt:500 }); 
 }
-
 function enemyShoot(e){ 
   if(!e.canShoot) return; const cx=e.x+e.w/2; 
-  if(e.kind==="red") enemyBullets.push({x:cx-2,y:e.y+e.h,w:4,h:12,vy:6,color:"#ef4444"});
-  else enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6.5,color:"#22c55e"}); 
+  if(e.kind==="red") enemyBullets.push({x:cx-2,y:e.y+e.h,w:4,h:12,vy:6,color:"#ef4444"}); else enemyBullets.push({x:cx-1,y:e.y+e.h,w:2,h:18,vy:6.5,color:"#22c55e"}); 
 }
 
+/* Orijinal Dönen Epic Skor Ekranı */
 function renderFinalScore(t){
   const cx=cv.width/2; const cy=cv.height * 0.35; 
-  ctx.save(); ctx.fillStyle="rgba(0,0,0,0.85)"; ctx.fillRect(0,0,cv.width,cv.height);
-  ctx.fillStyle="#00ffc8"; ctx.font="900 48px system-ui,Arial"; ctx.textAlign="center";
-  ctx.fillText("Game Over",cx,cy); ctx.font="900 24px system-ui,Arial"; ctx.fillText("Score: " + score,cx,cy+40);
+  ctx.save();
+  const grd=ctx.createRadialGradient(cx,cy,20,cx,cy,Math.max(cv.width,cv.height)/1.2);
+  grd.addColorStop(0,"rgba(0,0,0,0.55)"); grd.addColorStop(1,"rgba(0,0,0,0.95)");
+  ctx.fillStyle=grd; ctx.fillRect(0,0,cv.width,cv.height);
+  const pw=Math.min(360,cv.width-40), ph=160, rx=cx-pw/2, ry=cy-ph/2-6;
+  ctx.save(); ctx.beginPath(); ctx.rect(rx-50,ry-50,pw+100,ph+100); ctx.clip();
+  ctx.translate(cx,cy); ctx.rotate(Math.sin(t / 4000) * 0.15); 
+  ctx.fillStyle="rgba(0,255,200,0.15)"; const line=`Babypeacock • SCORE ${score} • CODE ${verifyCode} • `;
+  ctx.font="700 13px system-ui,Arial"; for(let y=-150;y<=150;y+=22){let x=-300; while(x<300){ctx.fillText(line,x,y); x+=ctx.measureText(line).width+40;}}
+  ctx.restore();
+  const gradText = ctx.createLinearGradient(cx - 100, 0, cx + 100, 0); gradText.addColorStop(0, "#22d3ee"); gradText.addColorStop(1, "#34d399");
+  ctx.fillStyle = gradText; ctx.font="900 26px system-ui,Arial"; ctx.textAlign="center"; ctx.shadowColor="rgba(34,211,238,0.8)"; ctx.shadowBlur=15;
+  ctx.fillText("Babypeacock",cx,cy-30); ctx.shadowBlur=0;
+  ctx.fillStyle="rgba(0,255,200,0.18)"; ctx.font="900 80px system-ui,Arial"; ctx.fillText(String(score),cx,cy+40);
+  ctx.fillStyle="#00ffc8"; ctx.font="900 48px system-ui,Arial"; ctx.fillText(score,cx,cy+20);
   ctx.restore();
 }
 
+/* FIREBASE VERİ KAYDI */
 async function endGame(){
   if (gameOver) return;
   gameOver = true; uiPause.style.display = "none"; overEl.style.display = "flex"; 
-  if (soundEnabled && !gameOverMusicPlayed) { gameOverMusicPlayed = true; sounds.gameOver.play(); }
-  updateMarketUI(); // Oyun bitince market UI'ı yenile (paralar güncellenmiş olabilir)
+  if (soundEnabled && !gameOverMusicPlayed) { gameOverMusicPlayed = true; sounds.gameOver.currentTime = 0; sounds.gameOver.volume = 1.0; sounds.gameOver.play().catch(()=>{}); }
+  updateMarketUI();
+  
+  if(window.checkMondayWinner) window.checkMondayWinner();
+  try{
+    if(navigator.onLine){
+      if (window.saveScore) await window.saveScore(score);
+      if (window.incrementGlobalPlays) await window.incrementGlobalPlays();
+      if (window.bumpLocation) await window.bumpLocation();
+      if (window.flushPendingScores) window.flushPendingScores();
+    } else { if (window.savePendingScore) window.savePendingScore(score); }
+    if (window.showWeeklyPanel) window.showWeeklyPanel();
+  }catch(e){ if (window.savePendingScore) window.savePendingScore(score); }
+  top10Box.style.display="block";
 }
 
 function update(dt){
   if(!started||gameOver||paused||inCountdown)return;
-  
   elapsed+=dt/1000;enT+=dt;gemT+=dt;
   
-  // Ateş hızı yükseltmesine göre atış sıklığını hesapla (max seviyede çok daha seri)
   const FIRE_MS = 170 - (upgSpeed * 18); 
   fireTimer+=dt;if(holding&&fireTimer>FIRE_MS){shoot();fireTimer=0;}
   
@@ -353,7 +399,6 @@ function update(dt){
   if(gemT > 15000){ if(Math.random() < 0.4) spawnGem(); gemT = 0; }
   
   bullets.forEach(b=>{b.y+=b.vy;b.x+=(b.ang||0)*0.5;}); bullets=bullets.filter(b=>b.y>-20);
-  
   enemies.forEach(e=>{
     e.y+=e.vy; e.shootT+=dt; if(e.canShoot&&e.shootT>=e.shootInt){e.shootT=0;enemyShoot(e);}
     if(e.isSprite && e.img) { e.frameTimer += dt; if(e.frameTimer > 30) { e.frameTimer = 0; e.frame = (e.frame + 1) % e.totalFrames; } }
@@ -365,28 +410,15 @@ function update(dt){
   coinsList.forEach(c=>c.y+=c.vy); coinsList=coinsList.filter(c=>c.y<cv.height+40);
   
   const pBox = { x: player.x + 12, y: player.y + 12, w: player.w - 24, h: player.h - 24 };
+  const takeDamage = () => { lives--; updateLives(); weaponLevel = 1; updateWeaponUI(); if(lives<=0) endGame(); };
 
-  // Düşmana ve mermiye çarpma (Can ve Silah Seviyesi düşüşü)
-  const takeDamage = () => {
-    lives--; updateLives(); weaponLevel = 1; updateWeaponUI(); // Silah seviyesi sıfırlanır
-    if(lives<=0) endGame();
-  };
-
-  for(const e of enemies){
-    if(rectHit(pBox,e)){ playExplosionSound(); explosion(player.x+player.w/2,player.y+player.h/2,22); takeDamage(); e.dead=1; }
-  }
-  for(const m of enemyBullets){
-    if(rectHit(pBox,m)){ playExplosionSound(); explosion(player.x+player.w/2,player.y+player.h/2,22); takeDamage(); m.dead=1; }
-  }
+  for(const e of enemies){ if(rectHit(pBox,e)){ playExplosionSound(); explosion(player.x+player.w/2,player.y+player.h/2,22); takeDamage(); e.dead=1; } }
+  for(const m of enemyBullets){ if(rectHit(pBox,m)){ playExplosionSound(); explosion(player.x+player.w/2,player.y+player.h/2,22); takeDamage(); m.dead=1; } }
   for(const b of bullets){ 
     for(const e of enemies){ 
       if(rectHit(b,e)){ 
         playExplosionSound(); explosion(e.x+e.w/2,e.y+e.h/2,16); b.dead=1; e.dead=1; 
-        if(!gameOver){ 
-          score++; scEl.textContent=score; 
-          // %30 ihtimalle jeton düşür
-          if(Math.random() < 0.3) { coinsList.push({x: e.x + e.w/2 - 8, y: e.y + e.h/2, w:16, h:16, vy: 2.5}); }
-        } 
+        if(!gameOver){ score++; scEl.textContent=score; if(Math.random() < 0.3) { coinsList.push({x: e.x + e.w/2 - 8, y: e.y + e.h/2, w:16, h:16, vy: 2.5}); } } 
       } 
     } 
   }
@@ -403,88 +435,184 @@ function update(dt){
 function draw(t){
   ctx.clearRect(0,0,cv.width,cv.height);
   
-  // YANIP SÖNEN YILDIZLAR (Twinkling Effect)
-  starsA.forEach(s=>{
-    s.y+=s.sp; if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);}
-    ctx.globalAlpha = 0.2 + 0.8 * Math.abs(Math.sin(t * s.blink + s.off));
-    ctx.fillStyle="rgba(255,255,255,1)"; ctx.fillRect(s.x,s.y,1.5,1.5);
-  }); 
-  starsB.forEach(s=>{
-    s.y+=s.sp; if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);}
-    ctx.globalAlpha = 0.3 + 0.7 * Math.abs(Math.sin(t * s.blink + s.off));
-    ctx.fillStyle="rgba(255,255,255,1)"; ctx.fillRect(s.x,s.y,2.5,2.5);
-  });
+  starsA.forEach(s=>{ s.y+=s.sp; if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} ctx.globalAlpha = 0.2 + 0.8 * Math.abs(Math.sin(t * s.blink + s.off)); ctx.fillStyle="rgba(255,255,255,1)"; ctx.fillRect(s.x,s.y,1.5,1.5); }); 
+  starsB.forEach(s=>{ s.y+=s.sp; if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} ctx.globalAlpha = 0.3 + 0.7 * Math.abs(Math.sin(t * s.blink + s.off)); ctx.fillStyle="rgba(255,255,255,1)"; ctx.fillRect(s.x,s.y,2.5,2.5); });
   ctx.globalAlpha = 1.0;
 
   if(!started) return;
   
-  // DİNAMİK MAVİ EGZOZ ATEŞİ
   if(!gameOver) {
-    ctx.save();
-    ctx.globalCompositeOperation = "screen";
-    // Egzoz alevinin titremesini zaman (t) bazlı yapıyoruz
-    ctx.fillStyle = (t % 120 < 60) ? "#38bdf8" : "#818cf8"; 
-    ctx.shadowColor = "#0284c7";
-    ctx.shadowBlur = 15;
-    const flameHeight = 15 + Math.random() * 12; // Alev boyutu dalgalansın
-    ctx.beginPath();
-    ctx.moveTo(player.x + 22, player.y + player.h - 8); // Sol dip
-    ctx.lineTo(player.x + player.w - 22, player.y + player.h - 8); // Sağ dip
-    ctx.lineTo(player.x + player.w / 2, player.y + player.h + flameHeight); // Uç noktası
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
+    ctx.save(); ctx.globalCompositeOperation = "screen"; ctx.fillStyle = (t % 120 < 60) ? "#38bdf8" : "#818cf8"; ctx.shadowColor = "#0284c7"; ctx.shadowBlur = 15;
+    const flameHeight = 15 + Math.random() * 12; ctx.beginPath(); ctx.moveTo(player.x + 22, player.y + player.h - 8); ctx.lineTo(player.x + player.w - 22, player.y + player.h - 8); ctx.lineTo(player.x + player.w / 2, player.y + player.h + flameHeight); ctx.closePath(); ctx.fill(); ctx.restore();
   }
 
-  // Gemi çizimi
   if(playerImg) ctx.drawImage(playerImg,player.x,player.y,player.w,player.h); else{ctx.fillStyle="#38bdf8";ctx.fillRect(player.x,player.y,player.w,player.h);}
   
   ctx.fillStyle="#0099ff"; bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
   enemies.forEach(e=>{
-    if(e.isSprite && e.img && e.totalFrames > 0) {
-      const frameW = e.img.width / e.totalFrames; const sx = e.frame * frameW;
-      ctx.save(); if(e.blendMode === 'screen') ctx.globalCompositeOperation = "screen";
-      if(frameW > 0 && sx >= 0) ctx.drawImage(e.img, sx, 0, frameW, e.img.height, e.x, e.y, e.w, e.h);
-      ctx.restore();
-    } else if(e.img) { ctx.drawImage(e.img, e.x, e.y, e.w, e.h); } 
-    else { ctx.fillStyle=e.kind==="green"?"#22c55e":"#ef4444"; ctx.fillRect(e.x,e.y,e.w,e.h); }
+    if(e.isSprite && e.img && e.totalFrames > 0) { const frameW = e.img.width / e.totalFrames; const sx = e.frame * frameW; ctx.save(); if(e.blendMode === 'screen') ctx.globalCompositeOperation = "screen"; if(frameW > 0 && sx >= 0) ctx.drawImage(e.img, sx, 0, frameW, e.img.height, e.x, e.y, e.w, e.h); ctx.restore(); } 
+    else if(e.img) { ctx.drawImage(e.img, e.x, e.y, e.w, e.h); } else { ctx.fillStyle=e.kind==="green"?"#22c55e":"#ef4444"; ctx.fillRect(e.x,e.y,e.w,e.h); }
   });
   enemyBullets.forEach(m=>{ctx.fillStyle=m.color;ctx.fillRect(m.x,m.y,m.w,m.h);});
-  
-  // Elmas ve Jeton Çizimi
-  gems.forEach(g=>{
-    ctx.save(); ctx.translate(g.x+g.w/2,g.y+g.h/2); ctx.rotate(Math.sin(t/300)*0.2);
-    ctx.fillStyle="#baf2ff"; ctx.fillRect(-g.w/2,-g.h/2,g.w,g.h); ctx.restore();
-  });
-  coinsList.forEach(c=>{
-    ctx.save(); ctx.translate(c.x+c.w/2,c.y+c.h/2); ctx.rotate(t/200);
-    ctx.shadowColor="rgba(250, 204, 21, 0.8)"; ctx.shadowBlur=10;
-    ctx.fillStyle="#facc15"; ctx.fillRect(-c.w/2,-c.h/2,c.w,c.h); ctx.restore();
-  });
-
+  gems.forEach(g=>{ ctx.save(); ctx.translate(g.x+g.w/2,g.y+g.h/2); ctx.rotate(Math.sin(t/300)*0.2); ctx.fillStyle="#baf2ff"; ctx.fillRect(-g.w/2,-g.h/2,g.w,g.h); ctx.restore(); });
+  coinsList.forEach(c=>{ ctx.save(); ctx.translate(c.x+c.w/2,c.y+c.h/2); ctx.rotate(t/200); ctx.shadowColor="rgba(250, 204, 21, 0.8)"; ctx.shadowBlur=10; ctx.fillStyle="#facc15"; ctx.fillRect(-c.w/2,-c.h/2,c.w,c.h); ctx.restore(); });
   particles.forEach(p=>{const a=Math.max(0,p.life/500);ctx.globalAlpha=a;ctx.fillStyle="rgba(255,200,80,1)";ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;});
-  if(gameOver) renderFinalScore(t);
+  
+  if(gameOver) { renderFinalScore(t); if(!scoreSent) scoreSent = true; }
 }
 function loop(t){const dt=Math.min(t-(window._lt||t),32);window._lt=t;update(dt);draw(t);requestAnimationFrame(loop);} requestAnimationFrame(loop);
 
-restartBtn.onclick=()=>{
-  score=0; scEl.textContent=0; bullets=[]; enemies=[]; enemyBullets=[]; gems=[]; coinsList=[]; particles=[];
-  gameOver=false; paused=false; inCountdown=false; gameOverMusicPlayed = false;
+function resetGameVars() {
+  score=0; lives=baseLives + upgLife; weaponLevel=1; scEl.textContent=0;
+  bullets=[]; enemies=[]; enemyBullets=[]; gems=[]; coinsList=[]; particles=[];
+  gameOver=false; scoreSent=false; paused=false; inCountdown=false; gameOverMusicPlayed = false;
   if (sounds.gameOver) { sounds.gameOver.pause(); sounds.gameOver.currentTime = 0; }
-  overEl.style.display="none"; uiPause.style.display="none";
-  // Restartta gemiyi merkeze al
-  player.x = cv.width/2 - player.w/2; player.y = cv.height - 120;
-  initGame(); // Canı ve silahı baştan kurar
+  overEl.style.display="none"; top10Box.style.display="none"; uiPause.style.display="none";
   if(cv.classList.contains("red-zone")) cv.classList.remove("red-zone");
+  player.x = cv.width/2 - player.w/2; player.y = cv.height - 120;
+}
+
+restartBtn.onclick=()=>{ if(window.bpcTimer)clearInterval(window.bpcTimer); resetGameVars(); playId=Math.floor(performance.now()+Math.random()*1e9); makeCode(); initGame(); };
+
+goToMarketBtn.onclick=()=>{
+  if(window.bpcTimer)clearInterval(window.bpcTimer); resetGameVars();
+  uiLayer.style.display="none"; startOverlay.style.display = "flex"; updateMarketUI();
 };
 
 let playerImg=null; let loadedSprites = {};
 (async function(){
   try{const p=await loadImage(PLAYER_SRC);playerImg=keyOutDark(p,80);}catch{}
-  for(const key in SPRITE_CONFIG){
-    try{ const raw = await loadImage(SPRITE_CONFIG[key].src); loadedSprites[key] = { img: keyOutDark(raw, 90), frames: SPRITE_CONFIG[key].frames }; }catch(e){}
-  }
+  for(const key in SPRITE_CONFIG){ try{ const raw = await loadImage(SPRITE_CONFIG[key].src); loadedSprites[key] = { img: keyOutDark(raw, 90), frames: SPRITE_CONFIG[key].frames }; }catch(e){} }
 })();
+</script>
+
+<!-- FIREBASE MODULE (ORİJİNAL) -->
+<script type="module">
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, get, set, push, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const INSTANCE_URL="https://bpc-space-default-rtdb.europe-west1.firebasedatabase.app/";
+const app=getApps().length?getApps()[0]:initializeApp({databaseURL:INSTANCE_URL}); 
+const db=getDatabase(app); window.db=db;
+
+function getLondonNow(d=new Date()){ return new Date(d.toLocaleString("en-US", { timeZone: "Europe/London" })); }
+function weekKey(d=new Date()){
+  const now = getLondonNow(d); const day = (now.getDay() + 6) % 7; 
+  const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - day); startOfWeek.setHours(0,0,0,0);
+  const startOfYear = getLondonNow(new Date(now.getFullYear(), 0, 1)); startOfYear.setHours(0,0,0,0);
+  const diff = startOfWeek - startOfYear; const weekNumber = Math.floor(diff / (7*24*60*60*1000)) + 1;
+  return `${now.getFullYear()}-W${String(weekNumber).padStart(2,"0")}`;
+}
+function getFlagEmoji(c){if(!c)return"🏳️";const cp=c.toUpperCase().split('').map(char=>127397+char.charCodeAt());return String.fromCodePoint(...cp);}
+function getCountryCode(){
+  try{
+    const lang=(navigator.languages&&navigator.languages[0])||navigator.language||"en-US";
+    let country = (lang.split('-')[1] || "").toUpperCase();
+    if (!country || country.length !== 2) {
+        const code = lang.split('-')[0].toLowerCase();
+        const map = { ar:'SA', en:'US', fr:'FR', de:'DE', es:'ES', it:'IT', pt:'BR', ru:'RU', zh:'CN', ja:'JP', ko:'KR', tr:'TR', nl:'NL', hi:'IN', sv:'SE', no:'NO', da:'DK', pl:'PL', cs:'CZ', sk:'SK', ro:'RO', hu:'HU', fi:'FI', el:'GR', id:'ID', th:'TH', vi:'VN', uk:'UA', bg:'BG', sr:'RS', hr:'HR', ms:'MY', he:'IL' };
+        country = map[code] || "TR";
+    }
+    if (country === "UK") country = "GB"; return country;
+  }catch{return"TR";}
+}
+function getLondonNowCompat(){ return getLondonNow(new Date()); }
+
+function savePendingScore(score){
+  const code = localStorage.getItem("playerCode") || "BPC"; const country = getCountryCode(); const wk = weekKey(new Date());
+  const item = { code, score, ts: Date.now(), country, week: wk };
+  const old = JSON.parse(localStorage.getItem("pendingScores") || "[]"); old.push(item); localStorage.setItem("pendingScores", JSON.stringify(old));
+}
+
+async function flushPendingScores(){
+  try{
+    const pending = JSON.parse(localStorage.getItem("pendingScores") || "[]"); if(pending.length === 0) return;
+    for(const p of pending){ await push(ref(db, "scores"), { code: p.code, score: p.score, ts: p.ts, country: p.country }); await push(ref(db, `scoresWeekly/${p.week}`), { code: p.code, score: p.score, ts: p.ts, country: p.country, week: p.week }); }
+    localStorage.removeItem("pendingScores");
+  }catch(e){}
+}
+window.addEventListener("online", flushPendingScores);
+if(navigator.onLine){ flushPendingScores(); }
+window.savePendingScore = savePendingScore; window.flushPendingScores = flushPendingScores;
+
+const refCounter=ref(db,"stats/globalPlays"); const elGC=document.getElementById("globalCounter");
+const cached=Number(localStorage.getItem("bpc_global_plays"))||0; if(elGC)elGC.textContent=cached?cached.toLocaleString("en-US"):"…";
+onValue(refCounter,s=>{const v=Number(s.val()??0);if(elGC)elGC.textContent=v.toLocaleString("en-US");localStorage.setItem("bpc_global_plays",String(v));});
+function incrementGlobalPlays(){return runTransaction(refCounter,v=>(v||0)+1);}
+
+async function bumpLocation(){ try{ const code = getCountryCode(); const locRef = ref(db, `stats/locations/${code}`); await runTransaction(locRef, v => (v||0) + 1); }catch(e){} }
+(async function bumpLocationOncePerDay(){
+  try{ const tk="bpc_loc_day"; const td=new Date().toISOString().slice(0,10); if(localStorage.getItem(tk)===td)return;
+    await bumpLocation(); const tr=ref(db,"stats/totalStarts"); await runTransaction(tr,v=>(v||0)+1); localStorage.setItem(tk,td);
+  }catch(e){}
+})();
+
+async function saveScore(score){
+  const code=localStorage.getItem("playerCode")||"BPC"; const country=getCountryCode(); 
+  const payload={code,score,ts:Date.now(),country, countryName: country};
+  await push(ref(db,"scores"),payload); const wk=weekKey(new Date()); await push(ref(db,`scoresWeekly/${wk}`),{...payload,week:wk});
+}
+
+async function getWeeklyTop10(wk=weekKey()){
+  const snap=await get(ref(db,`scoresWeekly/${wk}`)); const bestByCode={};
+  snap.forEach(ch=>{
+    const v=ch.val(); if(!v||typeof v.score!=="number") return;
+    if(!bestByCode[v.code] || v.score>bestByCode[v.code].score){ bestByCode[v.code]=v; }
+  });
+  return Object.values(bestByCode).sort((a,b)=>b.score-a.score).slice(0,20);
+}
+
+async function checkMondayWinner(){
+  const now = getLondonNow(new Date()); const londonDay = now.getDay(); const isMondayActive = londonDay === 1;
+  mondayBox.style.display = 'none'; if(!isMondayActive) return;
+  const d_prev = new Date(now); d_prev.setDate(d_prev.getDate() - 1); const prevWk = weekKey(d_prev);
+  const list = await getWeeklyTop10(prevWk); if(!list || list.length === 0) return;
+  const winner = list[0]; const myCode = localStorage.getItem("playerCode");
+  mondayBox.style.display = 'flex'; mcWeek.textContent = prevWk.split("-W")[1]; mcName.textContent = getFlagEmoji(winner.country) + " " + winner.code;
+  if(myCode === winner.code){
+    const winRef = ref(db, `weeklyWinners/${prevWk}`); const snapshot = await get(winRef);
+    let secret = "";
+    if(snapshot.exists() && snapshot.val().secretCode){ secret = snapshot.val().secretCode; } 
+    else { secret = "WIN-" + Math.floor(100000 + Math.random() * 900000); await set(winRef, { secretCode: secret, winnerCode: winner.code, country: winner.country, score: winner.score, ts: Date.now() }); }
+    mcSecretBox.style.display = "block"; mcCode.textContent = secret;
+  } else { mcSecretBox.style.display = "none"; }
+}
+window.checkMondayWinner = checkMondayWinner;
+
+async function showWeeklyPanel(){
+  const wk=weekKey(new Date()); const me=localStorage.getItem("playerCode");
+  const ol=document.getElementById("bpc-list"); const box=document.getElementById("bpc-top10"); const wnEl=document.getElementById("wk-num");
+  if(wnEl) wnEl.textContent=wk.split("-W")[1];
+  if(window.bpcTimer) clearInterval(window.bpcTimer);
+
+  function updateTimer(){
+    const now = getLondonNowCompat(); const target = new Date(now); const day = target.getDay(); const daysUntilSunday = (7 - day) % 7;
+    target.setDate(now.getDate() + daysUntilSunday); target.setHours(23, 59, 59, 999);
+    const diff = target - now; const remEl = document.getElementById("wk-rem"); if(!remEl) return;
+    if(diff<=0){ remEl.textContent="Resetting..."; return; }
+    const d=Math.floor(diff/(1000*60*60*24)); const h=Math.floor((diff%(1000*60*60*24))/(1000*60*60)); const m=Math.floor((diff%(1000*60*60))/(1000*60)); const s=Math.floor((diff%(1000*60))/1000);
+    remEl.textContent=`${d}d ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    remEl.style.color=(d===0)?"#ef4444":"#facc15";
+  }
+  updateTimer(); window.bpcTimer=setInterval(updateTimer,1000);
+
+  const list=await getWeeklyTop10(wk); const medals = ["🥇","🥈","🥉"]; 
+  if(ol){
+    ol.innerHTML = list.length
+      ? list.map((it,i)=>{
+          const mine = it.code===me; const flag = getFlagEmoji(it.country); const medal = medals[i] || ""; 
+          return `<li class="${mine?'me':''}">
+            <div class="li-info"><span class="rank-num">${i+1}.</span>${flag} ${it.code} → ${it.score} pts</div>
+            <div class="li-medal">${medal}</div>
+          </li>`;
+        }).join("")
+      : `<div style="opacity:.7;text-align:center">No scores this week yet.</div>`;
+  }
+  if(box) box.style.display="block";
+}
+
+window.incrementGlobalPlays = incrementGlobalPlays; window.saveScore = saveScore;
+window.showWeeklyPanel = showWeeklyPanel; window.bumpLocation = bumpLocation;
 </script>
 </body>
 </html>
