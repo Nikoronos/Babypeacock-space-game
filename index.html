@@ -72,7 +72,7 @@
   .upg-btn:active { background: #facc15; color: #000; }
   .upg-btn:disabled { border-color: #555; color: #555; cursor: not-allowed; background: transparent; }
 
-  /* YENİ: LEVEL WIN EKRANI */
+  /* LEVEL WIN EKRANI */
   #levelWinOverlay { background: rgba(0, 15, 5, 0.9); color: #fff; z-index: 75; }
   .win-title { color: #4ade80; font-size: 42px; font-weight: 900; text-shadow: 0 0 20px rgba(74, 222, 128, 0.6); margin-bottom: 10px; }
   .win-subtitle { font-size: 20px; margin-bottom: 30px; }
@@ -120,8 +120,8 @@
     transition: background 3.5s ease-in-out;
   }
   
-  /* MARS VE RED ZONE ARKA PLANLARI */
-  .mars-zone { background: radial-gradient(circle at top, #7c2d12 0%, #450a0a 60%, #000000 100%) !important; }
+  /* MARS VE RED ZONE ARKA PLANLARI - Kum Tonları Ayarlandı */
+  .mars-zone { background: radial-gradient(circle at top, #b45309 0%, #451a03 50%, #000000 100%) !important; }
   .red-zone { background: radial-gradient(circle at center, #2e1065 0%, #0f172a 60%, #000000 100%) !important; }
 </style>
 </head>
@@ -240,7 +240,7 @@ let upgLife = parseInt(localStorage.getItem('bpc_upg_life')) || 0;
 let upgSpeed = parseInt(localStorage.getItem('bpc_upg_speed')) || 0;
 let upgShield = parseInt(localStorage.getItem('bpc_upg_shield')) || 0; 
 let currentLevel = parseInt(localStorage.getItem('bpc_level')) || 1; 
-let score = parseInt(localStorage.getItem('bpc_score')) || 0; // Skoru da kayıttan çek
+let score = parseInt(localStorage.getItem('bpc_score')) || 0; 
 
 const marketCoinsEl = document.getElementById("marketCoins");
 const btnUpgLife = document.getElementById("btnUpgLife");
@@ -391,7 +391,6 @@ function triggerLevelWin() {
 }
 
 /* BUTON AKSİYONLARI */
-// Sadece ölünce baştan başlar (Hard Reset)
 function restartFromZero() {
    score = 0; currentLevel = 1; 
    localStorage.setItem('bpc_score', 0); localStorage.setItem('bpc_level', 1);
@@ -435,10 +434,13 @@ function shoot(){
 function spawnGem(){ if(weaponLevel >= 3) return; const s=22; gems.push({x:rand(0,cv.width-s), y:-s, w:s, h:s, vy:1.5}); }
 function explosion(x,y,count=18){ const left=Math.max(0,120-particles.length);const n=Math.min(12,left); for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=1.2+Math.random()*2.8;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:420+Math.random()*280,size:1.6+Math.random()*2.4});} }
 
+// DÜZELTME: Gemi Yükleme ve Obje Mantığı (Kare sorununu kesin çözer)
 function spawnEnemy(k, spMul){ 
-  const levelSpeedMul = 1.0 + (currentLevel * 0.10); // Her level hız %10 artar
+  const levelSpeedMul = 1.0 + (currentLevel * 0.10); 
   const kind=k[Math.floor(Math.random()*k.length)]; let size=rand(48,70); 
-  enemies.push({ x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul * levelSpeedMul, kind, frame:0, frameTimer:0, canShoot:(kind==="red"||kind==="green"), shootT:0,shootInt:500 }); 
+  let img = null, frames = 1, blendMode = 'normal';
+  if (loadedSprites[kind]) { img = loadedSprites[kind].img; frames = loadedSprites[kind].frames; blendMode = SPRITE_CONFIG[kind].mode || 'normal'; }
+  enemies.push({ x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul * levelSpeedMul, kind, img, isSprite:(frames>1), blendMode, frame:0, frameTimer:0, totalFrames: frames, canShoot:(kind==="red"||kind==="green"), shootT:0,shootInt:500 }); 
 }
 
 function enemyShoot(e){ 
@@ -492,7 +494,6 @@ function update(dt){
   const FIRE_MS = 170 - (upgSpeed * 18); 
   fireTimer+=dt;if(holding&&fireTimer>FIRE_MS){shoot();fireTimer=0;}
   
-  // ZEMİN KONTROLÜ
   if (currentLevel === 2 && !cv.classList.contains("mars-zone")) {
      cv.classList.add("mars-zone"); cv.classList.remove("red-zone");
   } else if (currentLevel > 2 && score >= getTargetScore() - 500 && !cv.classList.contains("red-zone")) {
@@ -501,7 +502,6 @@ function update(dt){
      cv.classList.remove("mars-zone", "red-zone");
   }
 
-  // MARS KAYALARININ AKIŞI
   if (currentLevel === 2) { marsRocks.forEach(r => { r.y += r.sp; if (r.y > cv.height) { r.y = -50; r.x = rand(0, cv.width); } }); }
 
   if(score >= getTargetScore() && !levelWon) { triggerLevelWin(); return; }
@@ -531,10 +531,12 @@ function update(dt){
   
   bullets.forEach(b=>{b.y+=b.vy;b.x+=(b.ang||0)*0.5;}); bullets=bullets.filter(b=>b.y>-20);
   
+  // DÜZELTME: Yüklenmiş obje üzerindeki frame güncellemeleri
   enemies.forEach(e=>{
     e.y+=e.vy; e.shootT+=dt; if(e.canShoot&&e.shootT>=e.shootInt){e.shootT=0;enemyShoot(e);}
-    const sData = loadedSprites[e.kind];
-    if(sData && sData.frames > 1) { e.frameTimer += dt; if(e.frameTimer > 30) { e.frameTimer = 0; e.frame = (e.frame + 1) % sData.frames; } }
+    if(e.isSprite && e.img && e.totalFrames > 1) { 
+        e.frameTimer += dt; if(e.frameTimer > 30) { e.frameTimer = 0; e.frame = (e.frame + 1) % e.totalFrames; } 
+    }
   }); 
   enemies=enemies.filter(e=>e.y<=cv.height+40);
 
@@ -573,15 +575,12 @@ function draw(t){
   ctx.clearRect(0,0,cv.width,cv.height);
   
   if (currentLevel === 2) {
-    // Mars tozu efektleri
     starsA.forEach(s=>{ s.y+=s.sp; if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} ctx.globalAlpha = 0.5 + 0.5 * Math.abs(Math.sin(t * s.blink + s.off)); ctx.fillStyle="rgba(251, 146, 60, 1)"; ctx.fillRect(s.x,s.y,2,2); }); 
     starsB.forEach(s=>{ s.y+=s.sp; if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} ctx.globalAlpha = 0.6 + 0.4 * Math.abs(Math.sin(t * s.blink + s.off)); ctx.fillStyle="rgba(251, 146, 60, 1)"; ctx.fillRect(s.x,s.y,3,3); });
     ctx.globalAlpha = 1.0;
-    // Mars kayaları
-    ctx.fillStyle = "rgba(124, 45, 18, 0.4)";
+    ctx.fillStyle = "rgba(180, 83, 9, 0.25)";
     marsRocks.forEach(r => { ctx.fillRect(r.x, r.y, r.w, r.h); });
   } else {
-    // Normal Uzay Yıldızları
     starsA.forEach(s=>{ s.y+=s.sp; if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} ctx.globalAlpha = 0.2 + 0.8 * Math.abs(Math.sin(t * s.blink + s.off)); ctx.fillStyle="rgba(255,255,255,1)"; ctx.fillRect(s.x,s.y,1.5,1.5); }); 
     starsB.forEach(s=>{ s.y+=s.sp; if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} ctx.globalAlpha = 0.3 + 0.7 * Math.abs(Math.sin(t * s.blink + s.off)); ctx.fillStyle="rgba(255,255,255,1)"; ctx.fillRect(s.x,s.y,2.5,2.5); });
     ctx.globalAlpha = 1.0;
@@ -594,7 +593,6 @@ function draw(t){
     const flameHeight = 15 + Math.random() * 12; ctx.beginPath(); ctx.moveTo(player.x + 22, player.y + player.h - 8); ctx.lineTo(player.x + player.w - 22, player.y + player.h - 8); ctx.lineTo(player.x + player.w / 2, player.y + player.h + flameHeight); ctx.closePath(); ctx.fill(); ctx.restore();
   }
   
-  // INCE YEŞİL LAZER ÇİZİMİ
   if (laserActive && !gameOver) {
     ctx.save(); ctx.globalCompositeOperation = "screen";
     const isFlash = Math.floor(t / 40) % 2 === 0; 
@@ -616,17 +614,16 @@ function draw(t){
   
   bullets.forEach(b=>{ctx.fillStyle=b.color||"#0099ff"; ctx.fillRect(b.x,b.y,b.w,b.h);});
   
+  // DÜZELTME: Obje çizimi eski güvenilir metoda alındı
   enemies.forEach(e=>{
-    const sData = loadedSprites[e.kind];
-    if(sData && sData.img) {
-      if(sData.frames > 1) { 
-          const frameW = sData.img.width / sData.frames; const sx = (e.frame||0) * frameW; 
-          ctx.save(); 
-          if(SPRITE_CONFIG[e.kind].mode === 'screen') ctx.globalCompositeOperation = "screen"; 
-          if(frameW > 0 && sx >= 0) ctx.drawImage(sData.img, sx, 0, frameW, sData.img.height, e.x, e.y, e.w, e.h); 
-          ctx.restore(); 
-      } else { ctx.drawImage(sData.img, e.x, e.y, e.w, e.h); }
-    } else { ctx.fillStyle=e.kind==="green"?"#22c55e":"#ef4444"; ctx.fillRect(e.x,e.y,e.w,e.h); }
+    if(e.isSprite && e.img && e.totalFrames > 0) { 
+        const frameW = e.img.width / e.totalFrames; const sx = (e.frame||0) * frameW; 
+        ctx.save(); 
+        if(e.blendMode === 'screen') ctx.globalCompositeOperation = "screen"; 
+        if(frameW > 0 && sx >= 0) ctx.drawImage(e.img, sx, 0, frameW, e.img.height, e.x, e.y, e.w, e.h); 
+        ctx.restore(); 
+    } else if(e.img) { ctx.drawImage(e.img, e.x, e.y, e.w, e.h); }
+    else { ctx.fillStyle=e.kind==="green"?"#22c55e":"#ef4444"; ctx.fillRect(e.x,e.y,e.w,e.h); }
   });
 
   enemyBullets.forEach(m=>{ctx.fillStyle=m.color;ctx.fillRect(m.x,m.y,m.w,m.h);});
