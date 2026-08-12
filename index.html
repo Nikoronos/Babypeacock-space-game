@@ -21,12 +21,10 @@
     white-space: nowrap; 
   }
 
-  #brand {
-    justify-self: start; 
-    background:linear-gradient(90deg,#22d3ee,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent;
-    font-weight: 900; font-size: 17px; 
-    text-shadow: 0 0 10px rgba(34, 211, 238, 0.3);
-  }
+  /* SOL ÜST: Level ve Skor */
+  #left-ui { justify-self: start; display: flex; flex-direction: column; }
+  #levelDisplay { color: #facc15; font-size: 13px; text-shadow: 0 0 5px rgba(250, 204, 21, 0.5); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 1px;}
+  #score { color:#00ffc8; text-shadow: 0 0 6px rgba(0, 255, 200, 0.5); font-size: 17px; }
 
   .center-group {
     justify-self: center; 
@@ -34,9 +32,9 @@
     gap: 15px; 
   }
   
-  #score { color:#00ffc8; text-shadow: 0 0 6px rgba(0, 255, 200, 0.5); font-size: 18px; }
   #lives { letter-spacing: 2px; font-size: 15px; text-shadow: 0 0 5px rgba(255, 50, 50, 0.4); min-width: 60px; text-align: center; }
 
+  /* SAĞ ÜST: Ekonomi */
   #economyUI { 
     justify-self: end; 
     display: flex; flex-direction: column; align-items: flex-end;
@@ -54,7 +52,8 @@
     box-shadow:0 0 10px rgba(56,189,248,0.4); 
   }
 
-  #startOverlay,#gameOver,#pauseOverlay,#countdownOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:60}
+  /* ARAYÜZ OVERLAY'LERİ */
+  #startOverlay,#gameOver,#pauseOverlay,#countdownOverlay,#levelWinOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:60}
   #startOverlay{background:rgba(0,0,0,0.85);color:#fff;display:flex;overflow:hidden}
   
   #pauseOverlay{background:rgba(0,0,0,0.9);color:#fff;}
@@ -65,13 +64,18 @@
     object-fit: cover; margin-bottom: 8px; animation: floatLogo 3.5s ease-in-out infinite;
   }
   @keyframes floatLogo { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-  .slogan { font-size: 15px; font-style: italic; background: linear-gradient(90deg, #a7f3d0, #22d3ee); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 600; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(34, 211, 238, 0.2); }
   
   #marketPanel { background: rgba(15, 23, 42, 0.8); border: 1px solid #38bdf8; border-radius: 10px; padding: 12px; margin: 15px 0; width: 280px; text-align: center; box-shadow: 0 0 15px rgba(56,189,248,0.2); }
   .market-title { color: #facc15; font-size: 14px; margin-bottom: 8px; font-weight: bold; }
   .upg-btn { background: #020617; border: 1px solid #facc15; color: #facc15; border-radius: 6px; padding: 8px; width: 100%; margin-bottom: 6px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
   .upg-btn:active { background: #facc15; color: #000; }
   .upg-btn:disabled { border-color: #555; color: #555; cursor: not-allowed; background: transparent; }
+
+  /* YENİ: LEVEL WIN EKRANI */
+  #levelWinOverlay { background: rgba(0, 15, 5, 0.9); color: #fff; z-index: 75; }
+  .win-title { color: #4ade80; font-size: 42px; font-weight: 900; text-shadow: 0 0 20px rgba(74, 222, 128, 0.6); margin-bottom: 10px; }
+  .win-subtitle { font-size: 20px; margin-bottom: 30px; }
+  .win-btn-next { border-color: #4ade80 !important; color: #4ade80 !important; box-shadow: 0 0 20px rgba(74, 222, 128, 0.4) !important; }
 
   #gameOver { background: transparent; justify-content: flex-start; padding-top: 35vh; overflow-y: auto; }
   #mondayChampBox {
@@ -104,7 +108,7 @@
   @keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
   
   .btn{padding:12px 32px;border:1px solid #00ffc8;background:#0b1220;color:#00ffc8;border-radius:12px;font-weight:900;z-index:60;font-size:16px;cursor:pointer;margin-bottom:5px;box-shadow:0 0 20px rgba(0,255,200,0.4);}
-  #goToMarketBtn { border-color: #facc15; color: #facc15; box-shadow:0 0 20px rgba(250,204,21,0.4); }
+  .market-btn-style { border-color: #facc15 !important; color: #facc15 !important; box-shadow:0 0 20px rgba(250,204,21,0.4) !important; }
   
   #soundToggle { position:absolute; bottom: 20px; right: 20px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(34, 211, 238, 0.5); background: rgba(15, 23, 42, 0.9); color: #22d3ee; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 100; }
   
@@ -119,9 +123,11 @@
 </head>
 <body>
   <div id="ui-layer">
-    <div id="brand">Babypeacock 🦚</div>
-    <div class="center-group">
+    <div id="left-ui">
+      <div id="levelDisplay">LEVEL <span id="currentLevelText">1</span></div>
       <div id="score">Score: <span id="sc">0</span></div>
+    </div>
+    <div class="center-group">
       <div id="lives">❤️❤️❤️</div>
     </div>
     <div id="economyUI">
@@ -132,9 +138,11 @@
 
   <div id="pauseBtn">II</div>
 
+  <!-- START / MARKET EKRANI -->
   <div id="startOverlay">
     <img id="startLogo" src="yc3ku6.jpg" alt="BPC Logo">
-    <div class="slogan">From feather to flight</div>
+    <div id="mainLevelText" style="font-size: 22px; font-weight: 900; color: #4ade80; margin-bottom: 5px;">LEVEL 1</div>
+    <div style="font-size: 14px; color: #ccc; margin-bottom: 15px;">Hedef: <span id="targetScoreText">500</span> Puan</div>
     
     <div id="marketPanel">
       <div class="market-title">BPC Jeton: <span id="marketCoins">0</span></div>
@@ -145,7 +153,6 @@
 
     <button id="startBtn" class="btn">START GAME</button>
     <div id="playerCode" style="margin-top:10px;font-size:14px;color:#00ffc8;"></div>
-    <div style="margin-top:8px;font-size:12px;color:#ccc;">Serbest sürükleme aktiftir (Yukarı/Aşağı/Sağa/Sola)</div>
     <div id="soundToggle">🔊</div>
   </div>
 
@@ -154,16 +161,25 @@
     <button id="resumeBtn" class="btn">RESUME</button>
   </div>
 
+  <!-- LEVEL TAMAMLANDI EKRANI -->
+  <div id="levelWinOverlay">
+    <div class="win-title">BAŞARILI!</div>
+    <div class="win-subtitle">Level <span id="winLevelNum">1</span> Tamamlandı</div>
+    <button id="nextLevelBtn" class="btn win-btn-next">Level 2'ye Geç</button>
+    <button id="winMarketBtn" class="btn market-btn-style">Markete Git</button>
+  </div>
+
   <div id="countdownOverlay"><div id="cntText"></div></div>
 
+  <!-- GAME OVER EKRANI -->
   <div id="gameOver">
     <div id="mondayChampBox">
       <div class="champ-label">👑 Week <span id="mc-week">--</span> Champion</div>
       <div class="champ-name" id="mc-name">Loading...</div>
       <div id="winnerSecret">CODE: <span id="mc-code">---</span></div>
     </div>
-    <button id="restart" class="btn">Restart</button>
-    <button id="goToMarketBtn" class="btn">Market / Upgrades</button>
+    <button id="restart" class="btn">Restart Level</button>
+    <button id="goToMarketBtn" class="btn market-btn-style">Market / Upgrades</button>
     <div id="globalCounterBox">Global plays: <span id="globalCounter">…</span></div>
     <div id="bpc-top10" style="display:none">
       <h4>🏆 Weekly Top 20</h4>
@@ -211,16 +227,29 @@ soundBtn.onclick = (e) => { e.stopPropagation(); soundEnabled = !soundEnabled; l
 function playShootSound(isPower) { if (!soundEnabled) return; if (isPower) sounds.powerShot.play(); else sounds.normalShot.play(); }
 function playExplosionSound() { if (!soundEnabled) return; sounds.boomShip.play(); }
 
-/* ====== KALICI EKONOMİ & YÜKSELTMELER ====== */
+/* ====== KALICI EKONOMİ & LEVEL SİSTEMİ ====== */
 let bpcCoins = parseInt(localStorage.getItem('bpc_coins')) || 0;
 let upgLife = parseInt(localStorage.getItem('bpc_upg_life')) || 0;
 let upgSpeed = parseInt(localStorage.getItem('bpc_upg_speed')) || 0;
-let upgShield = parseInt(localStorage.getItem('bpc_upg_shield')) || 0; // Kalkan verisi
+let upgShield = parseInt(localStorage.getItem('bpc_upg_shield')) || 0; 
+let currentLevel = parseInt(localStorage.getItem('bpc_level')) || 1; // YENİ: LEVEL KAYDI
 
 const marketCoinsEl = document.getElementById("marketCoins");
 const btnUpgLife = document.getElementById("btnUpgLife");
 const btnUpgSpeed = document.getElementById("btnUpgSpeed");
 const btnUpgShield = document.getElementById("btnUpgShield");
+
+// Level UI Elementleri
+const mainLevelText = document.getElementById("mainLevelText");
+const targetScoreText = document.getElementById("targetScoreText");
+const currentLevelTextUI = document.getElementById("currentLevelText");
+const winLevelNum = document.getElementById("winLevelNum");
+const nextLevelBtn = document.getElementById("nextLevelBtn");
+
+function getTargetScore() {
+    // Her bölüm hedefi 500'er 500'er artar (Lvl 1: 500, Lvl 2: 1000 vb.)
+    return currentLevel * 500;
+}
 
 function updateMarketUI() {
   marketCoinsEl.textContent = bpcCoins.toLocaleString("tr-TR");
@@ -231,6 +260,10 @@ function updateMarketUI() {
   btnUpgLife.disabled = bpcCoins < (500 + upgLife * 500);
   btnUpgSpeed.disabled = bpcCoins < (1000 + upgSpeed * 1000) || upgSpeed >= 5;
   btnUpgShield.disabled = upgShield ? true : (bpcCoins < 3000);
+
+  mainLevelText.textContent = `LEVEL ${currentLevel}`;
+  targetScoreText.textContent = getTargetScore();
+  currentLevelTextUI.textContent = currentLevel;
 }
 updateMarketUI();
 
@@ -264,6 +297,7 @@ const uiLayer = document.getElementById("ui-layer"), uiPause = document.getEleme
 const scEl=document.getElementById("sc"), wlEl=document.getElementById("wl"), livesEl=document.getElementById("lives"), cnEl=document.getElementById("cn");
 const startOverlay=document.getElementById("startOverlay"), startBtn=document.getElementById("startBtn");
 const overEl=document.getElementById("gameOver"), restartBtn=document.getElementById("restart"), goToMarketBtn=document.getElementById("goToMarketBtn");
+const levelWinOverlay=document.getElementById("levelWinOverlay"), winMarketBtn=document.getElementById("winMarketBtn");
 const top10Box=document.getElementById("bpc-top10");
 const pauseBtn=document.getElementById("pauseBtn"), pauseOverlay=document.getElementById("pauseOverlay"), resumeBtn=document.getElementById("resumeBtn");
 const countOverlay=document.getElementById("countdownOverlay"), cntText=document.getElementById("cntText");
@@ -284,12 +318,11 @@ const PLAYER_SRC="img/player/bpc_mini.png"; const PEACOCK_SRC="yc3ku6.jpg";
 const SPRITE_CONFIG = { green: { src: "bpc_enemy_green_sprite.png", frames: 60, mode: 'normal' }, ufo_red: { src: "ufo_red_sprite.png", frames: 85, mode: 'screen' }, ufo_gray: { src: "ufo_gray_sprite.png", frames: 60, mode: 'screen' }, red: { src: "bpc_enemy_red_sprite.png", frames: 60, mode: 'screen' } };
 
 let bullets=[], enemies=[], enemyBullets=[], gems=[], coinsList=[], particles=[];
-let score=0, baseLives=3, lives=3, weaponLevel=1, started=false, gameOver=false, paused=false, inCountdown=false;
+let score=0, baseLives=3, lives=3, weaponLevel=1, started=false, gameOver=false, levelWon=false, paused=false, inCountdown=false;
 let fireTimer=0, elapsed=0, enT=0, gemT=0, scoreSent=false;
 let player={x:cv.width/2-33,y:cv.height-120,w:66,h:66};
 let countdownTimer = null;
 
-// Kalkan ve Yeşil Lazer sistem değişkenleri
 let activeShield = 0; 
 let laserActive = false;
 let laserTimer = 0;
@@ -302,20 +335,19 @@ const starsA=[], starsB=[];
 for(let i=0;i<30;i++) starsA.push({x:rand(0,cv.width),y:rand(0,cv.height), sp:rand(0.2,0.4), blink: rand(0.002, 0.005), off: rand(0, Math.PI*2)});
 for(let i=0;i<20;i++) starsB.push({x:rand(0,cv.width),y:rand(0,cv.height), sp:rand(0.7,1.1), blink: rand(0.003, 0.007), off: rand(0, Math.PI*2)});
 
-/* ====== BAŞLANGIÇ SİSTEMİ ====== */
+/* ====== BAŞLANGIÇ & LEVEL SİSTEMİ ====== */
 function resetGameVars() {
   if(countdownTimer) clearInterval(countdownTimer);
   countOverlay.style.display="none";
   score=0; lives=baseLives + upgLife; weaponLevel=1; scEl.textContent=0;
   bullets=[]; enemies=[]; enemyBullets=[]; gems=[]; coinsList=[]; particles=[];
-  gameOver=false; started=false; scoreSent=false; paused=false; inCountdown=false; gameOverMusicPlayed = false;
+  gameOver=false; levelWon=false; started=false; scoreSent=false; paused=false; inCountdown=false; gameOverMusicPlayed = false;
   
-  // Marketten kalkan alındıysa her oyuna kalkanla başla
   activeShield = upgShield > 0 ? 1 : 0;
   laserActive = false; laserTimer = 0; laserCooldown = 4000;
 
   if (sounds.gameOver) { sounds.gameOver.pause(); sounds.gameOver.currentTime = 0; }
-  overEl.style.display="none"; top10Box.style.display="none"; uiPause.style.display="none";
+  overEl.style.display="none"; top10Box.style.display="none"; uiPause.style.display="none"; levelWinOverlay.style.display="none";
   if(cv.classList.contains("red-zone")) cv.classList.remove("red-zone");
   player.x = cv.width/2 - player.w/2; player.y = cv.height - 120;
 }
@@ -340,13 +372,31 @@ function initGame(){
   startCountdownSequence(()=>{ started=true; paused=false; uiPause.style.display="flex"; player.y=cv.height-120; player.x=cv.width/2-player.w/2; });
 }
 
+/* YENİ: LEVEL BAŞARIYLA TAMAMLANDIĞINDA ÇALIŞIR */
+function triggerLevelWin() {
+  levelWon = true;
+  started = false; // Oyunu durdur
+  uiPause.style.display = "none";
+  
+  // Level bilgilerini güncelle
+  winLevelNum.textContent = currentLevel;
+  currentLevel++; // Sonraki levele geçir
+  localStorage.setItem('bpc_level', currentLevel); // Hafızaya kaydet
+  
+  nextLevelBtn.textContent = `Level ${currentLevel}'e Geç`;
+  
+  // Ekranı göster
+  setTimeout(() => {
+    levelWinOverlay.style.display = "flex";
+  }, 1000); // 1 saniye bekleyip ekranı getir (patlama efektleri bitsin diye)
+}
+
 startBtn.onclick = () => { playId=Math.floor(performance.now()+Math.random()*1e9); makeCode(); initGame(); };
 restartBtn.onclick = () => { if(window.bpcTimer) clearInterval(window.bpcTimer); playId=Math.floor(performance.now()+Math.random()*1e9); makeCode(); initGame(); };
+nextLevelBtn.onclick = () => { if(window.bpcTimer) clearInterval(window.bpcTimer); playId=Math.floor(performance.now()+Math.random()*1e9); makeCode(); updateMarketUI(); initGame(); };
 
-goToMarketBtn.onclick = () => {
-  if(window.bpcTimer) clearInterval(window.bpcTimer); 
-  resetGameVars(); uiLayer.style.display="none"; startOverlay.style.display = "flex"; updateMarketUI();
-};
+goToMarketBtn.onclick = () => { if(window.bpcTimer) clearInterval(window.bpcTimer); resetGameVars(); uiLayer.style.display="none"; startOverlay.style.display = "flex"; updateMarketUI(); };
+winMarketBtn.onclick = () => { if(window.bpcTimer) clearInterval(window.bpcTimer); resetGameVars(); uiLayer.style.display="none"; startOverlay.style.display = "flex"; updateMarketUI(); };
 
 function updateLives(){livesEl.innerHTML="❤️".repeat(lives);} 
 function updateWeaponUI(){wlEl.textContent=weaponLevel;}
@@ -356,14 +406,12 @@ let holding=false;
 function getX(e){return (e.clientX??(e.touches?e.touches[0].clientX:0))-cv.getBoundingClientRect().left;}
 function getY(e){return (e.clientY??(e.touches?e.touches[0].clientY:0))-cv.getBoundingClientRect().top;}
 
-cv.addEventListener("pointerdown",e=>{ if(!started||paused||inCountdown)return; holding=true; player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w); player.y=clamp(getY(e)-player.h/2,0,cv.height-player.h); });
-cv.addEventListener("pointermove",e=>{ if(!holding||paused||inCountdown)return; player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w); player.y=clamp(getY(e)-player.h/2,0,cv.height-player.h); });
+cv.addEventListener("pointerdown",e=>{ if(!started||paused||inCountdown||levelWon)return; holding=true; player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w); player.y=clamp(getY(e)-player.h/2,0,cv.height-player.h); });
+cv.addEventListener("pointermove",e=>{ if(!holding||paused||inCountdown||levelWon)return; player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w); player.y=clamp(getY(e)-player.h/2,0,cv.height-player.h); });
 cv.addEventListener("pointerup",()=>holding=false); cv.addEventListener("pointercancel",()=>holding=false);
 
-/* GERİ DÖNEN MAVİ SİLAHLAR (YAYILMA YOK, PARALEL) */
 function shoot(){
   playShootSound(weaponLevel > 1); const cx = player.x + player.w/2 - 2;
-  // Tüm seviyelerde renk sabit MAVİ kalacak
   if (weaponLevel === 1) { 
       bullets.push({x:cx, y:player.y, w:4, h:12, vy:-10, color:"#38bdf8"}); 
   } else if (weaponLevel === 2) { 
@@ -379,9 +427,12 @@ function shoot(){
 function spawnGem(){ if(weaponLevel >= 3) return; const s=22; gems.push({x:rand(0,cv.width-s), y:-s, w:s, h:s, vy:1.5}); }
 function explosion(x,y,count=18){ const left=Math.max(0,120-particles.length);const n=Math.min(12,left); for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=1.2+Math.random()*2.8;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:420+Math.random()*280,size:1.6+Math.random()*2.4});} }
 
+// Level'a göre düşman hızı ayarlama
 function spawnEnemy(k, spMul){ 
+  // Level arttıkça düşmanlar %10 daha hızlı düşer
+  const levelSpeedMul = 1.0 + (currentLevel * 0.10); 
   const kind=k[Math.floor(Math.random()*k.length)]; let size=rand(48,70); 
-  enemies.push({ x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul, kind, frame:0, frameTimer:0, canShoot:(kind==="red"||kind==="green"), shootT:0,shootInt:500 }); 
+  enemies.push({ x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul * levelSpeedMul, kind, frame:0, frameTimer:0, canShoot:(kind==="red"||kind==="green"), shootT:0,shootInt:500 }); 
 }
 
 function enemyShoot(e){ 
@@ -410,7 +461,7 @@ function renderFinalScore(t){
 }
 
 async function endGame(){
-  if (gameOver) return;
+  if (gameOver || levelWon) return; // Level geçildiyse ölme tetiklenmesin
   gameOver = true; uiPause.style.display = "none"; overEl.style.display = "flex"; 
   if (soundEnabled && !gameOverMusicPlayed) { gameOverMusicPlayed = true; sounds.gameOver.currentTime = 0; sounds.gameOver.volume = 1.0; sounds.gameOver.play().catch(()=>{}); }
   updateMarketUI();
@@ -429,22 +480,27 @@ async function endGame(){
 }
 
 function update(dt){
-  if(!started||gameOver||paused||inCountdown)return;
+  if(!started||gameOver||paused||inCountdown||levelWon)return;
   elapsed+=dt/1000;enT+=dt;gemT+=dt;
   
   const FIRE_MS = 170 - (upgSpeed * 18); 
   fireTimer+=dt;if(holding&&fireTimer>FIRE_MS){shoot();fireTimer=0;}
   
-  // LEVEL 3 YEŞİL LAZER BEAM MEKANİĞİ
+  /* --- LEVEL KAZANMA KONTROLÜ --- */
+  if(score >= getTargetScore() && !levelWon) {
+      triggerLevelWin();
+      return;
+  }
+  
   if (weaponLevel >= 3) {
     if (laserActive) {
       laserTimer -= dt;
       if (laserTimer <= 0) {
         laserActive = false;
-        laserCooldown = 4000; // 4 saniyede bir ateşlenir
+        laserCooldown = 4000; 
       } else {
-        // Lazer Alanına Çarpanları Yok Et
-        const beamRect = { x: player.x + player.w/2 - 12, y: 0, w: 24, h: player.y };
+        // DÜZELTME: Lazer Hasar Alanı (Hitbox) Daraltıldı
+        const beamRect = { x: player.x + player.w/2 - 4, y: 0, w: 8, h: player.y };
         enemies.forEach(e => {
           if (!e.dead && rectHit(beamRect, e)) {
              playExplosionSound(); explosion(e.x+e.w/2, e.y+e.h/2, 22); e.dead = 1;
@@ -459,7 +515,7 @@ function update(dt){
       laserCooldown -= dt;
       if (laserCooldown <= 0) {
         laserActive = true;
-        laserTimer = 1500; // 1.5 Saniye sürer
+        laserTimer = 1500; 
         if(soundEnabled) sounds.powerShot.play();
       }
     }
@@ -488,10 +544,11 @@ function update(dt){
   
   const pBox = { x: player.x + 12, y: player.y + 12, w: player.w - 24, h: player.h - 24 };
   
-  // KALKAN HASAR EMME MANTIĞI
   const takeDamage = () => { 
     if(activeShield > 0) {
-      activeShield = 0; // Kalkan patladı, gemi korundu
+      activeShield = 0; 
+      upgShield = 0; localStorage.setItem('bpc_upg_shield', 0); // Kalkan kullanıldı, marketten sil
+      updateMarketUI();
       return;
     }
     lives--; updateLives(); weaponLevel = 1; updateWeaponUI(); if(lives<=0) endGame(); 
@@ -503,7 +560,7 @@ function update(dt){
     for(const e of enemies){ 
       if(rectHit(b,e)){ 
         playExplosionSound(); explosion(e.x+e.w/2,e.y+e.h/2,16); b.dead=1; e.dead=1; 
-        if(!gameOver){ 
+        if(!gameOver && !levelWon){ 
             score++; scEl.textContent=score; 
             if(Math.random() < 0.45) { coinsList.push({x: e.x + e.w/2 - 8, y: e.y + e.h/2, w:16, h:16, vy: 2.5}); } 
         } 
@@ -527,39 +584,31 @@ function draw(t){
   starsB.forEach(s=>{ s.y+=s.sp; if(s.y>cv.height){s.y=0;s.x=rand(0,cv.width);} ctx.globalAlpha = 0.3 + 0.7 * Math.abs(Math.sin(t * s.blink + s.off)); ctx.fillStyle="rgba(255,255,255,1)"; ctx.fillRect(s.x,s.y,2.5,2.5); });
   ctx.globalAlpha = 1.0;
 
-  if(!started) return;
+  if(!started && !levelWon) return; // Level kazanıldıysa son sahneyi çizmeye devam et
   
   if(!gameOver) {
     ctx.save(); ctx.globalCompositeOperation = "screen"; ctx.fillStyle = (t % 120 < 60) ? "#38bdf8" : "#818cf8"; ctx.shadowColor = "#0284c7"; ctx.shadowBlur = 15;
     const flameHeight = 15 + Math.random() * 12; ctx.beginPath(); ctx.moveTo(player.x + 22, player.y + player.h - 8); ctx.lineTo(player.x + player.w - 22, player.y + player.h - 8); ctx.lineTo(player.x + player.w / 2, player.y + player.h + flameHeight); ctx.closePath(); ctx.fill(); ctx.restore();
   }
   
-  // YANIP SÖNEN İNCE UZUN YEŞİL LAZER ÇİZİMİ
+  // DÜZELTME: İNCE YEŞİL LAZER ÇİZİMİ
   if (laserActive && !gameOver) {
     ctx.save();
     ctx.globalCompositeOperation = "screen";
-    const isFlash = Math.floor(t / 40) % 2 === 0; // Hızlı yanıp sönme efekti
+    const isFlash = Math.floor(t / 40) % 2 === 0; 
     ctx.fillStyle = isFlash ? "#4ade80" : "#ffffff";
     ctx.shadowColor = "#22c55e";
     ctx.shadowBlur = 20;
-    const bw = 16 + Math.random() * 8; // Lazerin genişliği dalgalansın
+    const bw = 6 + Math.random() * 4; // İnce ve daha zarif çizgi
     ctx.fillRect(player.x + player.w/2 - bw/2, 0, bw, player.y);
     ctx.restore();
   }
 
-  // GEMİ KALKAN (SHIELD) ÇİZİMİ
   if(activeShield > 0 && !gameOver) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(player.x + player.w/2, player.y + player.h/2, 45, 0, Math.PI*2);
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = `rgba(34, 211, 238, ${0.5 + 0.5 * Math.sin(t/150)})`; // Nefes alma efekti
-    ctx.shadowColor = "#22d3ee";
-    ctx.shadowBlur = 15;
-    ctx.stroke();
-    ctx.fillStyle = "rgba(34, 211, 238, 0.15)"; // Hafif şeffaf dolgu
-    ctx.fill();
-    ctx.restore();
+    ctx.save(); ctx.beginPath(); ctx.arc(player.x + player.w/2, player.y + player.h/2, 45, 0, Math.PI*2);
+    ctx.lineWidth = 3; ctx.strokeStyle = `rgba(34, 211, 238, ${0.5 + 0.5 * Math.sin(t/150)})`; 
+    ctx.shadowColor = "#22d3ee"; ctx.shadowBlur = 15; ctx.stroke();
+    ctx.fillStyle = "rgba(34, 211, 238, 0.15)"; ctx.fill(); ctx.restore();
   }
 
   if(playerImg) ctx.drawImage(playerImg,player.x,player.y,player.w,player.h); else{ctx.fillStyle="#38bdf8";ctx.fillRect(player.x,player.y,player.w,player.h);}
@@ -588,7 +637,7 @@ function draw(t){
 }
 function loop(t){const dt=Math.min(t-(window._lt||t),32);window._lt=t;update(dt);draw(t);requestAnimationFrame(loop);} requestAnimationFrame(loop);
 
-pauseBtn.onclick=()=>{if(!started||gameOver||inCountdown)return;paused=true;pauseOverlay.style.display="flex";uiPause.style.display="none";};
+pauseBtn.onclick=()=>{if(!started||gameOver||inCountdown||levelWon)return;paused=true;pauseOverlay.style.display="flex";uiPause.style.display="none";};
 resumeBtn.onclick=()=>{pauseOverlay.style.display="none";startCountdownSequence(()=>{paused=false;uiPause.style.display="flex";});};
 
 let playerImg=null; let loadedSprites = {};
