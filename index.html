@@ -140,6 +140,7 @@
       <div class="market-title">BPC Jeton: <span id="marketCoins">0</span></div>
       <button id="btnUpgLife" class="upg-btn">Can +1 (500 Jeton)</button>
       <button id="btnUpgSpeed" class="upg-btn">Ateş Hızı + (1000 Jeton)</button>
+      <button id="btnUpgShield" class="upg-btn">Kalkan (3000 Jeton)</button>
     </div>
 
     <button id="startBtn" class="btn">START GAME</button>
@@ -214,22 +215,28 @@ function playExplosionSound() { if (!soundEnabled) return; sounds.boomShip.play(
 let bpcCoins = parseInt(localStorage.getItem('bpc_coins')) || 0;
 let upgLife = parseInt(localStorage.getItem('bpc_upg_life')) || 0;
 let upgSpeed = parseInt(localStorage.getItem('bpc_upg_speed')) || 0;
+let upgShield = parseInt(localStorage.getItem('bpc_upg_shield')) || 0; // Kalkan verisi
 
 const marketCoinsEl = document.getElementById("marketCoins");
 const btnUpgLife = document.getElementById("btnUpgLife");
 const btnUpgSpeed = document.getElementById("btnUpgSpeed");
+const btnUpgShield = document.getElementById("btnUpgShield");
 
 function updateMarketUI() {
   marketCoinsEl.textContent = bpcCoins.toLocaleString("tr-TR");
   btnUpgLife.textContent = `Can +1 (${500 + upgLife * 500} Jeton)`;
   btnUpgSpeed.textContent = `Ateş Hızı + (${1000 + upgSpeed * 1000} Jeton)`;
+  btnUpgShield.textContent = upgShield ? "Kalkan (Satın Alındı)" : "Kalkan (3000 Jeton)";
+  
   btnUpgLife.disabled = bpcCoins < (500 + upgLife * 500);
   btnUpgSpeed.disabled = bpcCoins < (1000 + upgSpeed * 1000) || upgSpeed >= 5;
+  btnUpgShield.disabled = upgShield ? true : (bpcCoins < 3000);
 }
 updateMarketUI();
 
 btnUpgLife.onclick = () => { const cost = 500 + upgLife * 500; if(bpcCoins >= cost) { bpcCoins -= cost; upgLife++; localStorage.setItem('bpc_coins', bpcCoins); localStorage.setItem('bpc_upg_life', upgLife); updateMarketUI(); } };
 btnUpgSpeed.onclick = () => { const cost = 1000 + upgSpeed * 1000; if(bpcCoins >= cost && upgSpeed < 5) { bpcCoins -= cost; upgSpeed++; localStorage.setItem('bpc_coins', bpcCoins); localStorage.setItem('bpc_upg_speed', upgSpeed); updateMarketUI(); } };
+btnUpgShield.onclick = () => { if(bpcCoins >= 3000 && !upgShield) { bpcCoins -= 3000; upgShield = 1; localStorage.setItem('bpc_coins', bpcCoins); localStorage.setItem('bpc_upg_shield', upgShield); updateMarketUI(); } };
 
 function addCoins(amount) { bpcCoins += amount; localStorage.setItem('bpc_coins', bpcCoins); document.getElementById("cn").textContent = bpcCoins.toLocaleString("tr-TR"); }
 
@@ -281,6 +288,13 @@ let score=0, baseLives=3, lives=3, weaponLevel=1, started=false, gameOver=false,
 let fireTimer=0, elapsed=0, enT=0, gemT=0, scoreSent=false;
 let player={x:cv.width/2-33,y:cv.height-120,w:66,h:66};
 let countdownTimer = null;
+
+// Kalkan ve Yeşil Lazer sistem değişkenleri
+let activeShield = 0; 
+let laserActive = false;
+let laserTimer = 0;
+let laserCooldown = 4000;
+
 resize();
 
 /* YANIP SÖNEN YILDIZLAR */
@@ -295,6 +309,11 @@ function resetGameVars() {
   score=0; lives=baseLives + upgLife; weaponLevel=1; scEl.textContent=0;
   bullets=[]; enemies=[]; enemyBullets=[]; gems=[]; coinsList=[]; particles=[];
   gameOver=false; started=false; scoreSent=false; paused=false; inCountdown=false; gameOverMusicPlayed = false;
+  
+  // Marketten kalkan alındıysa her oyuna kalkanla başla
+  activeShield = upgShield > 0 ? 1 : 0;
+  laserActive = false; laserTimer = 0; laserCooldown = 4000;
+
   if (sounds.gameOver) { sounds.gameOver.pause(); sounds.gameOver.currentTime = 0; }
   overEl.style.display="none"; top10Box.style.display="none"; uiPause.style.display="none";
   if(cv.classList.contains("red-zone")) cv.classList.remove("red-zone");
@@ -341,25 +360,25 @@ cv.addEventListener("pointerdown",e=>{ if(!started||paused||inCountdown)return; 
 cv.addEventListener("pointermove",e=>{ if(!holding||paused||inCountdown)return; player.x=clamp(getX(e)-player.w/2,0,cv.width-player.w); player.y=clamp(getY(e)-player.h/2,0,cv.height-player.h); });
 cv.addEventListener("pointerup",()=>holding=false); cv.addEventListener("pointercancel",()=>holding=false);
 
-/* YENİ NESİL YEŞİL LAZER VE PARALEL 3'LÜ ATIŞ (yayılma yok) */
+/* GERİ DÖNEN MAVİ SİLAHLAR (YAYILMA YOK, PARALEL) */
 function shoot(){
   playShootSound(weaponLevel > 1); const cx = player.x + player.w/2 - 2;
+  // Tüm seviyelerde renk sabit MAVİ kalacak
   if (weaponLevel === 1) { 
-      bullets.push({x:cx, y:player.y, w:4, h:12, vy:-10, color:"#38bdf8"}); // Mavi Lazer
+      bullets.push({x:cx, y:player.y, w:4, h:12, vy:-10, color:"#38bdf8"}); 
   } else if (weaponLevel === 2) { 
-      bullets.push({x:cx - 8, y:player.y, w:4, h:12, vy:-10, color:"#22c55e"}); // Yeşil Lazer
-      bullets.push({x:cx + 8, y:player.y, w:4, h:12, vy:-10, color:"#22c55e"}); 
+      bullets.push({x:cx - 8, y:player.y, w:4, h:12, vy:-10, color:"#38bdf8"}); 
+      bullets.push({x:cx + 8, y:player.y, w:4, h:12, vy:-10, color:"#38bdf8"}); 
   } else { 
-      bullets.push({x:cx, y:player.y, w:4, h:12, vy:-10, color:"#22c55e"}); // 3'lü Paralel Yeşil Lazer
-      bullets.push({x:cx - 14, y:player.y, w:4, h:12, vy:-10, color:"#22c55e"}); 
-      bullets.push({x:cx + 14, y:player.y, w:4, h:12, vy:-10, color:"#22c55e"}); 
+      bullets.push({x:cx, y:player.y, w:4, h:12, vy:-10, color:"#38bdf8"}); 
+      bullets.push({x:cx - 14, y:player.y, w:4, h:12, vy:-10, color:"#38bdf8"}); 
+      bullets.push({x:cx + 14, y:player.y, w:4, h:12, vy:-10, color:"#38bdf8"}); 
   }
 }
 
 function spawnGem(){ if(weaponLevel >= 3) return; const s=22; gems.push({x:rand(0,cv.width-s), y:-s, w:s, h:s, vy:1.5}); }
 function explosion(x,y,count=18){ const left=Math.max(0,120-particles.length);const n=Math.min(12,left); for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=1.2+Math.random()*2.8;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:420+Math.random()*280,size:1.6+Math.random()*2.4});} }
 
-/* Dinamik resim alma: img değişkenini kaydetmiyoruz, sadece düşman tipini saklıyoruz. */
 function spawnEnemy(k, spMul){ 
   const kind=k[Math.floor(Math.random()*k.length)]; let size=rand(48,70); 
   enemies.push({ x:rand(0,cv.width-size),y:-size,w:size,h:size,vy:rand(1.4,3) * spMul, kind, frame:0, frameTimer:0, canShoot:(kind==="red"||kind==="green"), shootT:0,shootInt:500 }); 
@@ -416,6 +435,39 @@ function update(dt){
   const FIRE_MS = 170 - (upgSpeed * 18); 
   fireTimer+=dt;if(holding&&fireTimer>FIRE_MS){shoot();fireTimer=0;}
   
+  // LEVEL 3 YEŞİL LAZER BEAM MEKANİĞİ
+  if (weaponLevel >= 3) {
+    if (laserActive) {
+      laserTimer -= dt;
+      if (laserTimer <= 0) {
+        laserActive = false;
+        laserCooldown = 4000; // 4 saniyede bir ateşlenir
+      } else {
+        // Lazer Alanına Çarpanları Yok Et
+        const beamRect = { x: player.x + player.w/2 - 12, y: 0, w: 24, h: player.y };
+        enemies.forEach(e => {
+          if (!e.dead && rectHit(beamRect, e)) {
+             playExplosionSound(); explosion(e.x+e.w/2, e.y+e.h/2, 22); e.dead = 1;
+             if(!gameOver){ score++; scEl.textContent=score; if(Math.random() < 0.45) { coinsList.push({x: e.x + e.w/2 - 8, y: e.y + e.h/2, w:16, h:16, vy: 2.5}); } }
+          }
+        });
+        enemyBullets.forEach(m => {
+          if (!m.dead && rectHit(beamRect, m)) { m.dead = 1; explosion(m.x, m.y, 10); }
+        });
+      }
+    } else {
+      laserCooldown -= dt;
+      if (laserCooldown <= 0) {
+        laserActive = true;
+        laserTimer = 1500; // 1.5 Saniye sürer
+        if(soundEnabled) sounds.powerShot.play();
+      }
+    }
+  } else {
+    laserActive = false;
+    laserCooldown = 4000;
+  }
+
   if(enT > 600){ spawnEnemy(["ufo_red","ufo_gray","green","red"], 1.2); enT = 0; }
   if(gemT > 15000){ if(Math.random() < 0.4) spawnGem(); gemT = 0; }
   
@@ -423,7 +475,6 @@ function update(dt){
   
   enemies.forEach(e=>{
     e.y+=e.vy; e.shootT+=dt; if(e.canShoot&&e.shootT>=e.shootInt){e.shootT=0;enemyShoot(e);}
-    // Animasyon hesaplaması için yüklenmiş sprite'ı kullanıyoruz
     const sData = loadedSprites[e.kind];
     if(sData && sData.frames > 1) { 
         e.frameTimer += dt; if(e.frameTimer > 30) { e.frameTimer = 0; e.frame = (e.frame + 1) % sData.frames; } 
@@ -436,7 +487,15 @@ function update(dt){
   coinsList.forEach(c=>c.y+=c.vy); coinsList=coinsList.filter(c=>c.y<cv.height+40);
   
   const pBox = { x: player.x + 12, y: player.y + 12, w: player.w - 24, h: player.h - 24 };
-  const takeDamage = () => { lives--; updateLives(); weaponLevel = 1; updateWeaponUI(); if(lives<=0) endGame(); };
+  
+  // KALKAN HASAR EMME MANTIĞI
+  const takeDamage = () => { 
+    if(activeShield > 0) {
+      activeShield = 0; // Kalkan patladı, gemi korundu
+      return;
+    }
+    lives--; updateLives(); weaponLevel = 1; updateWeaponUI(); if(lives<=0) endGame(); 
+  };
 
   for(const e of enemies){ if(rectHit(pBox,e)){ playExplosionSound(); explosion(player.x+player.w/2,player.y+player.h/2,22); takeDamage(); e.dead=1; } }
   for(const m of enemyBullets){ if(rectHit(pBox,m)){ playExplosionSound(); explosion(player.x+player.w/2,player.y+player.h/2,22); takeDamage(); m.dead=1; } }
@@ -446,14 +505,12 @@ function update(dt){
         playExplosionSound(); explosion(e.x+e.w/2,e.y+e.h/2,16); b.dead=1; e.dead=1; 
         if(!gameOver){ 
             score++; scEl.textContent=score; 
-            // JETON DÜŞME İHTİMALİ ARTIRILDI: %45 şansla çıkar.
             if(Math.random() < 0.45) { coinsList.push({x: e.x + e.w/2 - 8, y: e.y + e.h/2, w:16, h:16, vy: 2.5}); } 
         } 
       } 
     } 
   }
   for(const g of gems){ if(rectHit(player,g)){ if(soundEnabled) sounds.gem.play(); weaponLevel = Math.min(3, weaponLevel + 1); updateWeaponUI(); g.dead=1; } } 
-  // JETON DEĞERİ ARTIRILDI: Tanesi 25 Jeton kazandırır.
   for(const c of coinsList){ if(rectHit(player,c)){ if(soundEnabled) sounds.coin.play(); addCoins(25); c.dead=1; } }
 
   enemies=enemies.filter(o=>!o.dead); bullets=bullets.filter(o=>!o.dead); enemyBullets=enemyBullets.filter(o=>!o.dead);
@@ -476,13 +533,39 @@ function draw(t){
     ctx.save(); ctx.globalCompositeOperation = "screen"; ctx.fillStyle = (t % 120 < 60) ? "#38bdf8" : "#818cf8"; ctx.shadowColor = "#0284c7"; ctx.shadowBlur = 15;
     const flameHeight = 15 + Math.random() * 12; ctx.beginPath(); ctx.moveTo(player.x + 22, player.y + player.h - 8); ctx.lineTo(player.x + player.w - 22, player.y + player.h - 8); ctx.lineTo(player.x + player.w / 2, player.y + player.h + flameHeight); ctx.closePath(); ctx.fill(); ctx.restore();
   }
+  
+  // YANIP SÖNEN İNCE UZUN YEŞİL LAZER ÇİZİMİ
+  if (laserActive && !gameOver) {
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+    const isFlash = Math.floor(t / 40) % 2 === 0; // Hızlı yanıp sönme efekti
+    ctx.fillStyle = isFlash ? "#4ade80" : "#ffffff";
+    ctx.shadowColor = "#22c55e";
+    ctx.shadowBlur = 20;
+    const bw = 16 + Math.random() * 8; // Lazerin genişliği dalgalansın
+    ctx.fillRect(player.x + player.w/2 - bw/2, 0, bw, player.y);
+    ctx.restore();
+  }
+
+  // GEMİ KALKAN (SHIELD) ÇİZİMİ
+  if(activeShield > 0 && !gameOver) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(player.x + player.w/2, player.y + player.h/2, 45, 0, Math.PI*2);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = `rgba(34, 211, 238, ${0.5 + 0.5 * Math.sin(t/150)})`; // Nefes alma efekti
+    ctx.shadowColor = "#22d3ee";
+    ctx.shadowBlur = 15;
+    ctx.stroke();
+    ctx.fillStyle = "rgba(34, 211, 238, 0.15)"; // Hafif şeffaf dolgu
+    ctx.fill();
+    ctx.restore();
+  }
 
   if(playerImg) ctx.drawImage(playerImg,player.x,player.y,player.w,player.h); else{ctx.fillStyle="#38bdf8";ctx.fillRect(player.x,player.y,player.w,player.h);}
   
-  // RENKLİ MERMİ ÇİZİMİ
   bullets.forEach(b=>{ctx.fillStyle=b.color||"#0099ff"; ctx.fillRect(b.x,b.y,b.w,b.h);});
   
-  /* KARE HATASININ DÜZELTİLDİĞİ ÇİZİM FONKSİYONU */
   enemies.forEach(e=>{
     const sData = loadedSprites[e.kind];
     if(sData && sData.img) {
@@ -492,12 +575,8 @@ function draw(t){
           if(SPRITE_CONFIG[e.kind].mode === 'screen') ctx.globalCompositeOperation = "screen"; 
           if(frameW > 0 && sx >= 0) ctx.drawImage(sData.img, sx, 0, frameW, sData.img.height, e.x, e.y, e.w, e.h); 
           ctx.restore(); 
-      } else { 
-          ctx.drawImage(sData.img, e.x, e.y, e.w, e.h); 
-      }
-    } else { 
-        ctx.fillStyle=e.kind==="green"?"#22c55e":"#ef4444"; ctx.fillRect(e.x,e.y,e.w,e.h); 
-    }
+      } else { ctx.drawImage(sData.img, e.x, e.y, e.w, e.h); }
+    } else { ctx.fillStyle=e.kind==="green"?"#22c55e":"#ef4444"; ctx.fillRect(e.x,e.y,e.w,e.h); }
   });
 
   enemyBullets.forEach(m=>{ctx.fillStyle=m.color;ctx.fillRect(m.x,m.y,m.w,m.h);});
