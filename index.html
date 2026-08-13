@@ -120,8 +120,8 @@
     transition: background 3.5s ease-in-out;
   }
   
-  /* MARS ÇÖLÜ GERÇEKÇİ ARKA PLAN (Koyu ufuk, turuncu zemin, koyu dip) */
-  .mars-zone { background: linear-gradient(to bottom, #450a0a 0%, #9a3412 50%, #2e1008 100%) !important; }
+  /* MARS ÇÖLÜ GERÇEKÇİ ARKA PLAN (Koyu Pas/Kızıl tonları ayarlandı, renkler daha net) */
+  .mars-zone { background: linear-gradient(to bottom, #2a0a05 0%, #5c1e06 50%, #170501 100%) !important; }
   .red-zone { background: radial-gradient(circle at center, #2e1065 0%, #0f172a 60%, #000000 100%) !important; }
 </style>
 </head>
@@ -340,13 +340,13 @@ const starsA=[], starsB=[];
 for(let i=0;i<30;i++) starsA.push({x:rand(0,cv.width),y:rand(0,cv.height), sp:rand(0.2,0.4), blink: rand(0.002, 0.005), off: rand(0, Math.PI*2)});
 for(let i=0;i<20;i++) starsB.push({x:rand(0,cv.width),y:rand(0,cv.height), sp:rand(0.7,1.1), blink: rand(0.003, 0.007), off: rand(0, Math.PI*2)});
 
-// Mars Toz Fırtınası (Çapraz esen çizgiler)
+// Mars Toz Fırtınası
 const marsDust = [];
 for(let i=0;i<35;i++) marsDust.push({x:rand(0,2000), y:rand(0,2000), vx:rand(-5, -2), vy:rand(4, 7), len:rand(10, 30)});
 
-// Mars Kraterleri (Zeminden kayan oval çukurlar)
+// DÜZELTME: Mars Kraterleri (Küçültüldü ve sayısı azaltıldı)
 const marsCraters = [];
-for(let i=0;i<10;i++) marsCraters.push({x:rand(0,1000), y:rand(0,1500), r:rand(30, 90), sp:rand(1.5, 3)});
+for(let i=0;i<8;i++) marsCraters.push({x:rand(0,cv.width), y:rand(0,1500), r:rand(15, 45), sp:rand(0.8, 2)});
 
 /* ====== BAŞLANGIÇ SİSTEMİ ====== */
 function resetGameVars() {
@@ -509,10 +509,9 @@ function update(dt){
      cv.classList.remove("mars-zone", "red-zone");
   }
 
-  // MARS ÇÖLÜ ARKA PLAN HAREKETLERİ
   if (currentLevel === 2) { 
      marsDust.forEach(d => { d.x += d.vx; d.y += d.vy; if (d.y > cv.height + 50 || d.x < -50) { d.y = -50; d.x = rand(0, cv.width + 200); } });
-     marsCraters.forEach(c => { c.y += c.sp; if (c.y > cv.height + c.r) { c.y = -c.r; c.x = rand(0, cv.width); c.r = rand(30, 90); } });
+     marsCraters.forEach(c => { c.y += c.sp; if (c.y > cv.height + c.r) { c.y = -c.r; c.x = rand(0, cv.width); c.r = rand(15, 45); } });
   }
 
   if(score >= getTargetScore() && !levelWon) { triggerLevelWin(); return; }
@@ -585,19 +584,18 @@ function draw(t){
   ctx.clearRect(0,0,cv.width,cv.height);
   
   if (currentLevel === 2) {
-    // 1. Atmosfer Sis Filtresi
-    ctx.fillStyle = "rgba(180, 83, 9, 0.15)";
+    // DÜZELTME: Sis Filtresi Daha Koyu ve Yarı Şeffaf
+    ctx.fillStyle = "rgba(40, 10, 0, 0.15)";
     ctx.fillRect(0, 0, cv.width, cv.height);
 
-    // 2. Mars Kraterleri (Gerçekçi oval yapılar)
-    ctx.lineWidth = 3;
+    // DÜZELTME: Mars Kraterleri (Daha küçük, daha yumuşak)
+    ctx.lineWidth = 2;
     marsCraters.forEach(c => {
        ctx.beginPath(); ctx.ellipse(c.x, c.y, c.r, c.r * 0.6, 0, 0, Math.PI * 2);
-       ctx.fillStyle = "rgba(67, 20, 7, 0.4)"; ctx.fill(); // Koyu iç gölge
-       ctx.strokeStyle = "rgba(146, 64, 14, 0.2)"; ctx.stroke(); // Kenar çizgisi
+       ctx.fillStyle = "rgba(20, 5, 0, 0.3)"; ctx.fill(); 
+       ctx.strokeStyle = "rgba(80, 25, 5, 0.15)"; ctx.stroke(); 
     });
 
-    // 3. Kum Fırtınası Çizgileri (Hızlı akan tozlar)
     ctx.strokeStyle = "rgba(217, 119, 6, 0.4)";
     ctx.lineCap = "round";
     marsDust.forEach(d => {
